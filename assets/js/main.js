@@ -373,7 +373,7 @@ export function launchApp(appId) {
   if (isLocalhost) {
     window.location.href = appId === 'arq' ? '/ADM_ARQ/index.html' : '/ADM_CONST/index.html';
   } else {
-    window.location.href = appId === 'arq' ? 'https://arq.cubikar.com' : 'https://const.cubikar.com';
+    window.location.href = appId === 'arq' ? 'https://arq.cubikar.app' : 'https://const.cubikar.app';
   }
 }
 
@@ -386,7 +386,7 @@ export async function handleDownloadMyBackup() {
                    state?.user?.user_metadata?.full_name || 
                    state?.user?.user_metadata?.name || 
                    'Usuario_Cubikar';
-  const userEmail = state?.user?.email || 'contacto@cubikar.com';
+  const userEmail = state?.user?.email || 'contacto@cubikar.app';
   const companyName = state?.company?.nombre || 
                       state?.user?.user_metadata?.empresa_nombre || 
                       'Despacho_y_Constructora';

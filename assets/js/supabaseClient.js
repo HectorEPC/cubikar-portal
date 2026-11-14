@@ -1,5 +1,5 @@
 // assets/js/supabaseClient.js
-// Cliente oficial de Supabase para el Portal Central Cubikar (cubikar.com)
+// Cliente oficial de Supabase para el Portal Central Cubikar (cubikar.app)
 
 export const SUPABASE_CONFIG = {
   url: 'https://hxyzvxueoqvvjyehfpym.supabase.co',
@@ -20,9 +20,9 @@ export function getSupabase() {
       detectSessionInUrl: true
     };
 
-    if (!isLocalhost && window.location.hostname.includes('cubikar.com')) {
+    if (!isLocalhost && window.location.hostname.includes('cubikar.app')) {
       authOptions.cookieOptions = {
-        domain: '.cubikar.com',
+        domain: '.cubikar.app',
         sameSite: 'lax',
         secure: true
       };

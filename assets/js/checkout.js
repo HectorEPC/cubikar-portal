@@ -245,7 +245,7 @@ export const COMBO_TIERS = {
     subtextAnnual: 'Sin tarjeta bancaria ni compromiso',
     limits: { projects: '2 Arq + 2 Const', concepts: '15 Arq / 100 Const', members: 'Hasta 3 usuarios', storage: '250 MB combinados' },
     features: [
-      'Acceso simultáneo a arq.cubikar.com y const.cubikar.com',
+      'Acceso simultáneo a arq.cubikar.app y const.cubikar.app',
       '2 proyectos ejecutivos en Arq + 2 proyectos de obra en Const',
       'Single Sign-On (1 solo correo y contraseña para ambas apps)',
       'Herramientas esenciales de diseño y catálogo base APU',
