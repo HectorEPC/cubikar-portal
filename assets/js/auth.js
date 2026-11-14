@@ -152,7 +152,7 @@ export async function loginWithGoogle() {
   const sb = getSupabase();
   if (!sb) throw new Error('Servidor de autenticación no disponible. Por favor recarga la página.');
 
-  let cleanRedirect = window.location.href.split('#')[0].split('?')[0];
+  let cleanRedirect = window.location.origin;
   if (window.location.protocol === 'file:') {
     cleanRedirect = 'http://localhost:3000/index.html';
   }
@@ -160,14 +160,14 @@ export async function loginWithGoogle() {
   const { data, error } = await sb.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: cleanRedirect
+      redirectTo: cleanRedirect,
+      queryParams: {
+        prompt: 'select_account'
+      }
     }
   });
 
   if (error) throw error;
-  if (data?.url && typeof window !== 'undefined') {
-    window.location.href = data.url;
-  }
   return data;
 }
 
