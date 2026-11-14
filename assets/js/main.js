@@ -4,6 +4,7 @@
 import { CONST_TIERS, ARQ_TIERS, COMBO_TIERS, redirectToStripeCheckout } from './checkout.js';
 import { downloadFullEcosystemBackup } from './exportBackup.js';
 import { initAppSwitcher } from './appSwitcher.js?v=20261114_11';
+import { isUserAdmin, openCubikarAdminModal } from './cubikarAdmin.js?v=20261114_13';
 import { 
   initAuth, 
   loginWithEmail, 
@@ -691,6 +692,19 @@ export function updateAuthUI(state) {
     if (dashName) dashName.textContent = name;
     if (dashEmail) dashEmail.textContent = state.user.email || '';
     if (dashCompany) dashCompany.textContent = company;
+
+    // Control de visibilidad del Área de Administración para SuperAdmin
+    const isAdmin = isUserAdmin(state.user.email);
+    const dashAdminSec = document.getElementById('dash-admin-section');
+    if (dashAdminSec) {
+      if (isAdmin) dashAdminSec.classList.remove('hidden');
+      else dashAdminSec.classList.add('hidden');
+    }
+    const chooserAdminSec = document.getElementById('app-chooser-admin-section');
+    if (chooserAdminSec) {
+      if (isAdmin) chooserAdminSec.classList.remove('hidden');
+      else chooserAdminSec.classList.add('hidden');
+    }
   } else {
     // Usuario invitado / no autenticado
     if (navGuest) navGuest.classList.remove('hidden');
@@ -698,6 +712,10 @@ export function updateAuthUI(state) {
       navUser.classList.add('hidden');
       navUser.classList.remove('flex');
     }
+    const dashAdminSec = document.getElementById('dash-admin-section');
+    if (dashAdminSec) dashAdminSec.classList.add('hidden');
+    const chooserAdminSec = document.getElementById('app-chooser-admin-section');
+    if (chooserAdminSec) chooserAdminSec.classList.add('hidden');
   }
 }
 
@@ -715,11 +733,11 @@ export function closeUserDashboard() {
 export function openAppChooserModal(userName) {
   const modal = document.getElementById('modal-app-chooser');
   const nameEl = document.getElementById('app-chooser-user-name');
+  const state = getCurrentState();
   if (nameEl) {
     if (userName) {
       nameEl.textContent = userName;
     } else {
-      const state = getCurrentState();
       const n = state?.profile?.nombre_completo || 
                 state?.user?.user_metadata?.full_name || 
                 state?.user?.user_metadata?.name || 
@@ -728,6 +746,14 @@ export function openAppChooserModal(userName) {
       nameEl.textContent = n;
     }
   }
+
+  const isAdmin = isUserAdmin(state?.user?.email);
+  const chooserAdminSec = document.getElementById('app-chooser-admin-section');
+  if (chooserAdminSec) {
+    if (isAdmin) chooserAdminSec.classList.remove('hidden');
+    else chooserAdminSec.classList.add('hidden');
+  }
+
   modal?.classList.remove('hidden');
 }
 

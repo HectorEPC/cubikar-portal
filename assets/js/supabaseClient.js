@@ -32,3 +32,5 @@ export function getSupabase() {
   console.warn('[Cubikar Portal] SDK de Supabase aún no cargado en window.supabase');
   return null;
 }
+
+export const getSupabaseClient = getSupabase;
