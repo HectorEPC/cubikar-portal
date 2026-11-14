@@ -316,7 +316,7 @@ function renderDynamicComparisonTable(productLabel, accentColor) {
       ['Ruta Crítica, Curva S y Financiero', 'Básico', 'Completo con días inhábiles', 'Avanzado con suspensiones'],
       ['Bitácora Legal y Compras ERP', 'Básico', 'Completo (firmas y PDF)', 'Avanzado con libro foliado legal'],
       ['Almacenamiento en Nube', '200 MB', '2 GB (con compresión)', '5 GB de alta velocidad'],
-      ['Catálogos Maestros Importados', '6 MB', '50 MB personalizados', '200 MB (Opus, Neodata, BIMSA)']
+      ['Catálogos Maestros Importados', '6 MB', '50 MB personalizados', '200 MB (Opus, Neodata, Excel)']
     ];
   } else if (currentPricingProduct === 'arq') {
     // Filas oficiales de ADM_ARQ
@@ -340,7 +340,7 @@ function renderDynamicComparisonTable(productLabel, accentColor) {
       ['Usuarios Compartidos en Suite', 'Hasta 3 usuarios', 'Hasta 10 usuarios compartidos', 'Hasta 30 usuarios corporativos'],
       ['Almacenamiento Total en Nube', '250 MB combinados', '3 GB en servidor', '7.5 GB de alta velocidad'],
       ['SSO (Un solo login)', 'Acceso a arq y const', 'Acceso total sin reconexión', 'Acceso total con roles unificados'],
-      ['Matrices APU + Honorarios Cost-Plus', 'Esenciales', 'Completos con catálogo BIMSA', 'Completos + Catálogos maestros'],
+      ['Matrices APU + Honorarios Cost-Plus', 'Esenciales', 'Completos con catálogos oficiales', 'Completos + Catálogos maestros'],
       ['Bitácora Legal + Contratos de Ingenierías', 'Básico', 'Completo (firmas digitales)', 'Libro legal + peritajes DRO'],
       ['Doble Ruta Crítica y Curva S', 'Básico', 'Planeación ejecutiva y obra', 'Ejecutivo avanzado'],
       ['Flujo de Caja y Dashboard ERP', 'Básico', 'Cobranza y compras en obra', 'Flujo integral de constructora y despacho'],
