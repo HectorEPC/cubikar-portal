@@ -8,6 +8,9 @@
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="assets/branding/favicon.png">
   
+  <!-- FontAwesome 6 Icons (mismo de ADM_CONST) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
   <!-- Tailwind CSS & Google Fonts -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -35,29 +38,35 @@
         <div>
           <div class="flex items-center gap-1.5">
             <span class="font-extrabold text-2xl tracking-tight text-white font-heading">cubikar<span class="text-blue-500">.</span></span>
-            <span class="hidden sm:inline-block bg-blue-500/10 text-blue-400 text-[11px] px-2.5 py-0.5 rounded-full font-bold border border-blue-500/20 tracking-wider uppercase">Suite</span>
+            <span class="hidden sm:inline-block bg-blue-500/10 text-blue-400 text-[11px] px-2.5 py-0.5 rounded-full font-bold border border-blue-500/20 tracking-wider uppercase">Ecosistema</span>
           </div>
-          <p class="text-[11px] text-slate-400 font-medium tracking-tight">Arquitectura &bull; Construcción</p>
+          <p class="text-[11px] text-slate-400 font-medium tracking-tight">Construcción &bull; Arquitectura</p>
         </div>
       </a>
 
       <!-- Desktop Nav Links -->
       <nav class="hidden md:flex items-center space-x-8 text-sm font-semibold text-slate-300">
         <a href="#ecosistema" class="hover:text-white transition">Ecosistema</a>
-        <a href="#arquitectura" class="hover:text-blue-400 transition flex items-center gap-1.5">
-          <span class="w-2 h-2 rounded-full bg-blue-500"></span>
-          Arquitectura
-        </a>
         <a href="#construccion" class="hover:text-amber-400 transition flex items-center gap-1.5">
           <span class="w-2 h-2 rounded-full bg-amber-500"></span>
           Construcción
         </a>
+        <a href="#arquitectura" class="hover:text-blue-400 transition flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+          Arquitectura
+        </a>
         <a href="#respaldo" class="hover:text-emerald-400 transition">Respaldos</a>
-        <a href="#precios" class="hover:text-white transition">Planes &amp; Precios</a>
+        <a href="#precios" class="hover:text-white transition flex items-center gap-1">
+          <i class="fa-solid fa-crown text-amber-400 text-xs"></i>
+          <span>Planes &amp; Precios</span>
+        </a>
       </nav>
 
-      <!-- User Auth CTA / Profile Button -->
+      <!-- User Auth CTA & App Switcher -->
       <div class="flex items-center space-x-3">
+        <!-- App Switcher Mount (9 puntos Waffle) -->
+        <div id="cubikar-app-switcher-mount" class="flex items-center"></div>
+
         <!-- Auth Guest Container -->
         <div id="nav-guest-actions" class="flex items-center space-x-2">
           <button onclick="openAuthModal('login')" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-200 hover:text-white hover:bg-slate-800/80 transition cursor-pointer">
@@ -90,36 +99,37 @@
   <!-- ========================================================================= -->
   <section class="relative pt-16 pb-24 md:pt-24 md:pb-32 overflow-hidden">
     <!-- Background Glows -->
-    <div class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] bg-gradient-to-tr from-blue-600/20 via-indigo-600/15 to-transparent blur-3xl pointer-events-none rounded-full"></div>
+    <div class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] bg-gradient-to-tr from-amber-600/20 via-blue-600/15 to-transparent blur-3xl pointer-events-none rounded-full"></div>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
       
       <!-- Top Pill -->
-      <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-xs font-bold mb-8 shadow-sm">
-        <span class="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
-        Nueva Versión 2.0 &bull; Ecosistema Integrado AEC
+      <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold mb-8 shadow-sm">
+        <i class="fa-solid fa-bolt text-amber-400 text-xs"></i>
+        <span>¡Precios de Lanzamiento Activos! Descuentos de hasta 56% OFF en Plus y Pro</span>
       </div>
 
       <!-- Main Headline -->
       <h1 class="text-4xl sm:text-5xl md:text-7xl font-extrabold tracking-tight text-white mb-6 font-heading max-w-5xl mx-auto leading-tight">
-        El ecosistema definitivo para <br class="hidden sm:inline">
-        <span class="text-gradient-blue">Arquitectura</span> y <span class="text-gradient-amber">Construcción</span>
+        El ecosistema unificado para <br class="hidden sm:inline">
+        <span class="text-gradient-amber">Construcción</span> &amp; <span class="text-gradient-blue">Arquitectura</span>
       </h1>
 
       <!-- Subtitle -->
       <p class="text-slate-300 text-lg sm:text-xl max-w-3xl mx-auto mb-10 font-normal leading-relaxed">
-        Gestiona proyectos ejecutivos, honorarios, presupuestos con matrices APU, cronogramas de obra y bitácoras digitales.
-        <span class="text-white font-semibold">Contrata solo lo que necesitas o desbloquea toda la suite unificada.</span>
+        Presupuestos con Matrices de Precios Unitarios (APU), catálogos oficiales BIMSA y Gobierno, cronogramas de obra, bitácora digital legal y control de proyectos ejecutivos.
+        <span class="text-white font-semibold">Usa el Plan Gratuito para siempre o escala con Plus y Pro.</span>
       </p>
 
       <!-- CTA Buttons -->
       <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
-        <a href="#precios" class="w-full sm:w-auto px-8 py-4 rounded-xl font-bold text-sm bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-xl shadow-blue-600/30 transition transform hover:-translate-y-0.5 text-center">
-          Ver Planes y Precios &rarr;
+        <a href="#precios" class="w-full sm:w-auto px-8 py-4 rounded-xl font-bold text-sm bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 shadow-xl shadow-amber-500/20 transition transform hover:-translate-y-0.5 text-center flex items-center justify-center gap-2">
+          <i class="fa-solid fa-crown text-xs"></i>
+          <span>Ver Planes y Precios Oficiales</span>
         </a>
         <button onclick="scrollToEcosistema()" class="w-full sm:w-auto px-8 py-4 rounded-xl font-bold text-sm bg-slate-900 border border-slate-700/80 hover:bg-slate-800 text-slate-200 transition text-center flex items-center justify-center gap-2">
-          <span>Explorar Ecosistema</span>
-          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+          <span>Explorar Características</span>
+          <i class="fa-solid fa-arrow-down text-xs text-slate-400"></i>
         </button>
       </div>
 
@@ -132,7 +142,7 @@
             <div class="w-3 h-3 rounded-full bg-emerald-500/80"></div>
           </div>
           <div class="flex items-center gap-2 text-xs text-slate-400 bg-slate-950/80 px-3 py-1 rounded-lg border border-slate-800 font-mono">
-            <span class="text-blue-400 font-bold">cubikar.com</span> &bull; Acceso Único SSO
+            <span class="text-amber-400 font-bold">cubikar.com</span> &bull; Inicio de Sesión Único (SSO)
           </div>
           <div class="w-12"></div>
         </div>
@@ -140,24 +150,7 @@
         <!-- 2 Columns Interactive Showcase -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 text-left">
           
-          <!-- App 1: Arquitectura Card -->
-          <div class="p-6 rounded-xl bg-slate-900/80 border border-blue-500/30 hover:border-blue-500 transition relative overflow-hidden group">
-            <div class="flex items-center justify-between mb-4">
-              <span class="px-2.5 py-1 rounded-md text-[11px] font-bold badge-arq">arq.cubikar.com</span>
-              <span class="text-xs text-slate-400">Despachos &bull; Diseño</span>
-            </div>
-            <h3 class="text-xl font-bold text-white mb-2 font-heading">Cubikar Arquitectura</h3>
-            <p class="text-xs text-slate-300 mb-4 leading-relaxed">
-              Planificación ejecutiva completa: Tabla de alcances, cálculo de honorarios profesionales Cost-Plus, cronograma de planos y control de acuerdos.
-            </p>
-            <div class="space-y-1.5 text-xs text-slate-400">
-              <div class="flex items-center gap-2"><span class="text-blue-400 font-bold">&check;</span> 01. Tabla de Alcances de Proyecto</div>
-              <div class="flex items-center gap-2"><span class="text-blue-400 font-bold">&check;</span> 02. Presupuesto Base y Honorarios</div>
-              <div class="flex items-center gap-2"><span class="text-blue-400 font-bold">&check;</span> 05. Cobros y Estimaciones de Honorarios</div>
-            </div>
-          </div>
-
-          <!-- App 2: Construcción Card -->
+          <!-- App 1: Construcción Card -->
           <div class="p-6 rounded-xl bg-slate-900/80 border border-amber-500/30 hover:border-amber-500 transition relative overflow-hidden group">
             <div class="flex items-center justify-between mb-4">
               <span class="px-2.5 py-1 rounded-md text-[11px] font-bold badge-const">const.cubikar.com</span>
@@ -165,12 +158,31 @@
             </div>
             <h3 class="text-xl font-bold text-white mb-2 font-heading">Cubikar Construcción</h3>
             <p class="text-xs text-slate-300 mb-4 leading-relaxed">
-              Control total en sitio: Análisis de Precios Unitarios (APU) con bases BIMSA y Gobierno, estimaciones, control ERP de gastos y bitácora legal.
+              Control integral de obra: Catálogo base, matrices paramétricas APU (Materiales, Mano de Obra, Equipos, Subcontratos), estimaciones, compras ERP y bitácora legal inmutable.
             </p>
             <div class="space-y-1.5 text-xs text-slate-400">
-              <div class="flex items-center gap-2"><span class="text-amber-400 font-bold">&check;</span> 01. Catálogo Base y Matrices APU</div>
-              <div class="flex items-center gap-2"><span class="text-amber-400 font-bold">&check;</span> 03. Estimaciones y Números Generadores</div>
-              <div class="flex items-center gap-2"><span class="text-amber-400 font-bold">&check;</span> 05. Bitácora Digital y Legal de Obra</div>
+              <div class="flex items-center gap-2"><i class="fa-solid fa-check text-amber-400 text-xs"></i> 01. Catálogo Base y Matrices APU</div>
+              <div class="flex items-center gap-2"><i class="fa-solid fa-check text-amber-400 text-xs"></i> 02. Cronograma de Obra y Registro Pluvial</div>
+              <div class="flex items-center gap-2"><i class="fa-solid fa-check text-amber-400 text-xs"></i> 03. Estimaciones y Números Generadores</div>
+              <div class="flex items-center gap-2"><i class="fa-solid fa-check text-amber-400 text-xs"></i> 05. Bitácora Digital y Legal de Obra</div>
+            </div>
+          </div>
+
+          <!-- App 2: Arquitectura Card -->
+          <div class="p-6 rounded-xl bg-slate-900/80 border border-blue-500/30 hover:border-blue-500 transition relative overflow-hidden group">
+            <div class="flex items-center justify-between mb-4">
+              <span class="px-2.5 py-1 rounded-md text-[11px] font-bold badge-arq">arq.cubikar.com</span>
+              <span class="text-xs text-slate-400">Despachos &bull; Proyectistas</span>
+            </div>
+            <h3 class="text-xl font-bold text-white mb-2 font-heading">Cubikar Arquitectura</h3>
+            <p class="text-xs text-slate-300 mb-4 leading-relaxed">
+              Gestión de proyectos ejecutivos y diseño: Tabla de alcances, honorarios profesionales con fórmula Cost-Plus, nómina de oficina, cronograma de entregables y minutas con clientes.
+            </p>
+            <div class="space-y-1.5 text-xs text-slate-400">
+              <div class="flex items-center gap-2"><i class="fa-solid fa-check text-blue-400 text-xs"></i> 01. Tabla de Alcances de Proyecto Ejecutivo</div>
+              <div class="flex items-center gap-2"><i class="fa-solid fa-check text-blue-400 text-xs"></i> 02. Presupuesto Base y Honorarios Cost-Plus</div>
+              <div class="flex items-center gap-2"><i class="fa-solid fa-check text-blue-400 text-xs"></i> 03. Seguimiento y Minutas de Acuerdos</div>
+              <div class="flex items-center gap-2"><i class="fa-solid fa-check text-blue-400 text-xs"></i> 05. Cobros y Estimaciones de Honorarios</div>
             </div>
           </div>
 
@@ -181,136 +193,68 @@
   </section>
 
   <!-- ========================================================================= -->
-  <!-- 3. DETALLE DE PRODUCTOS (ECOSISTEMA) -->
+  <!-- 3. PLANES Y PRECIOS OFICIALES (100% SINCRONIZADOS CON ADM_CONST) -->
   <!-- ========================================================================= -->
-  <section id="ecosistema" class="py-20 border-t border-slate-900 bg-slate-950/40">
+  <section id="precios" class="py-24 border-t border-slate-900 bg-slate-950 relative">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       
-      <div class="text-center max-w-3xl mx-auto mb-16">
-        <h2 class="text-3xl sm:text-4xl font-extrabold text-white mb-4 font-heading">
-          Especialización Quirúrgica para Cada Fase del Proyecto
+      <div class="text-center max-w-4xl mx-auto mb-10">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold mb-4">
+          <i class="fa-solid fa-crown text-amber-400 text-xs"></i>
+          <span>Elige la Suscripción Ideal para tus Proyectos</span>
+        </div>
+        <h2 class="text-3xl sm:text-5xl font-extrabold text-white mb-4 font-heading">
+          Planes y Suscripciones Oficiales
         </h2>
-        <p class="text-slate-400 text-base">
-          No mezcles procesos de diseño conceptual con la administración cruda de campo. Cubikar separa las herramientas según el momento del negocio.
+        <p class="text-slate-400 text-sm sm:text-base mb-6">
+          Comienza gratis para siempre con nuestro <strong>Plan Inicial</strong> o acelera tus obras con las herramientas profesionales de <strong>Plus</strong> y <strong>Pro</strong>.
         </p>
-      </div>
 
-      <!-- PRODUCTO 1: CUBIKAR ARQUITECTURA -->
-      <div id="arquitectura" class="mb-20 rounded-3xl glass-card p-8 md:p-12 border-blue-500/20 relative">
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-          <div class="lg:col-span-7">
-            <span class="px-3 py-1 rounded-full text-xs font-bold badge-arq mb-4 inline-block">
-              Herramienta 1 &bull; Despachos y Diseñadores
-            </span>
-            <h3 class="text-2xl sm:text-3xl font-extrabold text-white mb-4 font-heading">
-              Cubikar Arquitectura
-            </h3>
-            <p class="text-slate-300 text-sm sm:text-base mb-6 leading-relaxed">
-              Diseñado exclusivamente para la gestión de estudios de arquitectura y proyectistas ejecutivos. Cotiza con precisión matemática tus horas de trabajo, costos indirectos de oficina y entregables finales.
-            </p>
-            
-            <!-- Las 5 pestañas de Arq -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
-              <div class="bg-slate-900/90 border border-slate-800 p-3.5 rounded-xl">
-                <span class="text-xs font-bold text-blue-400 block mb-1">01. Tabla de Alcances</span>
-                <p class="text-xs text-slate-400">Catálogo de entregables ejecutivos, planos requeridos y firmas responsables.</p>
-              </div>
-              <div class="bg-slate-900/90 border border-slate-800 p-3.5 rounded-xl">
-                <span class="text-xs font-bold text-blue-400 block mb-1">02. Presupuesto Base y Honorarios</span>
-                <p class="text-xs text-slate-400">Fórmulas Cost-Plus, nómina H.H., indirectos de oficina y porcentaje de utilidad.</p>
-              </div>
-              <div class="bg-slate-900/90 border border-slate-800 p-3.5 rounded-xl">
-                <span class="text-xs font-bold text-blue-400 block mb-1">03. Seguimiento y Control</span>
-                <p class="text-xs text-slate-400">Minutas ejecutivas con clientes, control de revisiones y cambios aprobados.</p>
-              </div>
-              <div class="bg-slate-900/90 border border-slate-800 p-3.5 rounded-xl">
-                <span class="text-xs font-bold text-blue-400 block mb-1">04. Cronograma y Entregas</span>
-                <p class="text-xs text-slate-400">Calendario de avance para coordinación de ingenierías y diseño.</p>
-              </div>
-              <div class="bg-slate-900/90 border border-slate-800 p-3.5 rounded-xl sm:col-span-2">
-                <span class="text-xs font-bold text-blue-400 block mb-1">05. Cobros y Estimaciones de Honorarios</span>
-                <p class="text-xs text-slate-400">Monitoreo de anticipos cobrados, saldos pendientes y facturación a clientes.</p>
-              </div>
-            </div>
+        <!-- SELECTOR DE PRODUCTO: CONSTRUCCIÓN / ARQUITECTURA / COMBO -->
+        <div class="flex flex-wrap items-center justify-center gap-2 p-1.5 rounded-2xl bg-slate-900 border border-slate-800 max-w-xl mx-auto mb-6">
+          <button id="tab-prod-const" onclick="selectPricingProduct('const')" class="flex-1 py-2 px-4 rounded-xl text-xs font-bold bg-amber-500 text-slate-950 shadow transition flex items-center justify-center gap-1.5 cursor-pointer">
+            <i class="fa-solid fa-helmet-safety text-xs"></i>
+            <span>Cubikar Construcción</span>
+          </button>
+          <button id="tab-prod-arq" onclick="selectPricingProduct('arq')" class="flex-1 py-2 px-4 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition flex items-center justify-center gap-1.5 cursor-pointer">
+            <i class="fa-solid fa-compass-drafting text-xs"></i>
+            <span>Cubikar Arquitectura</span>
+          </button>
+          <button id="tab-prod-combo" onclick="selectPricingProduct('combo')" class="flex-1 py-2 px-4 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition flex items-center justify-center gap-1.5 cursor-pointer">
+            <i class="fa-solid fa-cubes text-xs"></i>
+            <span>Suite Combo</span>
+          </button>
+        </div>
 
-            <a href="#precios" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-lg shadow-blue-600/30 transition">
-              <span>Contratar Cubikar Arquitectura</span>
-              <span class="text-base">&rarr;</span>
-            </a>
-          </div>
+        <!-- BARRA DE CICLO DE FACTURACIÓN (MENSUAL / ANUAL) -->
+        <div class="inline-flex items-center p-1 rounded-xl bg-slate-900/90 border border-slate-800 shadow-inner">
+          <button id="btn-cycle-monthly" onclick="setBillingCycle('monthly')" class="px-5 py-2 rounded-lg text-xs font-bold bg-white text-slate-950 shadow transition cursor-pointer">
+            Mensual
+          </button>
+          <button id="btn-cycle-annual" onclick="setBillingCycle('annual')" class="px-5 py-2 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition flex items-center gap-1.5 cursor-pointer">
+            <span>Anual</span>
+            <span class="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">-20% OFF</span>
+          </button>
+        </div>
 
-          <!-- Feature graphic preview -->
-          <div class="lg:col-span-5 bg-gradient-to-br from-blue-950/40 to-slate-900 p-6 rounded-2xl border border-blue-500/30">
-            <div class="text-center p-6">
-              <div class="w-16 h-16 rounded-2xl bg-blue-600/20 border border-blue-500/40 text-blue-400 flex items-center justify-center mx-auto mb-4">
-                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-              </div>
-              <h4 class="font-bold text-white text-lg mb-1">Despacho Rentable</h4>
-              <p class="text-xs text-slate-400 max-w-xs mx-auto">
-                No vuelvas a perder dinero en cambios no cobrados ni en cotizaciones por metro cuadrado a ciegas.
-              </p>
-            </div>
-          </div>
+        <div class="mt-3 text-xs text-amber-400 font-medium flex items-center justify-center gap-1.5">
+          <i class="fa-solid fa-bolt text-amber-500"></i>
+          <span>¡Precios de <strong>Lanzamiento</strong> activos! Descuentos de hasta <strong>56% OFF</strong> en Plus y Pro.</span>
         </div>
       </div>
 
-      <!-- PRODUCTO 2: CUBIKAR CONSTRUCCIÓN -->
-      <div id="construccion" class="rounded-3xl glass-card p-8 md:p-12 border-amber-500/20 relative">
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-          <div class="lg:col-span-7">
-            <span class="px-3 py-1 rounded-full text-xs font-bold badge-const mb-4 inline-block">
-              Herramienta 2 &bull; Constructoras y Obra
-            </span>
-            <h3 class="text-2xl sm:text-3xl font-extrabold text-white mb-4 font-heading">
-              Cubikar Construcción
-            </h3>
-            <p class="text-slate-300 text-sm sm:text-base mb-6 leading-relaxed">
-              La plataforma integral para contratistas y residentes de obra. Presupuesta con matrices paramétricas de análisis de precios unitarios (APU), genera estimaciones oficiales y lleva el libro de bitácora con validez legal.
-            </p>
-            
-            <!-- Las 5 pestañas de Const -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
-              <div class="bg-slate-900/90 border border-slate-800 p-3.5 rounded-xl">
-                <span class="text-xs font-bold text-amber-400 block mb-1">01. Presupuesto Base y APU</span>
-                <p class="text-xs text-slate-400">Matrices con insumos (Materiales, Mano de Obra, Equipo, Subcontratos) y base BIMSA/Gobierno.</p>
-              </div>
-              <div class="bg-slate-900/90 border border-slate-800 p-3.5 rounded-xl">
-                <span class="text-xs font-bold text-amber-400 block mb-1">02. Cronograma de Obra</span>
-                <p class="text-xs text-slate-400">Calendario con jornadas laborales semanales, días inhábiles y registro pluvial.</p>
-              </div>
-              <div class="bg-slate-900/90 border border-slate-800 p-3.5 rounded-xl">
-                <span class="text-xs font-bold text-amber-400 block mb-1">03. Estimaciones de Avance</span>
-                <p class="text-xs text-slate-400">Números generadores, amortización de anticipos y carátulas de cobro.</p>
-              </div>
-              <div class="bg-slate-900/90 border border-slate-800 p-3.5 rounded-xl">
-                <span class="text-xs font-bold text-amber-400 block mb-1">04. Compras y Gastos ERP</span>
-                <p class="text-xs text-slate-400">Comparativa de gasto real contra presupuesto y comprobantes fiscales.</p>
-              </div>
-              <div class="bg-slate-900/90 border border-slate-800 p-3.5 rounded-xl sm:col-span-2">
-                <span class="text-xs font-bold text-amber-400 block mb-1">05. Bitácora Digital de Obra</span>
-                <p class="text-xs text-slate-400">Notas foliadas inalterables, evidencia fotográfica y firmas electrónicas de residentes.</p>
-              </div>
-            </div>
+      <!-- ===================================================================== -->
+      <!-- CONTENEDOR DINÁMICO DE LAS 3 TARJETAS (GRATUITA, PLUS, PRO) -->
+      <!-- ===================================================================== -->
+      <div id="pricing-cards-container" class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch max-w-6xl mx-auto mb-16">
+        <!-- Renderizado automáticamente por main.js sincronizado con ADM_CONST y ADM_ARQ -->
+      </div>
 
-            <a href="#precios" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold text-xs shadow-lg shadow-amber-600/30 transition">
-              <span>Contratar Cubikar Construcción</span>
-              <span class="text-base">&rarr;</span>
-            </a>
-          </div>
-
-          <!-- Feature graphic preview -->
-          <div class="lg:col-span-5 bg-gradient-to-br from-amber-950/40 to-slate-900 p-6 rounded-2xl border border-amber-500/30">
-            <div class="text-center p-6">
-              <div class="w-16 h-16 rounded-2xl bg-amber-600/20 border border-amber-500/40 text-amber-400 flex items-center justify-center mx-auto mb-4">
-                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-              </div>
-              <h4 class="font-bold text-white text-lg mb-1">Control Físico y Financiero</h4>
-              <p class="text-xs text-slate-400 max-w-xs mx-auto">
-                Auditorías sin sorpresas. Cada peso gastado en insumos se vincula directamente a su concepto de obra.
-              </p>
-            </div>
-          </div>
-        </div>
+      <!-- ===================================================================== -->
+      <!-- CONTENEDOR DINÁMICO DEL CUADRO COMPARATIVO -->
+      <!-- ===================================================================== -->
+      <div id="comparison-table-wrapper" class="max-w-5xl mx-auto rounded-3xl bg-slate-900 border border-slate-800 overflow-hidden shadow-2xl">
+        <!-- Renderizado automáticamente por main.js sincronizado con ADM_CONST y ADM_ARQ -->
       </div>
 
     </div>
@@ -343,21 +287,21 @@
         </div>
 
         <div class="space-y-1.5 leading-relaxed overflow-x-auto">
-          <div class="text-blue-400 font-bold">📁 Cubikar - [Nombre de tu Empresa]/</div>
+          <div class="text-amber-400 font-bold">📁 Cubikar - [Nombre de tu Empresa]/</div>
           <div class="pl-4 text-slate-400">│</div>
-          <div class="pl-4 text-blue-300 font-semibold">├── 📁 Cubikar Arquitectura/</div>
-          <div class="pl-8 text-slate-400">├── 📁 01. Tabla de Alcances/ <span class="text-slate-500 font-sans text-[11px]">(alcances_proyecto.xlsx)</span></div>
-          <div class="pl-8 text-slate-400">├── 📁 02. Presupuesto Base y Honorarios/ <span class="text-slate-500 font-sans text-[11px]">(honorarios_cost_plus.xlsx)</span></div>
-          <div class="pl-8 text-slate-400">├── 📁 03. Seguimiento y Control/ <span class="text-slate-500 font-sans text-[11px]">(minutas_acuerdos.pdf)</span></div>
-          <div class="pl-8 text-slate-400">├── 📁 04. Cronograma y Entregas/ <span class="text-slate-500 font-sans text-[11px]">(calendario_entregas.pdf)</span></div>
-          <div class="pl-8 text-slate-400">└── 📁 05. Cobros y Estimaciones/ <span class="text-slate-500 font-sans text-[11px]">(estado_cuenta_honorarios.xlsx)</span></div>
-          <div class="pl-4 text-slate-400">│</div>
-          <div class="pl-4 text-amber-300 font-semibold">└── 📁 Cubikar Construcción/</div>
+          <div class="pl-4 text-amber-300 font-semibold">├── 📁 Cubikar Construcción/</div>
           <div class="pl-8 text-slate-400">├── 📁 01. Presupuesto Base y APU/ <span class="text-slate-500 font-sans text-[11px]">(matrices_apu_conceptos.xlsx)</span></div>
           <div class="pl-8 text-slate-400">├── 📁 02. Cronograma de Obra/ <span class="text-slate-500 font-sans text-[11px]">(cronograma_jornadas_lluvias.xlsx)</span></div>
           <div class="pl-8 text-slate-400">├── 📁 03. Estimaciones de Avance/ <span class="text-slate-500 font-sans text-[11px]">(generadores_y_caratulas.xlsx)</span></div>
           <div class="pl-8 text-slate-400">├── 📁 04. Compras y Gastos ERP/ <span class="text-slate-500 font-sans text-[11px]">(facturas_comprobantes.pdf/xml)</span></div>
           <div class="pl-8 text-slate-400">└── 📁 05. Bitácora Digital de Obra/ <span class="text-slate-500 font-sans text-[11px]">(notas_foliadas_fotos_sitio.pdf)</span></div>
+          <div class="pl-4 text-slate-400">│</div>
+          <div class="pl-4 text-blue-300 font-semibold">└── 📁 Cubikar Arquitectura/</div>
+          <div class="pl-8 text-slate-400">├── 📁 01. Tabla de Alcances/ <span class="text-slate-500 font-sans text-[11px]">(alcances_proyecto.xlsx)</span></div>
+          <div class="pl-8 text-slate-400">├── 📁 02. Presupuesto Base y Honorarios/ <span class="text-slate-500 font-sans text-[11px]">(honorarios_cost_plus.xlsx)</span></div>
+          <div class="pl-8 text-slate-400">├── 📁 03. Seguimiento y Control/ <span class="text-slate-500 font-sans text-[11px]">(minutas_acuerdos.pdf)</span></div>
+          <div class="pl-8 text-slate-400">├── 📁 04. Cronograma y Entregas/ <span class="text-slate-500 font-sans text-[11px]">(calendario_entregas.pdf)</span></div>
+          <div class="pl-8 text-slate-400">└── 📁 05. Cobros y Estimaciones/ <span class="text-slate-500 font-sans text-[11px]">(estado_cuenta_honorarios.xlsx)</span></div>
         </div>
 
         <div class="mt-6 pt-4 border-t border-slate-800 text-center">
@@ -372,145 +316,7 @@
   </section>
 
   <!-- ========================================================================= -->
-  <!-- 5. PLANES Y PRECIOS -->
-  <!-- ========================================================================= -->
-  <section id="precios" class="py-24 border-t border-slate-900 bg-slate-950 relative">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      
-      <div class="text-center max-w-3xl mx-auto mb-12">
-        <h2 class="text-3xl sm:text-5xl font-extrabold text-white mb-4 font-heading">
-          Planes Claros y Transparentes
-        </h2>
-        <p class="text-slate-400 text-base mb-8">
-          Sin contratos forzosos. Cancela o cambia de plan en cualquier momento.
-        </p>
-
-        <!-- Toggle Mensual / Anual -->
-        <div class="inline-flex items-center p-1.5 rounded-xl bg-slate-900 border border-slate-800 shadow-inner">
-          <button id="btn-cycle-monthly" onclick="setBillingCycle('monthly')" class="px-5 py-2 rounded-lg text-xs font-bold bg-blue-600 text-white shadow transition cursor-pointer">
-            Pago Mensual
-          </button>
-          <button id="btn-cycle-annual" onclick="setBillingCycle('annual')" class="px-5 py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition flex items-center gap-1.5 cursor-pointer">
-            <span>Pago Anual</span>
-            <span class="bg-emerald-500/20 text-emerald-300 text-[10px] px-2 py-0.5 rounded-full font-extrabold uppercase">Ahorra 20%</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Pricing Grid (3 Cards) -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch max-w-6xl mx-auto">
-        
-        <!-- CARD 1: CUBIKAR ARQUITECTURA -->
-        <div class="rounded-3xl glass-card p-8 flex flex-col justify-between border-slate-800 hover:border-blue-500/50 transition">
-          <div>
-            <div class="flex items-center justify-between mb-4">
-              <span class="text-xs font-bold text-blue-400 badge-arq px-2.5 py-1 rounded-md">Solo Arquitectura</span>
-            </div>
-            <h3 class="text-2xl font-bold text-white mb-2 font-heading">Cubikar Arquitectura</h3>
-            <p class="text-xs text-slate-400 mb-6">Para despachos, estudios y diseñadores independientes.</p>
-
-            <!-- Price -->
-            <div class="mb-6">
-              <div class="flex items-baseline gap-1">
-                <span class="text-4xl font-extrabold text-white price-arq font-heading">$350</span>
-                <span class="text-xs text-slate-400 cycle-text">MXN / mes</span>
-              </div>
-              <span class="text-[11px] text-slate-500 block mt-1 billed-subtext">Facturado mensualmente</span>
-            </div>
-
-            <!-- Features -->
-            <ul class="space-y-3 text-xs text-slate-300 mb-8 border-t border-slate-800/80 pt-6">
-              <li class="flex items-center gap-2"><span class="text-blue-400">&check;</span> Acceso total a <strong>arq.cubikar.com</strong></li>
-              <li class="flex items-center gap-2"><span class="text-blue-400">&check;</span> Tabla de Alcances de Proyecto Ejecutivo</li>
-              <li class="flex items-center gap-2"><span class="text-blue-400">&check;</span> Cálculo de Honorarios Cost-Plus y Nómina</li>
-              <li class="flex items-center gap-2"><span class="text-blue-400">&check;</span> Cronograma de Planos e Ingenierías</li>
-              <li class="flex items-center gap-2"><span class="text-blue-400">&check;</span> Exportación y Respaldo organizado</li>
-            </ul>
-          </div>
-
-          <button onclick="handlePlanSelection('arq')" class="w-full py-3.5 rounded-xl text-xs font-bold bg-slate-900 border border-slate-700 hover:border-blue-500 hover:bg-blue-600 hover:text-white text-slate-200 transition cursor-pointer shadow-md">
-            Elegir Cubikar Arquitectura
-          </button>
-        </div>
-
-        <!-- CARD 2: COMBO SUITE CUBIKAR (RECOMENDADO) -->
-        <div class="rounded-3xl glass-card p-8 flex flex-col justify-between border-2 border-emerald-500/60 shadow-2xl glow-emerald relative transform md:-translate-y-2 bg-gradient-to-b from-slate-900 via-slate-900/90 to-slate-950">
-          <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-emerald-500 text-slate-950 text-[10px] font-extrabold uppercase px-3 py-1 rounded-full shadow tracking-wider">
-            ★ Más Popular &bull; Mejor Valor
-          </div>
-
-          <div>
-            <div class="flex items-center justify-between mb-4">
-              <span class="text-xs font-bold text-emerald-400 badge-combo px-2.5 py-1 rounded-md">Suite Completa</span>
-            </div>
-            <h3 class="text-2xl font-bold text-white mb-2 font-heading">Combo Cubikar AEC</h3>
-            <p class="text-xs text-slate-400 mb-6">La solución total: Del diseño a la entrega final de obra.</p>
-
-            <!-- Price -->
-            <div class="mb-6">
-              <div class="flex items-baseline gap-1">
-                <span class="text-5xl font-extrabold text-white price-combo font-heading">$550</span>
-                <span class="text-xs text-slate-400 cycle-text">MXN / mes</span>
-              </div>
-              <span class="text-[11px] text-emerald-400 font-medium block mt-1 billed-subtext">¡Ahorras más del 20% al contratar ambas!</span>
-            </div>
-
-            <!-- Features -->
-            <ul class="space-y-3 text-xs text-slate-200 mb-8 border-t border-slate-800/80 pt-6">
-              <li class="flex items-center gap-2"><span class="text-emerald-400 font-bold">&check;</span> <strong>Acceso Ilimitado a AMBAS plataformas</strong></li>
-              <li class="flex items-center gap-2"><span class="text-emerald-400 font-bold">&check;</span> Conexión <strong>arq.cubikar.com</strong> + <strong>const.cubikar.com</strong></li>
-              <li class="flex items-center gap-2"><span class="text-emerald-400 font-bold">&check;</span> Single Sign-On (1 solo correo y contraseña)</li>
-              <li class="flex items-center gap-2"><span class="text-emerald-400 font-bold">&check;</span> Matrices APU con catálogo BIMSA y Gobierno</li>
-              <li class="flex items-center gap-2"><span class="text-emerald-400 font-bold">&check;</span> Bitácora legal con firmas y fotos de obra</li>
-              <li class="flex items-center gap-2"><span class="text-emerald-400 font-bold">&check;</span> Respaldo total unificado en 1 clic</li>
-            </ul>
-          </div>
-
-          <button onclick="handlePlanSelection('combo')" class="w-full py-3.5 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-extrabold shadow-lg shadow-emerald-500/30 transition cursor-pointer transform hover:-translate-y-0.5">
-            Comenzar con la Suite Completa
-          </button>
-        </div>
-
-        <!-- CARD 3: CUBIKAR CONSTRUCCIÓN -->
-        <div class="rounded-3xl glass-card p-8 flex flex-col justify-between border-slate-800 hover:border-amber-500/50 transition">
-          <div>
-            <div class="flex items-center justify-between mb-4">
-              <span class="text-xs font-bold text-amber-400 badge-const px-2.5 py-1 rounded-md">Solo Construcción</span>
-            </div>
-            <h3 class="text-2xl font-bold text-white mb-2 font-heading">Cubikar Construcción</h3>
-            <p class="text-xs text-slate-400 mb-6">Para constructoras, contratistas y supervisores.</p>
-
-            <!-- Price -->
-            <div class="mb-6">
-              <div class="flex items-baseline gap-1">
-                <span class="text-4xl font-extrabold text-white price-const font-heading">$350</span>
-                <span class="text-xs text-slate-400 cycle-text">MXN / mes</span>
-              </div>
-              <span class="text-[11px] text-slate-500 block mt-1 billed-subtext">Facturado mensualmente</span>
-            </div>
-
-            <!-- Features -->
-            <ul class="space-y-3 text-xs text-slate-300 mb-8 border-t border-slate-800/80 pt-6">
-              <li class="flex items-center gap-2"><span class="text-amber-400">&check;</span> Acceso total a <strong>const.cubikar.com</strong></li>
-              <li class="flex items-center gap-2"><span class="text-amber-400">&check;</span> Catálogos y Matrices de Análisis APU</li>
-              <li class="flex items-center gap-2"><span class="text-amber-400">&check;</span> Cronograma de obra con registro pluvial</li>
-              <li class="flex items-center gap-2"><span class="text-amber-400">&check;</span> Control de estimaciones y compras ERP</li>
-              <li class="flex items-center gap-2"><span class="text-amber-400">&check;</span> Bitácora digital con validez legal</li>
-            </ul>
-          </div>
-
-          <button onclick="handlePlanSelection('const')" class="w-full py-3.5 rounded-xl text-xs font-bold bg-slate-900 border border-slate-700 hover:border-amber-500 hover:bg-amber-600 hover:text-slate-950 text-slate-200 transition cursor-pointer shadow-md">
-            Elegir Cubikar Construcción
-          </button>
-        </div>
-
-      </div>
-
-    </div>
-  </section>
-
-  <!-- ========================================================================= -->
-  <!-- 6. FOOTER -->
+  <!-- 5. FOOTER -->
   <!-- ========================================================================= -->
   <footer class="border-t border-slate-900 bg-slate-950 py-12 text-xs text-slate-500">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-6">
@@ -521,10 +327,10 @@
       </div>
 
       <div class="flex items-center space-x-6">
-        <a href="#arquitectura" class="hover:text-slate-300 transition">Cubikar Arquitectura</a>
         <a href="#construccion" class="hover:text-slate-300 transition">Cubikar Construcción</a>
+        <a href="#arquitectura" class="hover:text-slate-300 transition">Cubikar Arquitectura</a>
         <a href="#respaldo" class="hover:text-slate-300 transition">Políticas de Respaldo</a>
-        <a href="#precios" class="hover:text-slate-300 transition">Precios</a>
+        <a href="#precios" class="hover:text-slate-300 transition">Precios Oficiales</a>
       </div>
 
     </div>
@@ -558,6 +364,9 @@
         <div class="flex-grow border-t border-slate-800"></div>
       </div>
 
+      <div id="auth-error-msg" class="hidden text-xs text-rose-300 bg-rose-500/15 border border-rose-500/30 p-2.5 rounded-xl mb-3 text-center"></div>
+      <div id="auth-success-msg" class="hidden text-xs text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 p-2.5 rounded-xl mb-3 text-center"></div>
+
       <!-- Auth Form -->
       <form id="auth-form" onsubmit="handleAuthSubmit(event)" class="space-y-3.5">
         <div id="auth-name-container" class="hidden">
@@ -566,8 +375,8 @@
         </div>
 
         <div id="auth-company-container" class="hidden">
-          <label class="block text-[11px] font-bold text-slate-300 uppercase mb-1">Nombre de Empresa o Despacho</label>
-          <input type="text" id="auth-company" placeholder="Ej. Mendoza Arquitectos" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500">
+          <label class="block text-[11px] font-bold text-slate-300 uppercase mb-1">Nombre de Empresa o Constructora</label>
+          <input type="text" id="auth-company" placeholder="Ej. Mendoza Construcciones" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500">
         </div>
 
         <div>
@@ -595,6 +404,79 @@
   </div>
 
   <!-- ========================================================================= -->
+  <!-- MODAL: APP CHOOSER (SELECTOR DE APLICACIÓN AL INICIAR SESIÓN) -->
+  <!-- ========================================================================= -->
+  <div id="modal-app-chooser" class="fixed inset-0 z-50 hidden bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-2xl p-6 sm:p-8 shadow-2xl relative text-center animate-in fade-in zoom-in-95 duration-200">
+      
+      <button onclick="closeAppChooserModal()" class="absolute top-5 right-5 text-slate-400 hover:text-white text-lg font-bold cursor-pointer">
+        &times;
+      </button>
+
+      <div class="mb-6">
+        <img src="assets/branding/cubikar_icon_transparent.png" alt="cubikar" class="w-14 h-14 object-contain mx-auto mb-3 drop-shadow-md">
+        <h3 class="text-2xl font-extrabold text-white font-heading">
+          ¡Bienvenido al Ecosistema, <span id="app-chooser-user-name" class="text-blue-400">Usuario</span>!
+        </h3>
+        <p class="text-xs sm:text-sm text-slate-400 mt-1">¿A cuál de tus aplicaciones deseas ingresar ahora?</p>
+      </div>
+
+      <!-- Las 2 Grandes Opciones -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-left mb-6">
+        
+        <!-- Opción 1: Cubikar Construcción -->
+        <div onclick="launchApp('const')" class="group p-5 sm:p-6 rounded-2xl bg-slate-950 border-2 border-amber-500/30 hover:border-amber-500 hover:bg-slate-950/90 transition transform hover:-translate-y-1 cursor-pointer flex flex-col justify-between shadow-xl">
+          <div>
+            <div class="w-12 h-12 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition shrink-0">
+              <i class="fa-solid fa-helmet-safety"></i>
+            </div>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase tracking-wider">Obras &amp; Costos</span>
+            <h4 class="text-lg font-extrabold text-white mt-2 group-hover:text-amber-400 transition font-heading">Cubikar Construcción</h4>
+            <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+              Presupuestos con Matrices APU (BIMSA / Gobierno), cronogramas de obra, bitácora digital legal, compras ERP y estimaciones.
+            </p>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-800 flex items-center justify-between text-amber-400 font-bold text-xs group-hover:translate-x-1 transition">
+            <span>Entrar a Construcción</span>
+            <i class="fa-solid fa-arrow-right"></i>
+          </div>
+        </div>
+
+        <!-- Opción 2: Cubikar Arquitectura -->
+        <div onclick="launchApp('arq')" class="group p-5 sm:p-6 rounded-2xl bg-slate-950 border-2 border-blue-500/30 hover:border-blue-500 hover:bg-slate-950/90 transition transform hover:-translate-y-1 cursor-pointer flex flex-col justify-between shadow-xl">
+          <div>
+            <div class="w-12 h-12 rounded-xl bg-blue-500/20 text-blue-400 border border-blue-400/40 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition shrink-0">
+              <i class="fa-solid fa-compass-drafting"></i>
+            </div>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/30 uppercase tracking-wider">Diseño &amp; Honorarios</span>
+            <h4 class="text-lg font-extrabold text-white mt-2 group-hover:text-blue-400 transition font-heading">Cubikar Arquitectura</h4>
+            <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+              Gestión de proyectos ejecutivos, tabla de entregables, honorarios Cost-Plus, minutas con clientes y control de planos.
+            </p>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-800 flex items-center justify-between text-blue-400 font-bold text-xs group-hover:translate-x-1 transition">
+            <span>Entrar a Arquitectura</span>
+            <i class="fa-solid fa-arrow-right"></i>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Opciones secundarias -->
+      <div class="pt-3 border-t border-slate-800/80 flex items-center justify-between flex-wrap gap-2 text-xs">
+        <button onclick="closeAppChooserModal()" class="text-slate-400 hover:text-white transition cursor-pointer">
+          Permanecer en el portal central (planes y facturación)
+        </button>
+        <button onclick="closeAppChooserModal(); handleDownloadMyBackup()" class="text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1.5 transition cursor-pointer">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+          <span>Descargar respaldo completo (.zip)</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
   <!-- MODAL 2: USER DASHBOARD (MI CUENTA & ACCESO DIRECTO) -->
   <!-- ========================================================================= -->
   <div id="modal-dashboard" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
@@ -606,13 +488,13 @@
 
       <!-- User Header -->
       <div class="flex items-center space-x-4 mb-6 pb-6 border-b border-slate-800">
-        <div class="w-14 h-14 rounded-2xl bg-blue-600 flex items-center justify-center text-xl font-bold text-white shadow-lg">
+        <div class="w-14 h-14 rounded-2xl bg-amber-500 flex items-center justify-center text-xl font-bold text-slate-950 shadow-lg">
           <span id="dash-user-initial">U</span>
         </div>
         <div>
           <h3 id="dash-user-name" class="text-xl font-bold text-white font-heading">Usuario</h3>
           <p id="dash-user-email" class="text-xs text-slate-400">correo@ejemplo.com</p>
-          <span id="dash-user-company" class="inline-block mt-1 text-[11px] font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-md">Mi Empresa</span>
+          <span id="dash-user-company" class="inline-block mt-1 text-[11px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md">Mi Empresa</span>
         </div>
       </div>
 
@@ -620,6 +502,18 @@
       <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Tus Aplicaciones Disponibles</h4>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
         
+        <!-- App Const Button -->
+        <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 flex flex-col justify-between">
+          <div>
+            <span class="text-[10px] font-bold badge-const px-2 py-0.5 rounded">const.cubikar.com</span>
+            <h5 class="text-sm font-bold text-white mt-2">Cubikar Construcción</h5>
+            <p class="text-[11px] text-slate-400 mt-1">Presupuestos APU, bitácoras y estimaciones.</p>
+          </div>
+          <button onclick="launchApp('const')" class="mt-4 w-full py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition cursor-pointer">
+            Abrir Aplicación &rarr;
+          </button>
+        </div>
+
         <!-- App Arq Button -->
         <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 flex flex-col justify-between">
           <div>
@@ -628,18 +522,6 @@
             <p class="text-[11px] text-slate-400 mt-1">Gestión de proyectos ejecutivos y honorarios.</p>
           </div>
           <button onclick="launchApp('arq')" class="mt-4 w-full py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition cursor-pointer">
-            Abrir Aplicación &rarr;
-          </button>
-        </div>
-
-        <!-- App Const Button -->
-        <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 flex flex-col justify-between">
-          <div>
-            <span class="text-[10px] font-bold badge-const px-2 py-0.5 rounded">const.cubikar.com</span>
-            <h5 class="text-sm font-bold text-white mt-2">Cubikar Construcción</h5>
-            <p class="text-[11px] text-slate-400 mt-1">Presupuestos APU, bitácoras y estimaciones.</p>
-          </div>
-          <button onclick="launchApp('const')" class="mt-4 w-full py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold text-xs transition cursor-pointer">
             Abrir Aplicación &rarr;
           </button>
         </div>

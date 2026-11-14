@@ -1,4 +1,4 @@
-# Servidor HTTP local zero-configuración para el Portal Central Cubikar
+# Servidor HTTP local zero-configuración para el Portal Central Cubikar y Ecosistema
 # Permite ejecutar módulos ES6 (type="module") sin restricciones CORS
 
 $ErrorActionPreference = "Stop"
@@ -28,8 +28,10 @@ $url = "http://localhost:$port/"
 Write-Host "==========================================================" -ForegroundColor Cyan
 Write-Host "       PORTAL CENTRAL CUBIKAR - SERVIDOR LOCAL ACTIVO     " -ForegroundColor Green
 Write-Host "==========================================================" -ForegroundColor Cyan
-Write-Host "  URL: $url" -ForegroundColor Yellow
-Write-Host "  Modo: Modulos ES6 estandar (type='module')" -ForegroundColor Gray
+Write-Host "  URL Portal: $url" -ForegroundColor Yellow
+Write-Host "  Cubikar Construcción: http://localhost:$port/ADM_CONST/index.html" -ForegroundColor DarkYellow
+Write-Host "  Cubikar Arquitectura: http://localhost:$port/ADM_ARQ/index.html" -ForegroundColor Cyan
+Write-Host "  Modo: Módulos ES6 estándar (type='module') con SSO local" -ForegroundColor Gray
 Write-Host "  Presiona Ctrl+C en esta consola para detener el servidor." -ForegroundColor Gray
 Write-Host "==========================================================" -ForegroundColor Cyan
 Write-Host ""
@@ -49,12 +51,16 @@ $mimeMap = @{
     ".jpeg" = "image/jpeg"
     ".gif"  = "image/gif"
     ".ico"  = "image/x-icon"
+    ".woff" = "font/woff"
+    ".woff2"= "font/woff2"
+    ".ttf"  = "font/ttf"
 }
 
 $baseDir = $PSScriptRoot
 if ([string]::IsNullOrEmpty($baseDir)) {
     $baseDir = (Get-Location).Path
 }
+$parentDir = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($baseDir, ".."))
 
 try {
     while ($true) {
@@ -73,10 +79,17 @@ try {
                 
                 # Decodificar espacios y caracteres URL (%20, etc.)
                 $decodedPath = [System.Uri]::UnescapeDataString($rawPath)
-                $filePath = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($baseDir, $decodedPath))
 
-                # Protección contra directory traversal
-                if ($filePath.StartsWith($baseDir, [System.StringComparison]::OrdinalIgnoreCase) -and [System.IO.File]::Exists($filePath)) {
+                # Si la ruta apunta a aplicaciones hermanas (ADM_CONST o ADM_ARQ)
+                if ($decodedPath.StartsWith("ADM_CONST", [System.StringComparison]::OrdinalIgnoreCase) -or 
+                    $decodedPath.StartsWith("ADM_ARQ", [System.StringComparison]::OrdinalIgnoreCase)) {
+                    $filePath = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($parentDir, $decodedPath))
+                } else {
+                    $filePath = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($baseDir, $decodedPath))
+                }
+
+                # Protección y validación de archivo existente
+                if ($filePath.StartsWith($parentDir, [System.StringComparison]::OrdinalIgnoreCase) -and [System.IO.File]::Exists($filePath)) {
                     $bytes = [System.IO.File]::ReadAllBytes($filePath)
                     $ext = [System.IO.Path]::GetExtension($filePath).ToLower()
                     $mime = if ($mimeMap.ContainsKey($ext)) { $mimeMap[$ext] } else { "application/octet-stream" }
