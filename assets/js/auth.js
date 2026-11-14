@@ -415,8 +415,8 @@ export async function mountGoogleSignInButton({
   gsi.renderButton(slotEl, {
     type: 'standard',
     theme: 'outline',
-    size: 'large',
-    text: 'continue_with',
+    size: 'medium',
+    text: 'signin_with',
     shape: 'rectangular',
     logo_alignment: 'center',
     locale: 'es',

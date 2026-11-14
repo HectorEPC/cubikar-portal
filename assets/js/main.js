@@ -12,7 +12,7 @@ import {
   logout, 
   getCurrentState,
   buildSsoUrl
-} from './auth.js?v=20261114_04';
+} from './auth.js?v=20261114_05';
 
 let currentBillingCycle = 'monthly'; // 'monthly' | 'annual'
 let currentPricingProduct = 'const'; // 'const' | 'arq' | 'combo'
