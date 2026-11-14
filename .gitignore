@@ -1,0 +1,8 @@
+# Respaldos locales
+_respaldos/
+*.zip
+*.tar.gz
+
+# Archivos de sistema / temporales
+.DS_Store
+Thumbs.db
