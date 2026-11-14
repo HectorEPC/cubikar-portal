@@ -18,13 +18,18 @@ let currentPricingProduct = 'const'; // 'const' | 'arq' | 'combo'
 let currentAuthMode = 'login';       // 'login' | 'register'
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Limpiar parámetros de error OAuth en caso de redirección externa
+  // Manejar errores de retorno OAuth
   const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get('error')) {
-    const errorDesc = urlParams.get('error_description') || urlParams.get('error');
-    console.warn('[Supabase OAuth Notice]:', errorDesc);
+  const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+  const errorDesc = urlParams.get('error_description') || urlParams.get('error') || hashParams.get('error_description') || hashParams.get('error');
+  if (errorDesc) {
+    console.error('[Supabase OAuth Error]:', errorDesc);
+    alert('Aviso de inicio de sesión: ' + errorDesc);
     window.history.replaceState({}, document.title, window.location.pathname);
   }
+
+  const isOAuthReturn = window.location.hash.includes('access_token') || 
+                        window.location.search.includes('code=');
 
   // 1. Inicializar App Switcher (Selector de Apps de 9 puntos)
   initAppSwitcher('cubikar-app-switcher-mount', 'portal');
@@ -32,6 +37,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // 2. Inicializar observador de autenticación y estado del usuario
   initAuth(state => {
     updateAuthUI(state);
+    if (state && state.user && isOAuthReturn) {
+      window.history.replaceState({}, document.title, window.location.pathname);
+      openAppChooserModal();
+    }
   });
 
   // 3. Exponer funciones al scope global para eventos interactivos en HTML

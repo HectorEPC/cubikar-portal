@@ -20,14 +20,6 @@ export function getSupabase() {
       detectSessionInUrl: true
     };
 
-    if (!isLocalhost && window.location.hostname.includes('cubikar.app')) {
-      authOptions.cookieOptions = {
-        domain: '.cubikar.app',
-        sameSite: 'lax',
-        secure: true
-      };
-    }
-
     supabaseInstance = window.supabase.createClient(
       SUPABASE_CONFIG.url,
       SUPABASE_CONFIG.anonKey,
