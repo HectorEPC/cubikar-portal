@@ -12,19 +12,84 @@ import {
   scrubSsoHashParams,
   getLastSignOutTimestamp,
   buildSsoTargetUrl
-} from './ssoHelper.js?v=20261114_07';
+} from './ssoHelper.js?v=20261114_08';
 
 export const GOOGLE_CLIENT_ID = '1097638023851-36b44hlrj7fgslfcmqlvf77dk89h7eus.apps.googleusercontent.com';
+export const STORAGE_KEY_CLOSED_SESSIONS = 'control_obra_closed_sessions_v1';
 
 let currentUser = null;
 let currentProfile = null;
 let currentCompany = null;
 let activeGoogleNoncePair = null;
 let googleSignInBusy = false;
+let explicitAuthDepth = 0;
 let inFlightProfilePromise = null;
 let inFlightProfileUserId = null;
 let loadedProfileUserId = null;
 let lastProfileLoadedAt = 0;
+
+export function getClosedSessionsList() {
+  try {
+    if (typeof localStorage === 'undefined') return [];
+    const raw = localStorage.getItem(STORAGE_KEY_CLOSED_SESSIONS);
+    let list = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(list)) list = [];
+    return list.map(e => (typeof e === 'string' ? e.toLowerCase().trim() : '')).filter(Boolean);
+  } catch (_) {
+    return [];
+  }
+}
+
+export function markSessionClosed(email) {
+  if (!email) return;
+  try {
+    if (typeof localStorage === 'undefined') return;
+    const cleanEmail = email.toLowerCase().trim();
+    const list = getClosedSessionsList();
+    if (!list.includes(cleanEmail)) {
+      list.push(cleanEmail);
+      localStorage.setItem(STORAGE_KEY_CLOSED_SESSIONS, JSON.stringify(list));
+    }
+  } catch (_) {}
+}
+
+export function markSessionOpen(email) {
+  if (!email) return;
+  try {
+    if (typeof localStorage === 'undefined') return;
+    const cleanEmail = email.toLowerCase().trim();
+    const list = getClosedSessionsList();
+    const filtered = list.filter(e => e !== cleanEmail);
+    localStorage.setItem(STORAGE_KEY_CLOSED_SESSIONS, JSON.stringify(filtered));
+  } catch (_) {}
+}
+
+export function clearLocalSupabaseTokens() {
+  if (typeof localStorage !== 'undefined') {
+    try {
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && (k.startsWith('sb-') || k.includes('auth-token') || k.includes('supabase.auth.token'))) {
+          keysToRemove.push(k);
+        }
+      }
+      keysToRemove.forEach(k => localStorage.removeItem(k));
+    } catch (_) {}
+  }
+  if (typeof sessionStorage !== 'undefined') {
+    try {
+      const keysToRemove = [];
+      for (let i = 0; i < sessionStorage.length; i++) {
+        const k = sessionStorage.key(i);
+        if (k && (k.startsWith('sb-') || k.includes('auth-token') || k.includes('supabase.auth.token'))) {
+          keysToRemove.push(k);
+        }
+      }
+      keysToRemove.forEach(k => sessionStorage.removeItem(k));
+    } catch (_) {}
+  }
+}
 
 function resetProfileCache() {
   inFlightProfilePromise = null;
@@ -51,10 +116,12 @@ async function tryHydrateSsoSession(sb) {
   const hashTokens = extractIncomingSsoFromHash();
   scrubSsoHashParams();
   let tokens = hashTokens;
+  const closedList = getClosedSessionsList();
   if (!tokens) {
     const cookieTokens = readSharedSsoCookie();
     const lastSignOutTs = getLastSignOutTimestamp();
-    if (cookieTokens?.refreshToken && !(lastSignOutTs > 0 && cookieTokens.ts > 0 && cookieTokens.ts <= lastSignOutTs)) {
+    const cookieEmail = (cookieTokens?.email || '').toLowerCase().trim();
+    if (cookieTokens?.refreshToken && !closedList.includes(cookieEmail) && !(lastSignOutTs > 0 && cookieTokens.ts > 0 && cookieTokens.ts <= lastSignOutTs)) {
       tokens = cookieTokens;
     }
   }
@@ -64,6 +131,14 @@ async function tryHydrateSsoSession(sb) {
       ? await sb.auth.setSession({ access_token: tokens.accessToken, refresh_token: tokens.refreshToken })
       : await sb.auth.refreshSession({ refresh_token: tokens.refreshToken });
     if (error || !data?.session?.user) return null;
+    const userEmail = (data.session.user.email || '').toLowerCase().trim();
+    if (closedList.includes(userEmail)) {
+      clearLocalSupabaseTokens();
+      try {
+        await sb.auth.signOut({ scope: 'local' });
+      } catch (_) {}
+      return null;
+    }
     return data.session;
   } catch (err) {
     console.warn('[Portal Auth] No se pudo hidratar sesión SSO entrante:', err?.message || err);
@@ -85,6 +160,36 @@ export async function initAuth(onStateChange) {
   // para evitar contención/bloqueo del lock interno (navigator.locks) de GoTrue.
   sb.auth.onAuthStateChange((event, session) => {
     if (session?.user) {
+      const email = (session.user.email || '').toLowerCase().trim();
+      const closedList = getClosedSessionsList();
+      const isClosed = closedList.includes(email);
+      const isOAuthRedirect = typeof window !== 'undefined' && (
+        window.location.hash.includes('cubikar_sso_') ||
+        window.location.hash.includes('access_token') ||
+        window.location.search.includes('code=')
+      );
+      const isExplicitInteractive = explicitAuthDepth > 0 || isOAuthRedirect;
+
+      if (isExplicitInteractive) {
+        markSessionOpen(email);
+      } else if (isClosed) {
+        console.info(`[Portal Auth] Bloqueando auto-sesión pasiva (${event}) por sesión cerrada previamente (${email}).`);
+        currentUser = null;
+        currentProfile = null;
+        currentCompany = null;
+        resetProfileCache();
+        clearLocalSupabaseTokens();
+        clearLocalUserStorage();
+        clearSharedSsoCookie({ markSignOut: true });
+        setTimeout(() => {
+          try {
+            sb.auth.signOut({ scope: 'local' }).catch(() => {});
+          } catch (_) {}
+          if (onStateChange) onStateChange(null);
+        }, 0);
+        return;
+      }
+
       currentUser = session.user;
       writeSharedSsoCookie(session);
       syncLocalUserStorage(currentUser, currentProfile, currentCompany);
@@ -98,6 +203,7 @@ export async function initAuth(onStateChange) {
     } else {
       if (event === 'SIGNED_OUT') {
         clearSharedSsoCookie({ markSignOut: true });
+        clearLocalSupabaseTokens();
       }
       currentUser = null;
       currentProfile = null;
@@ -113,6 +219,21 @@ export async function initAuth(onStateChange) {
   try {
     // 1. Verificar sesión existente o hidratar SSO entrante desde subdominios Cubikar
     let { data: { session }, error } = await sb.auth.getSession();
+    const closedList = getClosedSessionsList();
+    if (session?.user) {
+      const email = (session.user.email || '').toLowerCase().trim();
+      if (closedList.includes(email)) {
+        console.info(`[Portal Auth] Sesión persistida pertenece a usuario con sesión cerrada (${email}). Purgando.`);
+        clearLocalSupabaseTokens();
+        clearLocalUserStorage();
+        clearSharedSsoCookie({ markSignOut: true });
+        try {
+          await sb.auth.signOut({ scope: 'local' }).catch(() => {});
+        } catch (_) {}
+        session = null;
+      }
+    }
+
     if (!session?.user || error) {
       const ssoSession = await tryHydrateSsoSession(sb);
       if (ssoSession?.user) {
@@ -121,6 +242,11 @@ export async function initAuth(onStateChange) {
       }
     }
     if (session?.user && !error) {
+      const userEmail = (session.user.email || '').toLowerCase().trim();
+      if (closedList.includes(userEmail)) {
+        if (onStateChange) onStateChange(null);
+        return;
+      }
       currentUser = session.user;
       writeSharedSsoCookie(session);
       syncLocalUserStorage(currentUser, currentProfile, currentCompany);
@@ -201,20 +327,26 @@ export async function loginWithEmail(email, password) {
   if (!sb) throw new Error('Servidor de autenticación no disponible. Por favor recarga la página.');
 
   const cleanEmail = (email || '').trim().toLowerCase();
-  const { data, error } = await sb.auth.signInWithPassword({
-    email: cleanEmail,
-    password: password
-  });
+  explicitAuthDepth += 1;
+  try {
+    const { data, error } = await sb.auth.signInWithPassword({
+      email: cleanEmail,
+      password: password
+    });
 
-  if (error) throw error;
+    if (error) throw error;
 
-  if (data?.user) {
-    currentUser = data.user;
-    if (data.session) writeSharedSsoCookie(data.session);
-    syncLocalUserStorage(currentUser, currentProfile, currentCompany);
-    scheduleBackgroundProfileSync(data.user.id);
+    if (data?.user) {
+      currentUser = data.user;
+      markSessionOpen(cleanEmail);
+      if (data.session) writeSharedSsoCookie(data.session);
+      syncLocalUserStorage(currentUser, currentProfile, currentCompany);
+      scheduleBackgroundProfileSync(data.user.id);
+    }
+    return data;
+  } finally {
+    setTimeout(() => { explicitAuthDepth = Math.max(0, explicitAuthDepth - 1); }, 1000);
   }
-  return data;
 }
 
 /**
@@ -228,26 +360,32 @@ export async function registerWithEmail(email, password, fullName, companyName) 
   const cleanName = (fullName || '').trim() || cleanEmail.split('@')[0];
   const cleanCompany = (companyName || '').trim() || cleanName;
 
-  const { data, error } = await sb.auth.signUp({
-    email: cleanEmail,
-    password: password,
-    options: {
-      data: {
-        full_name: cleanName,
-        empresa_nombre: cleanCompany
+  explicitAuthDepth += 1;
+  try {
+    const { data, error } = await sb.auth.signUp({
+      email: cleanEmail,
+      password: password,
+      options: {
+        data: {
+          full_name: cleanName,
+          empresa_nombre: cleanCompany
+        }
       }
+    });
+
+    if (error) throw error;
+
+    if (data?.user && data?.session) {
+      currentUser = data.user;
+      markSessionOpen(cleanEmail);
+      writeSharedSsoCookie(data.session);
+      syncLocalUserStorage(currentUser, currentProfile, currentCompany);
+      scheduleBackgroundProfileSync(data.user.id);
     }
-  });
-
-  if (error) throw error;
-
-  if (data?.user && data?.session) {
-    currentUser = data.user;
-    writeSharedSsoCookie(data.session);
-    syncLocalUserStorage(currentUser, currentProfile, currentCompany);
-    scheduleBackgroundProfileSync(data.user.id);
+    return data;
+  } finally {
+    setTimeout(() => { explicitAuthDepth = Math.max(0, explicitAuthDepth - 1); }, 1000);
   }
-  return data;
 }
 
 /**
@@ -262,18 +400,24 @@ export async function loginWithGoogle() {
     cleanRedirect = 'http://localhost:3000/index.html';
   }
 
-  const { data, error } = await sb.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: cleanRedirect,
-      queryParams: {
-        prompt: 'select_account'
+  explicitAuthDepth += 1;
+  try {
+    const { data, error } = await sb.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: cleanRedirect,
+        queryParams: {
+          prompt: 'select_account'
+        }
       }
-    }
-  });
+    });
 
-  if (error) throw error;
-  return data;
+    if (error) throw error;
+    return data;
+  } catch (err) {
+    explicitAuthDepth = Math.max(0, explicitAuthDepth - 1);
+    throw err;
+  }
 }
 
 /**
@@ -347,16 +491,23 @@ export async function loginWithGoogleIdToken(idToken, rawNonce) {
     payload.nonce = rawNonce;
   }
 
-  const { data, error } = await sb.auth.signInWithIdToken(payload);
-  if (error) throw error;
+  explicitAuthDepth += 1;
+  try {
+    const { data, error } = await sb.auth.signInWithIdToken(payload);
+    if (error) throw error;
 
-  if (data?.user) {
-    currentUser = data.user;
-    if (data.session) writeSharedSsoCookie(data.session);
-    syncLocalUserStorage(currentUser, currentProfile, currentCompany);
-    scheduleBackgroundProfileSync(data.user.id);
+    if (data?.user) {
+      currentUser = data.user;
+      const cleanEmail = (data.user.email || '').trim().toLowerCase();
+      if (cleanEmail) markSessionOpen(cleanEmail);
+      if (data.session) writeSharedSsoCookie(data.session);
+      syncLocalUserStorage(currentUser, currentProfile, currentCompany);
+      scheduleBackgroundProfileSync(data.user.id);
+    }
+    return data;
+  } finally {
+    setTimeout(() => { explicitAuthDepth = Math.max(0, explicitAuthDepth - 1); }, 1000);
   }
-  return data;
 }
 
 /**
@@ -433,10 +584,25 @@ export async function mountGoogleSignInButton({
  * Cerrar sesión
  */
 export async function logout() {
+  const email = (currentUser?.email || '').toLowerCase().trim();
+  if (email) {
+    markSessionClosed(email);
+  }
+  try {
+    const raw = localStorage.getItem('control_obra_active_user_v1');
+    if (raw) {
+      const p = JSON.parse(raw);
+      if (p?.email) markSessionClosed(p.email);
+    }
+  } catch (_) {}
+
   activeGoogleNoncePair = null;
   googleSignInBusy = false;
   resetProfileCache();
   clearSharedSsoCookie({ markSignOut: true });
+  clearLocalSupabaseTokens();
+  clearLocalUserStorage();
+
   const slotEl = document.getElementById('google-signin-gsi-slot');
   if (slotEl) slotEl.dataset.gsiRendered = '0';
   try {
@@ -444,16 +610,23 @@ export async function logout() {
       window.google.accounts.id.disableAutoSelect();
     }
   } catch (_) {}
+
   const sb = getSupabase();
   if (sb) {
     try {
-      await sb.auth.signOut({ scope: 'global' });
+      await sb.auth.signOut({ scope: 'local' }).catch(() => {});
+    } catch (_) {}
+    try {
+      await sb.auth.signOut({ scope: 'global' }).catch(() => {});
     } catch (_) {}
   }
+
+  // Doble pase de purga para garantizar que ningún token sobreviva
+  clearLocalSupabaseTokens();
+  clearLocalUserStorage();
   currentUser = null;
   currentProfile = null;
   currentCompany = null;
-  clearLocalUserStorage();
 }
 
 /**
