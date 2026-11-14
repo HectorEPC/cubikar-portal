@@ -15,6 +15,7 @@ export function getSupabase() {
     const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     
     const authOptions = {
+      flowType: 'implicit',
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true
