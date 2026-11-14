@@ -3,7 +3,7 @@
 
 import { CONST_TIERS, ARQ_TIERS, COMBO_TIERS, redirectToStripeCheckout } from './checkout.js';
 import { downloadFullEcosystemBackup } from './exportBackup.js';
-import { initAppSwitcher } from './appSwitcher.js?v=20261114_08';
+import { initAppSwitcher } from './appSwitcher.js?v=20261114_11';
 import { 
   initAuth, 
   loginWithEmail, 
@@ -12,7 +12,7 @@ import {
   logout, 
   getCurrentState,
   buildSsoUrl
-} from './auth.js?v=20261114_08';
+} from './auth.js?v=20261114_11';
 
 let currentBillingCycle = 'monthly'; // 'monthly' | 'annual'
 let currentPricingProduct = 'const'; // 'const' | 'arq' | 'combo'
