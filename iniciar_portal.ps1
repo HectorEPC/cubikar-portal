@@ -1,4 +1,4 @@
-# Servidor HTTP local zero-configuración para el Portal Central Cubikar y Ecosistema
+﻿# Servidor HTTP local zero-configuración para el Portal Central Cubikar y Ecosistema
 # Permite ejecutar módulos ES6 (type="module") sin restricciones CORS
 
 $ErrorActionPreference = "Stop"
@@ -65,52 +65,60 @@ $parentDir = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($baseDir, "
 try {
     while ($true) {
         $client = $tcp.AcceptTcpClient()
-        $stream = $client.GetStream()
-        $reader = New-Object System.IO.StreamReader($stream, [System.Text.Encoding]::ASCII)
-        $line = $reader.ReadLine()
+        $client.ReceiveTimeout = 2000
+        $client.SendTimeout = 2000
 
-        if (-not [string]::IsNullOrEmpty($line)) {
-            $parts = $line.Split(' ')
-            if ($parts.Length -ge 2) {
-                $rawPath = $parts[1].Split('?')[0].TrimStart('/')
-                if ([string]::IsNullOrEmpty($rawPath)) {
-                    $rawPath = "index.html"
-                }
-                
-                # Decodificar espacios y caracteres URL (%20, etc.)
-                $decodedPath = [System.Uri]::UnescapeDataString($rawPath)
+        try {
+            $stream = $client.GetStream()
+            $reader = New-Object System.IO.StreamReader($stream, [System.Text.Encoding]::ASCII)
+            $line = $reader.ReadLine()
 
-                # Si la ruta apunta a aplicaciones hermanas (ADM_CONST o ADM_ARQ)
-                if ($decodedPath.StartsWith("ADM_CONST", [System.StringComparison]::OrdinalIgnoreCase) -or 
-                    $decodedPath.StartsWith("ADM_ARQ", [System.StringComparison]::OrdinalIgnoreCase)) {
-                    $filePath = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($parentDir, $decodedPath))
-                } else {
-                    $filePath = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($baseDir, $decodedPath))
-                }
-
-                # Protección y validación de archivo existente
-                if ($filePath.StartsWith($parentDir, [System.StringComparison]::OrdinalIgnoreCase) -and [System.IO.File]::Exists($filePath)) {
-                    $bytes = [System.IO.File]::ReadAllBytes($filePath)
-                    $ext = [System.IO.Path]::GetExtension($filePath).ToLower()
-                    $mime = if ($mimeMap.ContainsKey($ext)) { $mimeMap[$ext] } else { "application/octet-stream" }
+            if (-not [string]::IsNullOrEmpty($line)) {
+                $parts = $line.Split(' ')
+                if ($parts.Length -ge 2) {
+                    $rawPath = $parts[1].Split('?')[0].TrimStart('/')
+                    if ([string]::IsNullOrEmpty($rawPath)) {
+                        $rawPath = "index.html"
+                    }
                     
-                    $header = "HTTP/1.1 200 OK`r`nContent-Type: $mime`r`nContent-Length: $($bytes.Length)`r`nAccess-Control-Allow-Origin: *`r`nConnection: close`r`n`r`n"
-                    $headerBytes = [System.Text.Encoding]::ASCII.GetBytes($header)
-                    $stream.Write($headerBytes, 0, $headerBytes.Length)
-                    $stream.Write($bytes, 0, $bytes.Length)
-                } else {
-                    $notFoundBody = [System.Text.Encoding]::UTF8.GetBytes("404 No encontrado: $decodedPath")
-                    $header = "HTTP/1.1 404 Not Found`r`nContent-Type: text/plain; charset=utf-8`r`nContent-Length: $($notFoundBody.Length)`r`nConnection: close`r`n`r`n"
-                    $headerBytes = [System.Text.Encoding]::ASCII.GetBytes($header)
-                    $stream.Write($headerBytes, 0, $headerBytes.Length)
-                    $stream.Write($notFoundBody, 0, $notFoundBody.Length)
+                    # Decodificar espacios y caracteres URL (%20, etc.)
+                    $decodedPath = [System.Uri]::UnescapeDataString($rawPath)
+
+                    # Si la ruta apunta a aplicaciones hermanas (ADM_CONST o ADM_ARQ)
+                    if ($decodedPath.StartsWith("ADM_CONST", [System.StringComparison]::OrdinalIgnoreCase) -or 
+                        $decodedPath.StartsWith("ADM_ARQ", [System.StringComparison]::OrdinalIgnoreCase)) {
+                        $filePath = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($parentDir, $decodedPath))
+                    } else {
+                        $filePath = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($baseDir, $decodedPath))
+                    }
+
+                    # Protección y validación de archivo existente
+                    if ($filePath.StartsWith($parentDir, [System.StringComparison]::OrdinalIgnoreCase) -and [System.IO.File]::Exists($filePath)) {
+                        $bytes = [System.IO.File]::ReadAllBytes($filePath)
+                        $ext = [System.IO.Path]::GetExtension($filePath).ToLower()
+                        $mime = if ($mimeMap.ContainsKey($ext)) { $mimeMap[$ext] } else { "application/octet-stream" }
+                        
+                        $header = "HTTP/1.1 200 OK`r`nContent-Type: $mime`r`nContent-Length: $($bytes.Length)`r`nAccess-Control-Allow-Origin: *`r`nCache-Control: no-cache, no-store, must-revalidate`r`nPragma: no-cache`r`nExpires: 0`r`nConnection: close`r`n`r`n"
+                        $headerBytes = [System.Text.Encoding]::ASCII.GetBytes($header)
+                        $stream.Write($headerBytes, 0, $headerBytes.Length)
+                        $stream.Write($bytes, 0, $bytes.Length)
+                    } else {
+                        $notFoundBody = [System.Text.Encoding]::UTF8.GetBytes("404 No encontrado: $decodedPath")
+                        $header = "HTTP/1.1 404 Not Found`r`nContent-Type: text/plain; charset=utf-8`r`nContent-Length: $($notFoundBody.Length)`r`nConnection: close`r`n`r`n"
+                        $headerBytes = [System.Text.Encoding]::ASCII.GetBytes($header)
+                        $stream.Write($headerBytes, 0, $headerBytes.Length)
+                        $stream.Write($notFoundBody, 0, $notFoundBody.Length)
+                    }
                 }
             }
-        }
 
-        $stream.Flush()
-        $stream.Close()
-        $client.Close()
+            $stream.Flush()
+            $stream.Close()
+        } catch {
+            # Ignorar timeouts de conexiones especulativas de Chrome
+        } finally {
+            $client.Close()
+        }
     }
 } finally {
     if ($tcp -ne $null) {

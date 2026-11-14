@@ -273,7 +273,7 @@ export function updateAdminDeleteButtonUI() {
   }
 }
 
-export function deleteSelectedAdminUsers() {
+export async function deleteSelectedAdminUsers() {
   const targets = Array.from(selectedAdminUserEmails).filter(e => !isUserMasterAdmin(e));
   if (targets.length === 0) {
     alert('Selecciona al menos un usuario para eliminar (el Administrador Maestro está protegido).');
@@ -284,6 +284,7 @@ export function deleteSelectedAdminUsers() {
     return;
   }
 
+  // 1. Eliminar localmente
   targets.forEach(email => {
     try {
       removeCoAdmin(email);
@@ -291,11 +292,34 @@ export function deleteSelectedAdminUsers() {
     } catch (_) {}
   });
 
+  // 2. Eliminar en el backend seguro de la nube (auth.users y bases de datos)
+  try {
+    const endpoints = ['/api/admin-users', 'https://const.cubikar.app/api/admin-users'];
+    for (const ep of endpoints) {
+      try {
+        const res = await fetch(ep, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-email': MASTER_ADMIN_EMAIL
+          },
+          body: JSON.stringify({
+            action: 'delete',
+            emails: targets
+          })
+        });
+        if (res.ok) break;
+      } catch (_) {}
+    }
+  } catch (err) {
+    console.warn('[Cubikar Admin] Error al sincronizar eliminación con la nube:', err);
+  }
+
   selectedAdminUserEmails.clear();
   const selectAll = document.getElementById('admin-select-all-checkbox');
   if (selectAll) selectAll.checked = false;
 
-  alert('Usuario(s) eliminado(s) correctamente.');
+  alert('Usuario(s) procesado(s) y eliminado(s) correctamente.');
   renderCubikarAdminTable();
 }
 
@@ -318,7 +342,62 @@ export async function fetchAllEcosystemUsers() {
     appUsage: 'ambas'
   });
 
-  // 2. Intentar cargar desde Supabase (tabla perfiles)
+  // 2. Consultar API Central Cloud de Usuarios (/api/admin-users o https://const.cubikar.app/api/admin-users)
+  try {
+    const endpoints = ['/api/admin-users', 'https://const.cubikar.app/api/admin-users'];
+    for (const url of endpoints) {
+      try {
+        const res = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-email': MASTER_ADMIN_EMAIL
+          }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && Array.isArray(data.users) && data.users.length > 0) {
+            data.users.forEach(u => {
+              if (!u || !u.email) return;
+              const em = u.email.toLowerCase().trim();
+              const isMaster = em === MASTER_ADMIN_EMAIL.toLowerCase();
+
+              const planConst = u.subscriptionConst?.planId || u.subscription?.planId || 'free';
+              const planArq = u.subscriptionArq?.planId || u.subscription?.planId || 'free';
+              const isCombo = u.subscription?.isCombo || (isMaster ? true : (planConst === 'pro' && planArq === 'pro'));
+
+              usersMap.set(em, {
+                id: u.id,
+                name: u.name || em.split('@')[0],
+                email: em,
+                createdAt: u.createdAt || '2026-02-01T00:00:00.000Z',
+                lastLogin: u.lastLogin || u.createdAt || new Date().toISOString(),
+                subscription: isMaster
+                  ? { planId: 'pro', billingCycle: 'annual', isCombo: true }
+                  : (u.subscription || { planId: 'free', billingCycle: 'monthly', isCombo }),
+                subscriptionConst: isMaster
+                  ? { planId: 'pro', billingCycle: 'annual' }
+                  : { planId: planConst, billingCycle: u.subscription?.billingCycle || 'monthly' },
+                subscriptionArq: isMaster
+                  ? { planId: 'pro', billingCycle: 'annual' }
+                  : { planId: planArq, billingCycle: u.subscription?.billingCycle || 'monthly' },
+                appUsage: isMaster ? 'ambas' : (u.appUsage || (planConst !== 'free' && planArq !== 'free' ? 'ambas' : (planConst !== 'free' ? 'const' : 'ambas'))),
+                source: u.source || 'cloud_api'
+              });
+            });
+
+            if (data.users.length > 1) {
+              break; // Obtuvimos con éxito el listado completo
+            }
+          }
+        }
+      } catch (_) {}
+    }
+  } catch (err) {
+    console.warn('[Cubikar Admin] Error consultando API de usuarios:', err);
+  }
+
+  // 3. Complementar desde Supabase (tabla perfiles) si está disponible
   try {
     const sb = getSupabaseClient();
     if (sb) {
@@ -327,42 +406,56 @@ export async function fetchAllEcosystemUsers() {
         profiles.forEach(p => {
           if (!p || !p.email) return;
           const em = p.email.toLowerCase().trim();
-          if (em === MASTER_ADMIN_EMAIL.toLowerCase()) return;
-
-          usersMap.set(em, {
-            id: p.id,
-            name: p.nombre_completo || p.name || em.split('@')[0],
-            email: em,
-            createdAt: p.created_at || '2026-02-01T00:00:00.000Z',
-            lastLogin: p.updated_at || p.created_at || new Date().toISOString(),
-            subscription: { planId: p.plan_id || 'free', billingCycle: p.billing_cycle || 'monthly' },
-            subscriptionConst: { planId: p.plan_const || p.plan_id || 'free', billingCycle: 'monthly' },
-            subscriptionArq: { planId: p.plan_arq || p.plan_id || 'free', billingCycle: 'monthly' },
-            appUsage: p.app_usage || 'ambas'
-          });
-        });
-      }
-    }
-  } catch (_) {}
-
-  // 3. Mergear con usuarios registrados localmente
-  try {
-    const rawLocal = localStorage.getItem(STORAGE_KEY_REGISTERED_USERS);
-    if (rawLocal) {
-      const list = JSON.parse(rawLocal);
-      if (Array.isArray(list)) {
-        list.forEach(u => {
-          if (!u || !u.email) return;
-          const em = u.email.toLowerCase().trim();
-          if (!usersMap.has(em)) {
+          if (usersMap.has(em)) {
+            const ex = usersMap.get(em);
+            if (p.nombre_completo && (!ex.name || ex.name === em.split('@')[0])) {
+              ex.name = p.nombre_completo;
+            }
+          } else {
             usersMap.set(em, {
-              ...u,
-              appUsage: u.appUsage || 'ambas'
+              id: p.id,
+              name: p.nombre_completo || p.name || em.split('@')[0],
+              email: em,
+              createdAt: p.created_at || '2026-02-01T00:00:00.000Z',
+              lastLogin: p.updated_at || p.created_at || new Date().toISOString(),
+              subscription: { planId: p.plan_id || 'free', billingCycle: p.billing_cycle || 'monthly' },
+              subscriptionConst: { planId: p.plan_const || p.plan_id || 'free', billingCycle: 'monthly' },
+              subscriptionArq: { planId: p.plan_arq || p.plan_id || 'free', billingCycle: 'monthly' },
+              appUsage: p.app_usage || 'ambas'
             });
           }
         });
       }
     }
+  } catch (_) {}
+
+  // 4. Mergear con usuarios registrados localmente (todas las posibles claves del ecosistema)
+  try {
+    const storageKeys = [
+      STORAGE_KEY_REGISTERED_USERS,
+      'control_obra_registered_accounts_v1',
+      'control_obra_closed_sessions_v1'
+    ];
+    storageKeys.forEach(k => {
+      const rawLocal = localStorage.getItem(k);
+      if (rawLocal) {
+        const list = JSON.parse(rawLocal);
+        if (Array.isArray(list)) {
+          list.forEach(u => {
+            if (!u || !u.email) return;
+            const em = u.email.toLowerCase().trim();
+            if (!usersMap.has(em)) {
+              usersMap.set(em, {
+                ...u,
+                name: u.name || u.fullName || em.split('@')[0],
+                email: em,
+                appUsage: u.appUsage || 'ambas'
+              });
+            }
+          });
+        }
+      }
+    });
   } catch (_) {}
 
   return Array.from(usersMap.values());
@@ -715,6 +808,8 @@ export function setAdminFilterCycle(val) {
 if (typeof window !== 'undefined') {
   window.openCubikarAdminModal = openCubikarAdminModal;
   window.closeCubikarAdminModal = closeCubikarAdminModal;
+  window.renderCubikarAdminTable = renderCubikarAdminTable;
+  window.fetchAllEcosystemUsers = fetchAllEcosystemUsers;
   window.openCoAdminsModal = openCoAdminsModal;
   window.closeCoAdminsModal = closeCoAdminsModal;
   window.openMarketRatesModal = openMarketRatesModal;

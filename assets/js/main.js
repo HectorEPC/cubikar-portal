@@ -4,7 +4,7 @@
 import { CONST_TIERS, ARQ_TIERS, COMBO_TIERS, redirectToStripeCheckout } from './checkout.js';
 import { downloadFullEcosystemBackup } from './exportBackup.js';
 import { initAppSwitcher } from './appSwitcher.js?v=20261114_11';
-import { isUserAdmin, openCubikarAdminModal } from './cubikarAdmin.js?v=20261114_14';
+import { isUserAdmin, openCubikarAdminModal } from './cubikarAdmin.js?v=20261114_15';
 import { 
   initAuth, 
   loginWithEmail, 
