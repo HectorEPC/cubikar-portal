@@ -4,9 +4,13 @@
 
 import { getSupabase } from './supabaseClient.js';
 
+export const GOOGLE_CLIENT_ID = '1097638023851-36b44hlrj7fgslfcmqlvf77dk89h7eus.apps.googleusercontent.com';
+
 let currentUser = null;
 let currentProfile = null;
 let currentCompany = null;
+let activeGoogleNoncePair = null;
+let googleSignInBusy = false;
 
 /**
  * Inicializar observador de autenticación
@@ -172,9 +176,165 @@ export async function loginWithGoogle() {
 }
 
 /**
+ * Carga bajo demanda el SDK oficial de Google Identity Services (accounts.google.com/gsi/client).
+ */
+function ensureGoogleGsiScript(timeoutMs = 7000) {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return Promise.reject(new Error('Google Sign-In solo está disponible en el navegador.'));
+  }
+  if (window.google?.accounts?.id) {
+    return Promise.resolve(window.google.accounts.id);
+  }
+
+  return new Promise((resolve, reject) => {
+    let script = document.querySelector('script[src*="accounts.google.com/gsi/client"]');
+    if (!script) {
+      script = document.createElement('script');
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      document.head.appendChild(script);
+    }
+
+    const startedAt = Date.now();
+    const poll = setInterval(() => {
+      if (window.google?.accounts?.id) {
+        clearInterval(poll);
+        resolve(window.google.accounts.id);
+      } else if (Date.now() - startedAt >= timeoutMs) {
+        clearInterval(poll);
+        reject(new Error('No se pudo cargar Google Sign-In. Si usas bloqueador de anuncios o privacidad estricta, permítelo o usa tu correo.'));
+      }
+    }, 60);
+
+    script.addEventListener('error', () => {
+      clearInterval(poll);
+      reject(new Error('El navegador o un bloqueador impidió cargar Google Sign-In.'));
+    }, { once: true });
+  });
+}
+
+/**
+ * Genera par nonce en texto plano (para Supabase) y hash SHA-256 hex (para Google GIS).
+ */
+async function createGoogleNoncePair() {
+  if (!window.crypto?.getRandomValues || !window.crypto?.subtle) {
+    throw new Error('Tu navegador requiere HTTPS o localhost para autenticar con Google.');
+  }
+  const bytes = new Uint8Array(32);
+  window.crypto.getRandomValues(bytes);
+  const rawNonce = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+  const encoded = new TextEncoder().encode(rawNonce);
+  const hashBuffer = await window.crypto.subtle.digest('SHA-256', encoded);
+  const hashedNonce = Array.from(new Uint8Array(hashBuffer), b => b.toString(16).padStart(2, '0')).join('');
+  return { rawNonce, hashedNonce };
+}
+
+/**
+ * Inicia sesión en Supabase con el ID Token de Google (sin pasar por /auth/v1/callback).
+ */
+export async function loginWithGoogleIdToken(idToken, rawNonce) {
+  const sb = getSupabase();
+  if (!sb) throw new Error('Servidor de autenticación no disponible. Por favor recarga la página.');
+  if (!idToken) throw new Error('Google no devolvió un token de identidad válido.');
+
+  const payload = {
+    provider: 'google',
+    token: idToken
+  };
+  if (rawNonce) {
+    payload.nonce = rawNonce;
+  }
+
+  const { data, error } = await sb.auth.signInWithIdToken(payload);
+  if (error) throw error;
+
+  if (data?.user) {
+    currentUser = data.user;
+    await loadUserProfileAndCompany(data.user.id);
+    syncLocalUserStorage(currentUser, currentProfile, currentCompany);
+  }
+  return data;
+}
+
+/**
+ * Monta el botón oficial de Google GIS y procesa la credencial vía signInWithIdToken.
+ */
+export async function mountGoogleSignInButton({
+  slotId = 'google-signin-gsi-slot',
+  fallbackId = 'google-signin-fallback-btn',
+  onStart = null,
+  onSuccess = null,
+  onError = null,
+  forceRefresh = false
+} = {}) {
+  const slotEl = document.getElementById(slotId);
+  if (!slotEl) return false;
+
+  if (!forceRefresh && activeGoogleNoncePair && slotEl.dataset.gsiRendered === '1') {
+    return true;
+  }
+
+  const gsi = await ensureGoogleGsiScript();
+  const noncePair = await createGoogleNoncePair();
+  activeGoogleNoncePair = noncePair;
+
+  gsi.initialize({
+    client_id: GOOGLE_CLIENT_ID,
+    nonce: noncePair.hashedNonce,
+    ux_mode: 'popup',
+    callback: async (response) => {
+      if (googleSignInBusy) return;
+      googleSignInBusy = true;
+      const usedRawNonce = activeGoogleNoncePair?.rawNonce;
+      activeGoogleNoncePair = null;
+      slotEl.dataset.gsiRendered = '0';
+
+      try {
+        if (onStart) onStart();
+        const data = await loginWithGoogleIdToken(response?.credential, usedRawNonce);
+        if (onSuccess) await onSuccess(data);
+      } catch (err) {
+        if (onError) onError(err);
+      } finally {
+        googleSignInBusy = false;
+      }
+    }
+  });
+
+  const parentWidth = slotEl.parentElement?.clientWidth || slotEl.clientWidth || 350;
+  const buttonWidth = Math.max(220, Math.min(380, Math.floor(parentWidth)));
+
+  slotEl.innerHTML = '';
+  gsi.renderButton(slotEl, {
+    type: 'standard',
+    theme: 'outline',
+    size: 'large',
+    text: 'continue_with',
+    shape: 'rectangular',
+    logo_alignment: 'center',
+    locale: 'es',
+    width: buttonWidth
+  });
+
+  slotEl.dataset.gsiRendered = '1';
+  slotEl.classList.remove('hidden');
+  document.getElementById(fallbackId)?.classList.add('hidden');
+  return true;
+}
+
+/**
  * Cerrar sesión
  */
 export async function logout() {
+  activeGoogleNoncePair = null;
+  const slotEl = document.getElementById('google-signin-gsi-slot');
+  if (slotEl) slotEl.dataset.gsiRendered = '0';
+  try {
+    if (typeof window !== 'undefined' && window.google?.accounts?.id) {
+      window.google.accounts.id.disableAutoSelect();
+    }
+  } catch (_) {}
   const sb = getSupabase();
   if (sb) {
     try {

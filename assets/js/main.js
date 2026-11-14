@@ -8,10 +8,10 @@ import {
   initAuth, 
   loginWithEmail, 
   registerWithEmail, 
-  loginWithGoogle, 
+  mountGoogleSignInButton, 
   logout, 
   getCurrentState 
-} from './auth.js';
+} from './auth.js?v=20261114_03';
 
 let currentBillingCycle = 'monthly'; // 'monthly' | 'annual'
 let currentPricingProduct = 'const'; // 'const' | 'arq' | 'combo'
@@ -441,6 +441,7 @@ export function openAuthModal(mode = 'login') {
   }
 
   modal?.classList.remove('hidden');
+  setupModalGoogleButton().catch(() => {});
 }
 
 export function closeAuthModal() {
@@ -456,13 +457,38 @@ export function toggleAuthMode() {
   }
 }
 
+async function setupModalGoogleButton(forceRefresh = false) {
+  return mountGoogleSignInButton({
+    slotId: 'google-signin-gsi-slot',
+    fallbackId: 'google-signin-fallback-btn',
+    forceRefresh,
+    onStart: () => {
+      hideAuthMessages();
+      showAuthSuccess('Verificando tu cuenta de Google...');
+    },
+    onSuccess: () => {
+      showAuthSuccess('¡Sesión iniciada con Google! Elige a qué aplicación deseas entrar...');
+      setTimeout(() => {
+        closeAuthModal();
+        openAppChooserModal();
+      }, 500);
+    },
+    onError: (err) => {
+      console.error('[Google Sign-In Error]:', err);
+      showAuthError('No se pudo iniciar sesión con Google: ' + (err?.message || 'Error de autenticación'));
+      setupModalGoogleButton(true).catch(() => {});
+    }
+  });
+}
+
 export async function handleGoogleSignIn() {
   hideAuthMessages();
   try {
-    await loginWithGoogle();
+    await setupModalGoogleButton(true);
+    showAuthSuccess('Botón de Google listo. Haz clic nuevamente para elegir tu cuenta.');
   } catch (err) {
-    console.error('[Google OAuth Error]:', err);
-    showAuthError('No se pudo conectar con Google: ' + (err.message || 'Error de autenticación'));
+    console.error('[Google Sign-In Error]:', err);
+    showAuthError(err?.message || 'No se pudo cargar Google Sign-In. Usa tu correo o desactiva bloqueadores.');
   }
 }
 
