@@ -4,7 +4,7 @@
 import { CONST_TIERS, ARQ_TIERS, COMBO_TIERS, redirectToStripeCheckout } from './checkout.js';
 import { downloadFullEcosystemBackup } from './exportBackup.js';
 import { initAppSwitcher } from './appSwitcher.js?v=20261114_11';
-import { isUserAdmin, openCubikarAdminModal } from './cubikarAdmin.js?v=20261114_13';
+import { isUserAdmin, openCubikarAdminModal } from './cubikarAdmin.js?v=20261114_14';
 import { 
   initAuth, 
   loginWithEmail, 
@@ -13,7 +13,7 @@ import {
   logout, 
   getCurrentState,
   buildSsoUrl
-} from './auth.js?v=20261114_11';
+} from './auth.js?v=20261114_14';
 
 let currentBillingCycle = 'monthly'; // 'monthly' | 'annual'
 let currentPricingProduct = 'const'; // 'const' | 'arq' | 'combo'

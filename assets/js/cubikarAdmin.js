@@ -2,7 +2,8 @@
 // Módulo de Administración Maestra de Cubikar para el Portal Central (cubikar.app)
 // Supervisión integral de clientes, membresías, consumos técnicos de IA y margen SaaS de ambas aplicaciones
 
-import { getSupabaseClient } from './supabaseClient.js';
+import { getSupabase } from './supabaseClient.js?v=20261114_14';
+const getSupabaseClient = getSupabase;
 
 // Administrador Maestro Oficial
 export const MASTER_ADMIN_EMAIL = 'hepc.90@gmail.com';
