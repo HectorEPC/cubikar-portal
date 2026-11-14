@@ -20,9 +20,19 @@ let currentAuthMode = 'login';       // 'login' | 'register'
 let googleAuthInProgress = false;
 let googleAuthWatchdog = null;
 
-document.addEventListener('DOMContentLoaded', () => {
-  // Manejar errores de retorno OAuth
+document.addEventListener('DOMContentLoaded', async () => {
+  // Manejar retorno de logout desde aplicaciones satélite (Cubikar Construcción o Cubikar Arquitectura)
   const urlParams = new URLSearchParams(window.location.search);
+  const isLogoutReturn = urlParams.get('logout') === '1';
+  if (isLogoutReturn) {
+    try {
+      await logout();
+      updateAuthUI(null);
+    } catch (_) {}
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+
+  // Manejar errores de retorno OAuth
   const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
   const errorDesc = urlParams.get('error_description') || urlParams.get('error') || hashParams.get('error_description') || hashParams.get('error');
   if (errorDesc) {
