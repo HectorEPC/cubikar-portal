@@ -3,19 +3,22 @@
 
 import { CONST_TIERS, ARQ_TIERS, COMBO_TIERS, redirectToStripeCheckout } from './checkout.js';
 import { downloadFullEcosystemBackup } from './exportBackup.js';
-import { initAppSwitcher } from './appSwitcher.js';
+import { initAppSwitcher } from './appSwitcher.js?v=20261114_04';
 import { 
   initAuth, 
   loginWithEmail, 
   registerWithEmail, 
   mountGoogleSignInButton, 
   logout, 
-  getCurrentState 
-} from './auth.js?v=20261114_03';
+  getCurrentState,
+  buildSsoUrl
+} from './auth.js?v=20261114_04';
 
 let currentBillingCycle = 'monthly'; // 'monthly' | 'annual'
 let currentPricingProduct = 'const'; // 'const' | 'arq' | 'combo'
 let currentAuthMode = 'login';       // 'login' | 'register'
+let googleAuthInProgress = false;
+let googleAuthWatchdog = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   // Manejar errores de retorno OAuth
@@ -28,6 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.history.replaceState({}, document.title, window.location.pathname);
   }
 
+  let handledOAuthReturn = false;
   const isOAuthReturn = window.location.hash.includes('access_token') || 
                         window.location.search.includes('code=');
 
@@ -37,9 +41,17 @@ document.addEventListener('DOMContentLoaded', () => {
   // 2. Inicializar observador de autenticación y estado del usuario
   initAuth(state => {
     updateAuthUI(state);
-    if (state && state.user && isOAuthReturn) {
-      window.history.replaceState({}, document.title, window.location.pathname);
-      openAppChooserModal();
+    if (state && state.user) {
+      if (isOAuthReturn && !handledOAuthReturn) {
+        handledOAuthReturn = true;
+        window.history.replaceState({}, document.title, window.location.pathname);
+        completeAuthAndOpenChooser();
+        return;
+      }
+      const authModal = document.getElementById('modal-auth');
+      if (authModal && !authModal.classList.contains('hidden') && !googleAuthInProgress && state.event === 'SIGNED_IN') {
+        completeAuthAndOpenChooser();
+      }
     }
   });
 
@@ -377,13 +389,13 @@ export function handleTierSelection(planId) {
   redirectToStripeCheckout(currentPricingProduct, planId, currentBillingCycle);
 }
 
-export function launchApp(appId) {
+export async function launchApp(appId) {
   const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-  if (isLocalhost) {
-    window.location.href = appId === 'arq' ? '/ADM_ARQ/index.html' : '/ADM_CONST/index.html';
-  } else {
-    window.location.href = appId === 'arq' ? 'https://arq.cubikar.app' : 'https://const.cubikar.app';
-  }
+  const baseUrl = isLocalhost
+    ? (appId === 'arq' ? '/ADM_ARQ/index.html' : '/ADM_CONST/index.html')
+    : (appId === 'arq' ? 'https://arq.cubikar.app' : 'https://const.cubikar.app');
+  const ssoUrl = await buildSsoUrl(baseUrl, true);
+  window.location.href = ssoUrl;
 }
 
 // =========================================================================
@@ -408,6 +420,7 @@ export async function handleDownloadMyBackup() {
 // =========================================================================
 export function openAuthModal(mode = 'login') {
   currentAuthMode = mode;
+  resetModalAuthControls();
   hideAuthMessages();
 
   const modal = document.getElementById('modal-auth');
@@ -444,7 +457,31 @@ export function openAuthModal(mode = 'login') {
   setupModalGoogleButton().catch(() => {});
 }
 
+function resetModalAuthControls() {
+  if (googleAuthWatchdog) {
+    clearTimeout(googleAuthWatchdog);
+    googleAuthWatchdog = null;
+  }
+  googleAuthInProgress = false;
+  const gsiSlot = document.getElementById('google-signin-gsi-slot');
+  if (gsiSlot) gsiSlot.classList.remove('pointer-events-none', 'opacity-60');
+  const submitBtn = document.getElementById('auth-submit-btn');
+  if (submitBtn) {
+    submitBtn.disabled = false;
+    submitBtn.classList.remove('opacity-60', 'cursor-not-allowed');
+    submitBtn.textContent = currentAuthMode === 'login' ? 'Iniciar Sesión' : 'Crear Cuenta Gratis';
+  }
+}
+
+function completeAuthAndOpenChooser() {
+  resetModalAuthControls();
+  closeAuthModal();
+  updateAuthUI(getCurrentState());
+  openAppChooserModal();
+}
+
 export function closeAuthModal() {
+  resetModalAuthControls();
   document.getElementById('modal-auth')?.classList.add('hidden');
   hideAuthMessages();
 }
@@ -464,17 +501,29 @@ async function setupModalGoogleButton(forceRefresh = false) {
     forceRefresh,
     onStart: () => {
       hideAuthMessages();
+      googleAuthInProgress = true;
+      const gsiSlot = document.getElementById('google-signin-gsi-slot');
+      if (gsiSlot) gsiSlot.classList.add('pointer-events-none', 'opacity-60');
+      const submitBtn = document.getElementById('auth-submit-btn');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.classList.add('opacity-60', 'cursor-not-allowed');
+      }
       showAuthSuccess('Verificando tu cuenta de Google...');
+      if (googleAuthWatchdog) clearTimeout(googleAuthWatchdog);
+      googleAuthWatchdog = setTimeout(() => {
+        if (!googleAuthInProgress) return;
+        resetModalAuthControls();
+        showAuthError('La verificación con Google tardó demasiado. Intenta nuevamente o ingresa con tu correo.');
+        setupModalGoogleButton(true).catch(() => {});
+      }, 15000);
     },
     onSuccess: () => {
-      showAuthSuccess('¡Sesión iniciada con Google! Elige a qué aplicación deseas entrar...');
-      setTimeout(() => {
-        closeAuthModal();
-        openAppChooserModal();
-      }, 500);
+      completeAuthAndOpenChooser();
     },
     onError: (err) => {
       console.error('[Google Sign-In Error]:', err);
+      resetModalAuthControls();
       showAuthError('No se pudo iniciar sesión con Google: ' + (err?.message || 'Error de autenticación'));
       setupModalGoogleButton(true).catch(() => {});
     }
@@ -494,6 +543,7 @@ export async function handleGoogleSignIn() {
 
 export async function handleAuthSubmit(e) {
   e.preventDefault();
+  if (googleAuthInProgress) return;
   hideAuthMessages();
 
   const emailInput = document.getElementById('auth-email');
@@ -521,33 +571,21 @@ export async function handleAuthSubmit(e) {
   try {
     if (currentAuthMode === 'login') {
       await loginWithEmail(email, password);
-      showAuthSuccess('¡Sesión iniciada con éxito! Elige a qué aplicación deseas entrar...');
-      setTimeout(() => {
-        closeAuthModal();
-        if (submitBtn) {
-          submitBtn.disabled = false;
-          submitBtn.innerHTML = originalBtnText;
-        }
-        openAppChooserModal();
-      }, 700);
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnText;
+      }
+      completeAuthAndOpenChooser();
     } else {
       const data = await registerWithEmail(email, password, fullName, company);
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnText;
+      }
       if (data?.session) {
-        showAuthSuccess('¡Cuenta creada exitosamente! Bienvenido a Cubikar.');
-        setTimeout(() => {
-          closeAuthModal();
-          if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = originalBtnText;
-          }
-          openAppChooserModal();
-        }, 900);
+        completeAuthAndOpenChooser();
       } else {
         showAuthSuccess('¡Cuenta registrada! Si tu proyecto requiere confirmación, por favor verifica tu correo electrónico para activar el acceso.');
-        if (submitBtn) {
-          submitBtn.disabled = false;
-          submitBtn.innerHTML = originalBtnText;
-        }
       }
     }
   } catch (err) {

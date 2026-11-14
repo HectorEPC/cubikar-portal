@@ -3,6 +3,16 @@
 // Totalmente sincronizado con Supabase Auth y los esquemas de ADM_CONST y ADM_ARQ
 
 import { getSupabase } from './supabaseClient.js';
+import {
+  writeSharedSsoCookie,
+  clearSharedSsoCookie,
+  readSharedSsoCookie,
+  readLocalSupabaseTokens,
+  extractIncomingSsoFromHash,
+  scrubSsoHashParams,
+  getLastSignOutTimestamp,
+  buildSsoTargetUrl
+} from './ssoHelper.js?v=20261114_04';
 
 export const GOOGLE_CLIENT_ID = '1097638023851-36b44hlrj7fgslfcmqlvf77dk89h7eus.apps.googleusercontent.com';
 
@@ -11,6 +21,55 @@ let currentProfile = null;
 let currentCompany = null;
 let activeGoogleNoncePair = null;
 let googleSignInBusy = false;
+let inFlightProfilePromise = null;
+let inFlightProfileUserId = null;
+let loadedProfileUserId = null;
+let lastProfileLoadedAt = 0;
+
+function resetProfileCache() {
+  inFlightProfilePromise = null;
+  inFlightProfileUserId = null;
+  loadedProfileUserId = null;
+  lastProfileLoadedAt = 0;
+}
+
+function scheduleBackgroundProfileSync(userId, onStateChange = null) {
+  if (!userId) return;
+  setTimeout(async () => {
+    const res = await loadUserProfileAndCompany(userId);
+    if (res && currentUser?.id === userId) {
+      syncLocalUserStorage(currentUser, currentProfile, currentCompany);
+      if (onStateChange) {
+        onStateChange({ user: currentUser, profile: currentProfile, company: currentCompany, event: 'PROFILE_SYNCED' });
+      }
+    }
+  }, 0);
+}
+
+async function tryHydrateSsoSession(sb) {
+  if (!sb) return null;
+  const hashTokens = extractIncomingSsoFromHash();
+  scrubSsoHashParams();
+  let tokens = hashTokens;
+  if (!tokens) {
+    const cookieTokens = readSharedSsoCookie();
+    const lastSignOutTs = getLastSignOutTimestamp();
+    if (cookieTokens?.refreshToken && !(lastSignOutTs > 0 && cookieTokens.ts > 0 && cookieTokens.ts <= lastSignOutTs)) {
+      tokens = cookieTokens;
+    }
+  }
+  if (!tokens?.refreshToken) return null;
+  try {
+    const { data, error } = tokens.accessToken
+      ? await sb.auth.setSession({ access_token: tokens.accessToken, refresh_token: tokens.refreshToken })
+      : await sb.auth.refreshSession({ refresh_token: tokens.refreshToken });
+    if (error || !data?.session?.user) return null;
+    return data.session;
+  } catch (err) {
+    console.warn('[Portal Auth] No se pudo hidratar sesión SSO entrante:', err?.message || err);
+    return null;
+  }
+}
 
 /**
  * Inicializar observador de autenticación
@@ -22,14 +81,51 @@ export async function initAuth(onStateChange) {
     return;
   }
 
+  // Listener síncrono: nunca ejecutar queries Supabase dentro de onAuthStateChange
+  // para evitar contención/bloqueo del lock interno (navigator.locks) de GoTrue.
+  sb.auth.onAuthStateChange((event, session) => {
+    if (session?.user) {
+      currentUser = session.user;
+      writeSharedSsoCookie(session);
+      syncLocalUserStorage(currentUser, currentProfile, currentCompany);
+      const userId = currentUser.id;
+      setTimeout(() => {
+        if (onStateChange) {
+          onStateChange({ user: currentUser, profile: currentProfile, company: currentCompany, event });
+        }
+        scheduleBackgroundProfileSync(userId, onStateChange);
+      }, 0);
+    } else {
+      if (event === 'SIGNED_OUT') {
+        clearSharedSsoCookie({ markSignOut: true });
+      }
+      currentUser = null;
+      currentProfile = null;
+      currentCompany = null;
+      resetProfileCache();
+      clearLocalUserStorage();
+      setTimeout(() => {
+        if (onStateChange) onStateChange(null);
+      }, 0);
+    }
+  });
+
   try {
-    // 1. Verificar sesión existente en el almacenamiento
-    const { data: { session }, error } = await sb.auth.getSession();
+    // 1. Verificar sesión existente o hidratar SSO entrante desde subdominios Cubikar
+    let { data: { session }, error } = await sb.auth.getSession();
+    if (!session?.user || error) {
+      const ssoSession = await tryHydrateSsoSession(sb);
+      if (ssoSession?.user) {
+        session = ssoSession;
+        error = null;
+      }
+    }
     if (session?.user && !error) {
       currentUser = session.user;
-      await loadUserProfileAndCompany(currentUser.id);
+      writeSharedSsoCookie(session);
       syncLocalUserStorage(currentUser, currentProfile, currentCompany);
-      if (onStateChange) onStateChange({ user: currentUser, profile: currentProfile, company: currentCompany });
+      if (onStateChange) onStateChange({ user: currentUser, profile: currentProfile, company: currentCompany, event: 'INIT' });
+      scheduleBackgroundProfileSync(currentUser.id, onStateChange);
     } else {
       if (onStateChange) onStateChange(null);
     }
@@ -37,61 +133,64 @@ export async function initAuth(onStateChange) {
     console.warn('[Portal Auth] Error al inicializar sesión:', err);
     if (onStateChange) onStateChange(null);
   }
-
-  // 2. Escuchar cambios de sesión en tiempo real (login, logout, refresh de token)
-  sb.auth.onAuthStateChange(async (event, session) => {
-    if (session?.user) {
-      currentUser = session.user;
-      await loadUserProfileAndCompany(currentUser.id);
-      syncLocalUserStorage(currentUser, currentProfile, currentCompany);
-      if (onStateChange) onStateChange({ user: currentUser, profile: currentProfile, company: currentCompany });
-    } else {
-      currentUser = null;
-      currentProfile = null;
-      currentCompany = null;
-      clearLocalUserStorage();
-      if (onStateChange) onStateChange(null);
-    }
-  });
 }
 
 /**
- * Cargar perfil de usuario y datos de empresa desde Supabase
+ * Cargar perfil de usuario y datos de empresa desde Supabase (con deduplicación)
  */
-export async function loadUserProfileAndCompany(userId) {
+export async function loadUserProfileAndCompany(userId, forceRefresh = false) {
   const sb = getSupabase();
   if (!sb || !userId) return null;
 
-  try {
-    const { data: perfil, error } = await sb
-      .from('perfiles')
-      .select(`
-        id,
-        nombre_completo,
-        email,
-        avatar_url,
-        rol,
-        empresa_id,
-        empresas (
-          id,
-          nombre,
-          plan,
-          estado_suscripcion,
-          logo_url
-        )
-      `)
-      .eq('id', userId)
-      .maybeSingle();
-
-    if (!error && perfil) {
-      currentProfile = perfil;
-      currentCompany = perfil.empresas || null;
-      return { profile: currentProfile, company: currentCompany };
-    }
-  } catch (err) {
-    console.warn('[Portal Auth] No se pudo cargar perfil extendido:', err);
+  if (!forceRefresh && loadedProfileUserId === userId && Date.now() - lastProfileLoadedAt < 5000 && currentProfile) {
+    return { profile: currentProfile, company: currentCompany };
   }
-  return null;
+  if (inFlightProfilePromise && inFlightProfileUserId === userId) {
+    return inFlightProfilePromise;
+  }
+
+  inFlightProfileUserId = userId;
+  inFlightProfilePromise = (async () => {
+    try {
+      const { data: perfil, error } = await sb
+        .from('perfiles')
+        .select(`
+          id,
+          nombre_completo,
+          email,
+          avatar_url,
+          rol,
+          empresa_id,
+          empresas (
+            id,
+            nombre,
+            plan,
+            estado_suscripcion,
+            logo_url
+          )
+        `)
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (!error && perfil) {
+        currentProfile = perfil;
+        currentCompany = perfil.empresas || null;
+        loadedProfileUserId = userId;
+        lastProfileLoadedAt = Date.now();
+        return { profile: currentProfile, company: currentCompany };
+      }
+    } catch (err) {
+      console.warn('[Portal Auth] No se pudo cargar perfil extendido:', err);
+    } finally {
+      if (inFlightProfileUserId === userId) {
+        inFlightProfilePromise = null;
+        inFlightProfileUserId = null;
+      }
+    }
+    return null;
+  })();
+
+  return inFlightProfilePromise;
 }
 
 /**
@@ -111,8 +210,9 @@ export async function loginWithEmail(email, password) {
 
   if (data?.user) {
     currentUser = data.user;
-    await loadUserProfileAndCompany(data.user.id);
+    if (data.session) writeSharedSsoCookie(data.session);
     syncLocalUserStorage(currentUser, currentProfile, currentCompany);
+    scheduleBackgroundProfileSync(data.user.id);
   }
   return data;
 }
@@ -143,8 +243,9 @@ export async function registerWithEmail(email, password, fullName, companyName) 
 
   if (data?.user && data?.session) {
     currentUser = data.user;
-    await loadUserProfileAndCompany(data.user.id);
+    writeSharedSsoCookie(data.session);
     syncLocalUserStorage(currentUser, currentProfile, currentCompany);
+    scheduleBackgroundProfileSync(data.user.id);
   }
   return data;
 }
@@ -251,8 +352,9 @@ export async function loginWithGoogleIdToken(idToken, rawNonce) {
 
   if (data?.user) {
     currentUser = data.user;
-    await loadUserProfileAndCompany(data.user.id);
+    if (data.session) writeSharedSsoCookie(data.session);
     syncLocalUserStorage(currentUser, currentProfile, currentCompany);
+    scheduleBackgroundProfileSync(data.user.id);
   }
   return data;
 }
@@ -285,6 +387,10 @@ export async function mountGoogleSignInButton({
     ux_mode: 'popup',
     callback: async (response) => {
       if (googleSignInBusy) return;
+      if (!response?.credential) {
+        if (onError) onError(new Error('No se recibió una credencial válida de Google. Inténtalo de nuevo.'));
+        return;
+      }
       googleSignInBusy = true;
       const usedRawNonce = activeGoogleNoncePair?.rawNonce;
       activeGoogleNoncePair = null;
@@ -292,7 +398,7 @@ export async function mountGoogleSignInButton({
 
       try {
         if (onStart) onStart();
-        const data = await loginWithGoogleIdToken(response?.credential, usedRawNonce);
+        const data = await loginWithGoogleIdToken(response.credential, usedRawNonce);
         if (onSuccess) await onSuccess(data);
       } catch (err) {
         if (onError) onError(err);
@@ -328,6 +434,9 @@ export async function mountGoogleSignInButton({
  */
 export async function logout() {
   activeGoogleNoncePair = null;
+  googleSignInBusy = false;
+  resetProfileCache();
+  clearSharedSsoCookie({ markSignOut: true });
   const slotEl = document.getElementById('google-signin-gsi-slot');
   if (slotEl) slotEl.dataset.gsiRendered = '0';
   try {
@@ -345,6 +454,29 @@ export async function logout() {
   currentProfile = null;
   currentCompany = null;
   clearLocalUserStorage();
+}
+
+/**
+ * Construir URL de destino con tokens SSO para navegar a subdominios sin segundo login
+ */
+export async function buildSsoUrl(targetUrl, remember = true) {
+  const cleanTarget = String(targetUrl || '').split('#')[0];
+  try {
+    const sb = getSupabase();
+    let session = null;
+    if (sb) {
+      const { data } = await sb.auth.getSession();
+      session = data?.session || null;
+    }
+    const tokens = session?.access_token && session?.refresh_token
+      ? session
+      : (readLocalSupabaseTokens() || readSharedSsoCookie());
+    if (tokens) {
+      if (session) writeSharedSsoCookie(session);
+      return buildSsoTargetUrl(cleanTarget, tokens, remember);
+    }
+  } catch (_) {}
+  return cleanTarget;
 }
 
 /**
