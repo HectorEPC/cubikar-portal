@@ -135,16 +135,22 @@ function renderShowcaseStructure(container) {
         <!-- ================================================================= -->
         <div class="relative w-full aspect-video bg-black overflow-hidden">
           
-          <!-- VISTA 1: VIDEO YOUTUBE IFRAME -->
-          <div id="hero-video-view" class="absolute inset-0 w-full h-full z-10 transition-opacity duration-300">
-            <iframe 
-              id="hero-youtube-iframe"
-              class="w-full h-full border-0 absolute inset-0"
-              src="${YOUTUBE_EMBED_URL}"
-              title="Cubikar Video Publicitario"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              allowfullscreen
-            ></iframe>
+          <!-- VISTA 1: VIDEO PUBLICITARIO OFICIAL MP4 CUBIKAR -->
+          <div id="hero-video-view" class="absolute inset-0 w-full h-full z-10 transition-opacity duration-300 flex items-center justify-center bg-black">
+            <video 
+              id="hero-cubikar-video"
+              class="w-full h-full object-cover cursor-pointer"
+              src="assets/videos/cubikar_promo.mp4"
+              autoplay
+              muted
+              loop
+              playsinline
+              preload="auto"
+              title="Video Publicitario Oficial de Cubikar"
+            ></video>
+            <div id="video-play-hint" class="pointer-events-none absolute bottom-3 left-3 px-2.5 py-1 rounded-md bg-black/70 border border-white/10 text-[10px] font-mono text-cyan-300 backdrop-blur-md">
+              <i class="fa-solid fa-circle-play mr-1 text-cyan-400"></i> Video Publicitario Oficial Cubikar Full HD
+            </div>
           </div>
 
           <!-- VISTA 2: RULETA DE CAPTURAS DE LA APP -->
@@ -264,8 +270,9 @@ export function setMode(mode) {
     if (bottomGalleryActions) bottomGalleryActions.classList.add('hidden');
 
     stopAutoPlay();
-    if (iframe && iframe.contentWindow) {
-      sendYouTubeCommand('playVideo');
+    const vid = document.getElementById('hero-cubikar-video');
+    if (vid) {
+      vid.play().catch(() => {});
     }
   } else {
     if (tabGallery) {
@@ -286,29 +293,24 @@ export function setMode(mode) {
     if (bottomVideoActions) bottomVideoActions.classList.add('hidden');
     if (bottomGalleryActions) bottomGalleryActions.classList.remove('hidden');
 
-    if (iframe && iframe.contentWindow) {
-      sendYouTubeCommand('pauseVideo');
+    const vid = document.getElementById('hero-cubikar-video');
+    if (vid) {
+      vid.pause();
     }
     updateSlide(currentIndex);
     startAutoPlay();
   }
 }
 
-function sendYouTubeCommand(func, args = []) {
-  const iframe = document.getElementById('hero-youtube-iframe');
-  if (iframe && iframe.contentWindow) {
-    iframe.contentWindow.postMessage(JSON.stringify({
-      event: 'command',
-      func: func,
-      args: args
-    }), '*');
-  }
-}
-
 export function toggleVideoSound() {
+  const vid = document.getElementById('hero-cubikar-video');
   isMuted = !isMuted;
-  const command = isMuted ? 'mute' : 'unMute';
-  sendYouTubeCommand(command);
+  if (vid) {
+    vid.muted = isMuted;
+    if (!isMuted && vid.paused) {
+      vid.play().catch(() => {});
+    }
+  }
 
   const btn = document.getElementById('video-sound-btn');
   const icon = document.getElementById('video-sound-icon');
@@ -322,6 +324,10 @@ export function toggleVideoSound() {
     } else {
       icon.className = 'fa-solid fa-volume-high text-cyan-400 animate-pulse';
       label.textContent = 'Audio Activado';
+      btn.className = 'px-2.5 sm:px-3 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 text-[11px] font-bold flex items-center gap-1.5 transition cursor-pointer shadow-[0_0_15px_rgba(0,242,254,0.3)]';
+    }
+  }
+}
       btn.className = 'px-2.5 sm:px-3 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 text-[11px] font-bold flex items-center gap-1.5 transition cursor-pointer shadow-[0_0_15px_rgba(0,242,254,0.3)]';
     }
   }

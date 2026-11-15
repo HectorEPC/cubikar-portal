@@ -6,3 +6,7 @@ _respaldos/
 # Archivos de sistema / temporales
 .DS_Store
 Thumbs.db
+
+scratch/
+*.wav
+*.log
