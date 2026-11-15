@@ -5,7 +5,26 @@ import { CONST_TIERS, ARQ_TIERS, COMBO_TIERS, redirectToStripeCheckout, CUBIKAR_
 import { downloadFullEcosystemBackup } from './exportBackup.js?v=20261115_auth_ok';
 import { initAppSwitcher } from './appSwitcher.js?v=20261115_auth_ok';
 import { initShowcaseRuleta } from './showcaseRuleta.js?v=20261115_auth_ok';
-import { isUserAdmin, openCubikarAdminModal } from './cubikarAdmin.js?v=20261115_auth_ok';
+import { 
+  isUserAdmin, 
+  openCubikarAdminModal,
+  closeCubikarAdminModal,
+  openCoAdminsModal,
+  closeCoAdminsModal,
+  openMarketRatesModal,
+  closeMarketRatesModal,
+  saveMarketRatesFromModal,
+  exportCubikarDatabaseToExcel,
+  setAdminAppScope,
+  setAdminTableSearch,
+  setAdminFilterActivity,
+  setAdminFilterPlan,
+  setAdminFilterCycle,
+  toggleSelectAllAdminUsers,
+  onAdminUserCheckboxChange,
+  addCoAdmin,
+  removeCoAdmin
+} from './cubikarAdmin.js?v=20261115_auth_ok';
 import { 
   initAuth, 
   loginWithEmail, 
@@ -95,6 +114,23 @@ document.addEventListener('DOMContentLoaded', async () => {
   window.closeUserDashboard = closeUserDashboard;
   window.handleLogout = handleLogout;
   window.handleStripePortal = handleStripePortal;
+  window.openCubikarAdminModal = openCubikarAdminModal;
+  window.closeCubikarAdminModal = closeCubikarAdminModal;
+  window.openCoAdminsModal = openCoAdminsModal;
+  window.closeCoAdminsModal = closeCoAdminsModal;
+  window.openMarketRatesModal = openMarketRatesModal;
+  window.closeMarketRatesModal = closeMarketRatesModal;
+  window.saveMarketRatesFromModal = saveMarketRatesFromModal;
+  window.exportCubikarDatabaseToExcel = exportCubikarDatabaseToExcel;
+  window.setAdminAppScope = setAdminAppScope;
+  window.setAdminTableSearch = setAdminTableSearch;
+  window.setAdminFilterActivity = setAdminFilterActivity;
+  window.setAdminFilterPlan = setAdminFilterPlan;
+  window.setAdminFilterCycle = setAdminFilterCycle;
+  window.toggleSelectAllAdminUsers = toggleSelectAllAdminUsers;
+  window.onAdminUserCheckboxChange = onAdminUserCheckboxChange;
+  window.addCoAdmin = addCoAdmin;
+  window.removeCoAdmin = removeCoAdmin;
   window.scrollToEcosistema = () => {
     const el = document.getElementById('ecosistema');
     if (el) el.scrollIntoView({ behavior: 'smooth' });
@@ -799,6 +835,17 @@ export function updateAuthUI(state) {
 // ACCIONES DE USUARIO Y MI CUENTA
 // =========================================================================
 export function openUserDashboard() {
+  const state = getCurrentState();
+  const email = (state?.user?.email || document.getElementById('dash-user-email')?.textContent || '').toLowerCase().trim();
+  const isAdmin = isUserAdmin(email);
+  const dashAdminSec = document.getElementById('dash-admin-section');
+  if (dashAdminSec) {
+    if (isAdmin) {
+      dashAdminSec.classList.remove('hidden');
+    } else {
+      dashAdminSec.classList.add('hidden');
+    }
+  }
   document.getElementById('modal-dashboard')?.classList.remove('hidden');
 }
 
