@@ -3,6 +3,7 @@
 // Totalmente sincronizado con Supabase Auth y los esquemas de ADM_CONST y ADM_ARQ
 
 import { getSupabase } from './supabaseClient.js';
+import { CUBIKAR_SUB_TEST_MODE } from './checkout.js';
 import {
   writeSharedSsoCookie,
   clearSharedSsoCookie,
@@ -362,14 +363,25 @@ export async function registerWithEmail(email, password, fullName, companyName) 
 
   explicitAuthDepth += 1;
   try {
+    const optionsData = {
+      full_name: cleanName,
+      empresa_nombre: cleanCompany
+    };
+
+    if (CUBIKAR_SUB_TEST_MODE) {
+      optionsData.plan = 'plus';
+      optionsData.subscription = {
+        planId: 'plus',
+        billingCycle: 'monthly',
+        isBetaTest: true
+      };
+    }
+
     const { data, error } = await sb.auth.signUp({
       email: cleanEmail,
       password: password,
       options: {
-        data: {
-          full_name: cleanName,
-          empresa_nombre: cleanCompany
-        }
+        data: optionsData
       }
     });
 
@@ -668,7 +680,8 @@ export function syncLocalUserStorage(user, profile, company) {
                         user.user_metadata?.empresa_nombre || 
                         'Mi Empresa';
 
-    const plan = company?.plan || 
+    const plan = (CUBIKAR_SUB_TEST_MODE ? 'plus' : null) ||
+                 company?.plan || 
                  user.user_metadata?.subscription?.planId || 
                  'free';
 
@@ -686,6 +699,19 @@ export function syncLocalUserStorage(user, profile, company) {
 
     localStorage.setItem('control_obra_active_user_v1', JSON.stringify(userData));
     localStorage.setItem('control_obra_active_user_v1_last', JSON.stringify(userData));
+
+    if (CUBIKAR_SUB_TEST_MODE && cleanEmail) {
+      try {
+        const testSub = {
+          planId: 'plus',
+          billingCycle: 'monthly',
+          isBetaTest: true,
+          updatedAt: new Date().toISOString()
+        };
+        localStorage.setItem(`adm_const_subscription_${cleanEmail}`, JSON.stringify(testSub));
+        localStorage.setItem(`adm_arq_subscription_${cleanEmail}`, JSON.stringify(testSub));
+      } catch (_) {}
+    }
   } catch (err) {
     console.warn('[Portal Auth] Error al sincronizar almacenamiento local:', err);
   }

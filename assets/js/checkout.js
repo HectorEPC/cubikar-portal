@@ -1,6 +1,13 @@
 // assets/js/checkout.js
 // Configuración exacta y completa de suscripciones de ADM_CONST y ADM_ARQ
 
+// =========================================================================
+// MODO DE CONTROL: CUBIKAR SUB TEST vs CUBIKAR SUB ORIGINAL
+// true: Modo de prueba activo. Plan Plus de cortesía sin cobros, Stripe pausado.
+// false: Modo comercial oficial. Stripe activo y plan gratuito inicial estándar.
+// =========================================================================
+export const CUBIKAR_SUB_TEST_MODE = true;
+
 export const STRIPE_PAYMENT_LINKS = {
   const: {
     plus: {
@@ -310,6 +317,23 @@ export const COMBO_TIERS = {
 };
 
 export async function redirectToStripeCheckout(product = 'const', planId = 'plus', cycle = 'monthly') {
+  if (CUBIKAR_SUB_TEST_MODE) {
+    if (planId === 'pro') {
+      alert('El Plan Pro estará habilitado al concluir la fase de pruebas. Durante este periodo de evaluación, tienes acceso gratuito al Plan Plus.');
+      if (window.openAuthModal) window.openAuthModal('register');
+      return;
+    }
+    // Para Plus o Free durante la prueba: registrarse o lanzar la app de inmediato
+    const state = typeof window.getCurrentState === 'function' ? window.getCurrentState() : null;
+    if (state?.user) {
+      alert('¡Tu cuenta tiene acceso Plus gratuito activo por la fase de pruebas! Abriendo la aplicación...');
+      if (window.launchApp) window.launchApp(product);
+    } else {
+      if (window.openAuthModal) window.openAuthModal('register');
+    }
+    return;
+  }
+
   if (planId === 'free') {
     alert('Tu cuenta incluye acceso gratuito inicial. Puedes comenzar de inmediato.');
     if (window.launchApp) window.launchApp(product);

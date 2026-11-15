@@ -1,7 +1,7 @@
 // assets/js/main.js
 // Controlador interactivo sincronizado al 100% con ADM_CONST y ADM_ARQ
 
-import { CONST_TIERS, ARQ_TIERS, COMBO_TIERS, redirectToStripeCheckout } from './checkout.js';
+import { CONST_TIERS, ARQ_TIERS, COMBO_TIERS, redirectToStripeCheckout, CUBIKAR_SUB_TEST_MODE } from './checkout.js';
 import { downloadFullEcosystemBackup } from './exportBackup.js';
 import { initAppSwitcher } from './appSwitcher.js?v=20261114_11';
 import { initShowcaseRuleta } from './showcaseRuleta.js?v=20261115_clean_ruleta';
@@ -23,6 +23,12 @@ let googleAuthInProgress = false;
 let googleAuthWatchdog = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
+  // Sincronizar visibilidad del banner de prueba (Cubikar Sub Test)
+  const subBanner = document.getElementById('banner-cubikar-sub-test');
+  if (subBanner) {
+    subBanner.style.display = CUBIKAR_SUB_TEST_MODE ? 'flex' : 'none';
+  }
+
   // Manejar retorno de logout desde aplicaciones satélite (Cubikar Construcción o Cubikar Arquitectura)
   const urlParams = new URLSearchParams(window.location.search);
   const isLogoutReturn = urlParams.get('logout') === '1';
@@ -185,24 +191,35 @@ function renderPricingCardsAndComparison() {
       cardBorder = 'border-2 border-blue-500/80 shadow-2xl glow-blue bg-gradient-to-b from-slate-900 via-slate-900/90 to-slate-950 transform lg:-translate-y-2';
       iconBoxCls = 'bg-blue-500/20 text-blue-400 border border-blue-400/30';
       iconName = 'fa-solid fa-bolt';
-      btnCls = 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/30 transform hover:-translate-y-0.5';
-      btnText = `<i class="fa-solid fa-bolt text-[11px]"></i><span>Elegir Plan Plus</span>`;
+      btnCls = CUBIKAR_SUB_TEST_MODE
+        ? 'bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 text-slate-950 font-black shadow-lg shadow-cyan-500/25 transform hover:-translate-y-0.5'
+        : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/30 transform hover:-translate-y-0.5';
+      btnText = CUBIKAR_SUB_TEST_MODE
+        ? `<i class="fa-solid fa-flask text-xs"></i><span>Probar Plan Plus Gratis (Beta)</span>`
+        : `<i class="fa-solid fa-bolt text-[11px]"></i><span>Elegir Plan Plus</span>`;
       checkIconCls = 'text-blue-400';
     } else if (isPro) {
       cardBorder = 'border border-amber-500/40 hover:border-amber-400 transition bg-slate-900/80 shadow-xl';
       iconBoxCls = 'bg-amber-500/20 text-amber-400 border border-amber-400/30';
       iconName = 'fa-solid fa-crown';
-      btnCls = 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 shadow-md transform hover:-translate-y-0.5';
-      btnText = `<i class="fa-solid fa-crown text-[11px]"></i><span>Elegir Plan Pro</span>`;
+      btnCls = CUBIKAR_SUB_TEST_MODE
+        ? 'bg-slate-800 hover:bg-slate-700/80 text-slate-400 border border-slate-700 cursor-pointer'
+        : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 shadow-md transform hover:-translate-y-0.5';
+      btnText = CUBIKAR_SUB_TEST_MODE
+        ? `<i class="fa-solid fa-lock text-xs text-amber-400/80"></i><span>Próximamente tras fase Beta</span>`
+        : `<i class="fa-solid fa-crown text-[11px]"></i><span>Elegir Plan Pro</span>`;
       checkIconCls = 'text-amber-400';
     }
+
+    const plusBadgeText = CUBIKAR_SUB_TEST_MODE ? 'GRATIS EN FASE DE PRUEBA' : plan.badge;
+    const cardBadgeText = (CUBIKAR_SUB_TEST_MODE && isPro) ? 'EN EVALUACIÓN' : plan.badge;
 
     return `
       <div class="rounded-3xl glass-card p-6 sm:p-7 flex flex-col justify-between ${cardBorder} relative">
         ${isPlus ? `
-          <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-[10px] font-extrabold uppercase px-3.5 py-1 rounded-full shadow tracking-wider flex items-center gap-1.5">
-            <i class="fa-solid fa-fire text-[10px]"></i>
-            <span>${plan.badge}</span>
+          <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 ${CUBIKAR_SUB_TEST_MODE ? 'bg-amber-500 text-slate-950 font-black' : 'bg-blue-600 text-white font-extrabold'} text-[10px] uppercase px-3.5 py-1 rounded-full shadow tracking-wider flex items-center gap-1.5">
+            <i class="${CUBIKAR_SUB_TEST_MODE ? 'fa-solid fa-flask' : 'fa-solid fa-fire'} text-[10px]"></i>
+            <span>${plusBadgeText}</span>
           </div>
         ` : ''}
 
@@ -216,10 +233,10 @@ function renderPricingCardsAndComparison() {
               <div>
                 <h4 class="font-extrabold text-base leading-tight text-white">${plan.name}</h4>
                 <span class="inline-block mt-0.5 text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                  isPlus ? 'bg-blue-500/20 text-blue-300 border border-blue-400/40' :
-                  (isPro ? 'bg-amber-500/20 text-amber-300 border border-amber-400/40' : 'bg-slate-800 text-slate-300 border border-slate-700')
+                  isPlus ? (CUBIKAR_SUB_TEST_MODE ? 'bg-amber-500/20 text-amber-300 border border-amber-400/40' : 'bg-blue-500/20 text-blue-300 border border-blue-400/40') :
+                  (isPro ? (CUBIKAR_SUB_TEST_MODE ? 'bg-slate-800 text-slate-400 border border-slate-700' : 'bg-amber-500/20 text-amber-300 border border-amber-400/40') : 'bg-slate-800 text-slate-300 border border-slate-700')
                 }">
-                  ${plan.badge}
+                  ${cardBadgeText}
                 </span>
               </div>
             </div>
@@ -239,35 +256,63 @@ function renderPricingCardsAndComparison() {
 
           <!-- Bloque de Precio -->
           <div class="p-4 rounded-xl mb-5 bg-slate-950/80 border ${isPlus ? 'border-blue-500/30' : (isPro ? 'border-amber-500/30' : 'border-slate-800')}">
-            ${hasDiscount ? `
+            ${(CUBIKAR_SUB_TEST_MODE && isPlus) ? `
               <div class="flex items-center gap-2 mb-1 flex-wrap">
-                <span class="text-xs font-semibold line-through text-slate-500">
-                  $${origPrice.toLocaleString('es-MX')} MXN
-                </span>
-                <span class="text-[10px] font-black px-1.5 py-0.5 rounded-sm bg-rose-500/20 text-rose-400 border border-rose-500/30">
-                  Ahorras $${(origPrice - price).toLocaleString('es-MX')}${plan.periodLabel}
+                <span class="text-[10px] font-black px-2 py-0.5 rounded-sm bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">
+                  Cubikar Sub Test &bull; 100% Bonificado
                 </span>
               </div>
-            ` : ''}
-            <div class="flex items-baseline gap-1">
-              <span class="text-3xl sm:text-4xl font-extrabold font-mono tracking-tight ${
-                isPro ? 'text-amber-400' : (isPlus ? 'text-blue-400' : 'text-white')
-              }">
-                $${price.toLocaleString('es-MX')}
-              </span>
-              <span class="text-xs font-bold text-slate-400">
-                ${isFree ? 'MXN Siempre gratis' : `MXN ${plan.periodLabel}`}
-              </span>
-            </div>
-            ${hasDiscount ? `
-              <div class="mt-1 flex items-center gap-1 text-[10px] font-bold text-amber-400">
-                <i class="fa-solid fa-bolt text-[9px]"></i>
-                <span>Precio especial de lanzamiento</span>
+              <div class="flex items-baseline gap-1">
+                <span class="text-3xl sm:text-4xl font-extrabold font-mono tracking-tight text-cyan-400">$0</span>
+                <span class="text-xs font-bold text-slate-300">MXN / mes de prueba</span>
               </div>
-            ` : ''}
-            <p class="text-[10px] mt-1 font-medium text-slate-400">
-              ${subtext}
-            </p>
+              <p class="text-[10px] mt-1 font-medium text-slate-400">
+                Acceso completo sin tarjeta bancaria ni cobros durante la evaluación
+              </p>
+            ` : ((CUBIKAR_SUB_TEST_MODE && isPro) ? `
+              <div class="flex items-center gap-2 mb-1 flex-wrap">
+                <span class="text-[10px] font-black px-2 py-0.5 rounded-sm bg-slate-800 text-slate-400 border border-slate-700">
+                  En Evaluación
+                </span>
+              </div>
+              <div class="flex items-baseline gap-1">
+                <span class="text-3xl sm:text-4xl font-extrabold font-mono tracking-tight text-slate-500">$0</span>
+                <span class="text-xs font-bold text-slate-500">MXN (No disponible aún)</span>
+              </div>
+              <p class="text-[10px] mt-1 font-medium text-slate-500">
+                Habilitado una vez concluida la fase de prueba
+              </p>
+            ` : `
+              ${hasDiscount ? `
+                <div class="flex items-center gap-2 mb-1 flex-wrap">
+                  <span class="text-xs font-semibold line-through text-slate-500">
+                    $${origPrice.toLocaleString('es-MX')} MXN
+                  </span>
+                  <span class="text-[10px] font-black px-1.5 py-0.5 rounded-sm bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                    Ahorras $${(origPrice - price).toLocaleString('es-MX')}${plan.periodLabel}
+                  </span>
+                </div>
+              ` : ''}
+              <div class="flex items-baseline gap-1">
+                <span class="text-3xl sm:text-4xl font-extrabold font-mono tracking-tight ${
+                  isPro ? 'text-amber-400' : (isPlus ? 'text-blue-400' : 'text-white')
+                }">
+                  $${price.toLocaleString('es-MX')}
+                </span>
+                <span class="text-xs font-bold text-slate-400">
+                  ${isFree ? 'MXN Siempre gratis' : `MXN ${plan.periodLabel}`}
+                </span>
+              </div>
+              ${hasDiscount ? `
+                <div class="mt-1 flex items-center gap-1 text-[10px] font-bold text-amber-400">
+                  <i class="fa-solid fa-bolt text-[9px]"></i>
+                  <span>Precio especial de lanzamiento</span>
+                </div>
+              ` : ''}
+              <p class="text-[10px] mt-1 font-medium text-slate-400">
+                ${subtext}
+              </p>
+            `)}
           </div>
 
           <!-- Lista de Características -->
@@ -448,6 +493,15 @@ export function openAuthModal(mode = 'login') {
   const submitBtn = document.getElementById('auth-submit-btn');
   const toggleBtn = document.getElementById('auth-toggle-mode-btn');
 
+  const testModeNotice = document.getElementById('auth-test-mode-notice');
+  if (testModeNotice) {
+    if (CUBIKAR_SUB_TEST_MODE) {
+      testModeNotice.classList.remove('hidden');
+    } else {
+      testModeNotice.classList.add('hidden');
+    }
+  }
+
   if (mode === 'login') {
     if (modalTitle) modalTitle.textContent = 'Acceso al Ecosistema';
     if (modalSubtitle) modalSubtitle.textContent = 'Ingresa con tu cuenta unificada de Cubikar';
@@ -459,12 +513,12 @@ export function openAuthModal(mode = 'login') {
     if (toggleBtn) toggleBtn.innerHTML = '¿No tienes cuenta? <span class="font-bold text-blue-400">Regístrate aquí</span>';
   } else {
     if (modalTitle) modalTitle.textContent = 'Crear Cuenta en Cubikar';
-    if (modalSubtitle) modalSubtitle.textContent = 'Comienza a gestionar tus proyectos y obras';
+    if (modalSubtitle) modalSubtitle.textContent = CUBIKAR_SUB_TEST_MODE ? 'Acceso de cortesía a Plan Plus durante evaluación' : 'Comienza a gestionar tus proyectos y obras';
     if (nameContainer) nameContainer.classList.remove('hidden');
     if (companyContainer) companyContainer.classList.remove('hidden');
     if (nameInput) nameInput.required = true;
     if (companyInput) companyInput.required = false;
-    if (submitBtn) submitBtn.textContent = 'Crear Cuenta Gratis';
+    if (submitBtn) submitBtn.textContent = CUBIKAR_SUB_TEST_MODE ? 'Crear Cuenta (Plan Plus Beta Gratis)' : 'Crear Cuenta Gratis';
     if (toggleBtn) toggleBtn.innerHTML = '¿Ya tienes cuenta? <span class="font-bold text-blue-400">Inicia sesión aquí</span>';
   }
 
@@ -484,7 +538,9 @@ function resetModalAuthControls() {
   if (submitBtn) {
     submitBtn.disabled = false;
     submitBtn.classList.remove('opacity-60', 'cursor-not-allowed');
-    submitBtn.textContent = currentAuthMode === 'login' ? 'Iniciar Sesión' : 'Crear Cuenta Gratis';
+    submitBtn.textContent = currentAuthMode === 'login'
+      ? 'Iniciar Sesión'
+      : (CUBIKAR_SUB_TEST_MODE ? 'Crear Cuenta (Plan Plus Beta Gratis)' : 'Crear Cuenta Gratis');
   }
 }
 

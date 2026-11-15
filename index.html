@@ -29,6 +29,22 @@
 <body class="bg-[#07080c] text-slate-100 min-h-screen antialiased flex flex-col selection:bg-cyan-500 selection:text-black">
 
   <!-- ========================================================================= -->
+  <!-- BANNER GLOBAL: CUBIKAR SUB TEST (FASE DE PRUEBAS)                         -->
+  <!-- ========================================================================= -->
+  <div id="banner-cubikar-sub-test" class="bg-gradient-to-r from-amber-950 via-[#181208] to-amber-950 text-amber-200 py-2.5 px-4 text-xs font-medium text-center border-b border-amber-500/40 relative z-[60] shadow-md flex items-center justify-center flex-wrap gap-2">
+    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-black uppercase tracking-wider border border-amber-400/40 shrink-0">
+      <i class="fa-solid fa-flask text-amber-400"></i> Cubikar Sub Test
+    </span>
+    <span class="text-slate-200">
+      Fase de pruebas activa: <strong>Plan Plus de cortesía sin costo</strong> en todos los registros.
+    </span>
+    <span class="text-amber-300/90 text-[11px] font-normal flex items-center gap-1">
+      <i class="fa-solid fa-triangle-exclamation text-amber-400"></i>
+      <em>Entorno de evaluación: los archivos y proyectos ingresados podrán ser depurados al finalizar el periodo de prueba.</em>
+    </span>
+  </div>
+
+  <!-- ========================================================================= -->
   <!-- 1. TOP GLOBAL NAVBAR (LUMION STYLE + D5 DARK GLASS)                        -->
   <!-- ========================================================================= -->
   <header class="sticky top-0 z-50 glass-nav transition-all duration-300">
@@ -124,7 +140,7 @@
         <!-- Lumion Dual CTA Buttons -->
         <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 mb-8">
           <button onclick="openAuthModal('register')" class="px-7 py-4 rounded-xl font-extrabold text-sm bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 text-slate-950 shadow-[0_0_25px_rgba(0,242,254,0.4)] transition transform hover:-translate-y-0.5 text-center flex items-center justify-center gap-2 cursor-pointer">
-            <span>Prueba Pro gratis</span>
+            <span>Probar Gratis (Plan Plus Beta)</span>
             <i class="fa-solid fa-arrow-right text-xs"></i>
           </button>
 
@@ -1629,6 +1645,17 @@
       <div id="auth-error-msg" class="hidden text-xs text-rose-300 bg-rose-500/15 border border-rose-500/30 p-2.5 rounded-xl mb-3 text-center"></div>
       <div id="auth-success-msg" class="hidden text-xs text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 p-2.5 rounded-xl mb-3 text-center"></div>
 
+      <!-- Aviso Oficial: Cubikar Sub Test -->
+      <div id="auth-test-mode-notice" class="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3 mb-4 text-left">
+        <div class="flex items-center gap-1.5 text-amber-300 font-bold text-xs mb-1">
+          <i class="fa-solid fa-flask text-amber-400"></i>
+          <span>Modo de Prueba Activo (Cubikar Sub Test)</span>
+        </div>
+        <p class="text-[11px] text-slate-300 leading-relaxed">
+          Tu cuenta se creará con beneficios del <strong class="text-white font-semibold">Plan Plus sin costo</strong>. ⚠️ Por tratarse de un entorno de testeo, te sugerimos no ingresar información sensible: los archivos y proyectos podrán ser depurados o reiniciados antes del lanzamiento comercial.
+        </p>
+      </div>
+
       <!-- Auth Form -->
       <form id="auth-form" onsubmit="handleAuthSubmit(event)" class="space-y-3.5">
         <div id="auth-name-container" class="hidden">
@@ -2199,7 +2226,7 @@
   </div>
 
   <!-- Scripts -->
-  <script type="module" src="assets/js/main.js?v=20261115_auth_switcher"></script>
+  <script type="module" src="assets/js/main.js?v=20261115_sub_test"></script>
 
 </body>
 </html>
