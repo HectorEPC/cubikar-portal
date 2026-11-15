@@ -656,6 +656,7 @@ function hideAuthMessages() {
 export function updateAuthUI(state) {
   const navGuest = document.getElementById('nav-guest-actions');
   const navUser = document.getElementById('nav-user-actions');
+  const appSwitcherMount = document.getElementById('cubikar-app-switcher-mount');
 
   if (state && state.user) {
     // Usuario autenticado
@@ -663,6 +664,10 @@ export function updateAuthUI(state) {
     if (navUser) {
       navUser.classList.remove('hidden');
       navUser.classList.add('flex');
+    }
+    if (appSwitcherMount) {
+      appSwitcherMount.classList.remove('hidden');
+      appSwitcherMount.classList.add('flex');
     }
 
     const name = state.profile?.nombre_completo || 
@@ -715,6 +720,10 @@ export function updateAuthUI(state) {
     if (navUser) {
       navUser.classList.add('hidden');
       navUser.classList.remove('flex');
+    }
+    if (appSwitcherMount) {
+      appSwitcherMount.classList.add('hidden');
+      appSwitcherMount.classList.remove('flex');
     }
     const dashAdminSec = document.getElementById('dash-admin-section');
     if (dashAdminSec) dashAdminSec.classList.add('hidden');

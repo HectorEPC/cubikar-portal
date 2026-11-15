@@ -60,10 +60,7 @@
 
       <!-- User Auth CTA & App Switcher (Right aligned - Lumion CTA block) -->
       <div class="flex items-center space-x-3 relative z-10">
-        <!-- App Switcher Mount (9 puntos Waffle) -->
-        <div id="cubikar-app-switcher-mount" class="flex items-center"></div>
-
-        <!-- Auth Guest Container -->
+        <!-- Auth Guest Container (Visible para invitados sin sesión) -->
         <div id="nav-guest-actions" class="flex items-center space-x-2">
           <button onclick="openAuthModal('login')" class="px-3.5 py-2 rounded-xl text-xs font-bold text-slate-300 hover:text-white hover:bg-white/5 border border-white/10 hover:border-white/20 transition cursor-pointer">
             Acceso
@@ -73,8 +70,11 @@
           </button>
         </div>
 
-        <!-- Auth Logged In Container -->
+        <!-- Auth Logged In Container (Visible SOLO con sesión iniciada) -->
         <div id="nav-user-actions" class="hidden items-center space-x-3">
+          <!-- App Switcher Mount (9 puntos Waffle - Solo visible con sesión) -->
+          <div id="cubikar-app-switcher-mount" class="flex items-center"></div>
+
           <button onclick="openUserDashboard()" class="flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl bg-[#0e111a] border border-white/10 hover:border-cyan-500/50 transition cursor-pointer shadow-lg">
             <div id="user-avatar-badge" class="w-7 h-7 rounded-lg bg-gradient-to-tr from-cyan-500 to-blue-600 text-slate-950 font-black text-xs flex items-center justify-center">
               U
@@ -2185,7 +2185,7 @@
   </div>
 
   <!-- Scripts -->
-  <script type="module" src="assets/js/main.js?v=20261115_punto8_const"></script>
+  <script type="module" src="assets/js/main.js?v=20261115_auth_switcher"></script>
 
 </body>
 </html>
