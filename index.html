@@ -8,14 +8,14 @@
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="assets/branding/favicon.png">
   
-  <!-- FontAwesome 6 Icons (mismo de ADM_CONST) -->
+  <!-- FontAwesome 6 Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   <!-- Tailwind CSS & Google Fonts -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Poppins:wght@500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   
   <!-- Supabase JS, Google Identity Services, JSZip & SheetJS -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -23,71 +23,65 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
-  <!-- Estilos Personalizados -->
-  <link rel="stylesheet" href="assets/css/styles.css">
+  <!-- Estilos Personalizados (D5 Render Palette x Lumion Structure) -->
+  <link rel="stylesheet" href="assets/css/styles.css?v=20261114_03">
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen antialiased flex flex-col selection:bg-blue-600 selection:text-white">
+<body class="bg-[#07080c] text-slate-100 min-h-screen antialiased flex flex-col selection:bg-cyan-500 selection:text-black">
 
   <!-- ========================================================================= -->
-  <!-- 1. TOP GLOBAL NAVBAR -->
+  <!-- 1. TOP GLOBAL NAVBAR (LUMION STYLE + D5 DARK GLASS)                        -->
   <!-- ========================================================================= -->
-  <header class="sticky top-0 z-50 glass-nav border-b border-slate-800/80 transition-all duration-300">
+  <header class="sticky top-0 z-50 glass-nav transition-all duration-300">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
       
-      <!-- Brand Logo -->
-      <a href="#" class="flex items-center space-x-3 group cursor-pointer">
-        <img src="assets/branding/cubikar_icon_transparent.png" alt="cubikar icon" class="w-12 h-12 md:w-14 md:h-14 object-contain group-hover:scale-105 transition-transform duration-200 drop-shadow-md">
+      <!-- Brand Logo (Lumion Center/Left Vibe) -->
+      <a href="#" class="flex items-center space-x-3 group cursor-pointer shrink-0">
+        <img src="assets/branding/cubikar_icon_transparent.png" alt="cubikar icon" class="w-10 h-10 md:w-11 md:h-11 object-contain group-hover:scale-105 transition-transform duration-200 drop-shadow-[0_0_15px_rgba(0,242,254,0.3)]">
         <div>
           <div class="flex items-center gap-1.5">
-            <span class="font-extrabold text-2xl tracking-tight text-white font-heading">cubikar<span class="text-blue-500">.</span></span>
-            <span class="hidden sm:inline-block bg-blue-500/10 text-blue-400 text-[11px] px-2.5 py-0.5 rounded-full font-bold border border-blue-500/20 tracking-wider uppercase">Ecosistema</span>
+            <span class="font-black text-2xl tracking-tight text-white font-heading">cubikar<span class="text-cyan-400">.</span></span>
+            <span class="hidden sm:inline-block bg-cyan-500/10 text-cyan-300 text-[10px] px-2 py-0.5 rounded-full font-bold border border-cyan-500/30 tracking-wider uppercase">Ecosistema</span>
           </div>
-          <p class="text-[11px] text-slate-400 font-medium tracking-tight">Construcción &bull; Arquitectura</p>
+          <p class="text-[10px] text-slate-400 font-medium tracking-tight">Construcción &bull; Arquitectura</p>
         </div>
       </a>
 
-      <!-- Desktop Nav Links -->
-      <nav class="hidden md:flex items-center space-x-8 text-sm font-semibold text-slate-300">
-        <a href="#ecosistema" class="hover:text-white transition">Ecosistema</a>
-        <a href="#ecosistema" onclick="window.switchAppToConst();" class="hover:text-amber-400 transition flex items-center gap-1.5">
-          <span class="w-2 h-2 rounded-full bg-amber-500"></span>
-          Construcción
-        </a>
-        <a href="#ecosistema" onclick="window.switchAppToArq();" class="hover:text-cyan-400 transition flex items-center gap-1.5">
-          <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
-          Arquitectura
-        </a>
-        <a href="#respaldo" class="hover:text-emerald-400 transition">Respaldos</a>
-        <a href="#precios" class="hover:text-white transition flex items-center gap-1">
-          <i class="fa-solid fa-crown text-amber-400 text-xs"></i>
-          <span>Planes &amp; Precios</span>
+      <!-- Desktop Nav Links (Lumion Navigation) -->
+      <nav class="hidden lg:flex items-center space-x-7 text-xs font-semibold text-slate-300">
+        <a href="#soluciones" class="hover:text-cyan-400 transition">Soluciones</a>
+        <a href="#flujo" class="hover:text-white transition">Flujo de Trabajo</a>
+        <a href="#ecosistema-visual" class="hover:text-white transition">Capacidades</a>
+        <a href="#precios" class="hover:text-white transition">Precios</a>
+        <a href="#respaldo" class="hover:text-emerald-400 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-cloud-arrow-down text-emerald-400 text-[11px]"></i>
+          <span>Respaldos</span>
         </a>
       </nav>
 
-      <!-- User Auth CTA & App Switcher -->
-      <div class="flex items-center space-x-3">
+      <!-- User Auth CTA & App Switcher (Right aligned - Lumion CTA block) -->
+      <div class="flex items-center space-x-3 relative z-10">
         <!-- App Switcher Mount (9 puntos Waffle) -->
         <div id="cubikar-app-switcher-mount" class="flex items-center"></div>
 
         <!-- Auth Guest Container -->
         <div id="nav-guest-actions" class="flex items-center space-x-2">
-          <button onclick="openAuthModal('login')" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-200 hover:text-white hover:bg-slate-800/80 transition cursor-pointer">
-            Iniciar Sesión
+          <button onclick="openAuthModal('login')" class="px-3.5 py-2 rounded-xl text-xs font-bold text-slate-300 hover:text-white hover:bg-white/5 border border-white/10 hover:border-white/20 transition cursor-pointer">
+            Acceso
           </button>
-          <button onclick="openAuthModal('register')" class="px-4 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/30 transition transform hover:-translate-y-0.5 cursor-pointer">
-            Crear Cuenta
+          <button onclick="openAuthModal('register')" class="px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-cyan-400 to-blue-600 hover:from-cyan-300 hover:to-blue-500 text-slate-950 shadow-[0_0_20px_rgba(0,242,254,0.4)] transition transform hover:-translate-y-0.5 cursor-pointer">
+            Comienza gratis
           </button>
         </div>
 
         <!-- Auth Logged In Container -->
         <div id="nav-user-actions" class="hidden items-center space-x-3">
-          <button onclick="openUserDashboard()" class="flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl bg-slate-900 border border-slate-700/80 hover:border-blue-500/50 transition cursor-pointer">
-            <div id="user-avatar-badge" class="w-7 h-7 rounded-lg bg-blue-600 text-white font-bold text-xs flex items-center justify-center">
+          <button onclick="openUserDashboard()" class="flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl bg-[#0e111a] border border-white/10 hover:border-cyan-500/50 transition cursor-pointer shadow-lg">
+            <div id="user-avatar-badge" class="w-7 h-7 rounded-lg bg-gradient-to-tr from-cyan-500 to-blue-600 text-slate-950 font-black text-xs flex items-center justify-center">
               U
             </div>
             <div class="text-left hidden sm:block">
               <span id="user-display-name" class="block text-xs font-bold text-slate-200 leading-tight">Usuario</span>
-              <span id="user-company-badge" class="block text-[10px] text-blue-400 font-medium">Mi Empresa</span>
+              <span id="user-company-badge" class="block text-[10px] text-cyan-400 font-medium">Mi Empresa</span>
             </div>
           </button>
         </div>
@@ -97,88 +91,369 @@
   </header>
 
   <!-- ========================================================================= -->
-  <!-- 2. HERO SECTION -->
+  <!-- 2. HERO SECTION (EXACTO LUMION HERO SLANT + ÁLBUM RULETA DE IMÁGENES)     -->
   <!-- ========================================================================= -->
-  <section class="relative pt-16 pb-24 md:pt-24 md:pb-32 overflow-hidden">
-    <!-- Background Glows -->
-    <div class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] bg-gradient-to-tr from-amber-600/20 via-blue-600/15 to-transparent blur-3xl pointer-events-none rounded-full"></div>
+  <section id="hero-section" class="relative w-full min-h-[580px] lg:min-h-[720px] bg-[#07080c] overflow-hidden flex items-stretch">
+    
+    <!-- LADO DERECHO: ÁLBUM RULETA DE IMÁGENES CINEMÁTICAS (Sin saturación de letras) -->
+    <div id="cubikar-showcase-mount" class="absolute inset-0 lg:left-[34%] w-full lg:w-[66%] h-full z-0">
+      <!-- Inyectado dinámicamente por showcaseRuleta.js con imágenes rotativas limpias -->
+    </div>
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+    <!-- LADO IZQUIERDO: BLOQUE OSCURO EN DIAGONAL (SLANTED CUT ESTILO LUMION) -->
+    <div class="relative z-10 w-full lg:w-[48%] bg-[#07080c]/95 lg:bg-[#07080c] lumion-hero-slant flex flex-col justify-center px-6 sm:px-12 lg:px-16 py-16 lg:py-24 backdrop-blur-md lg:backdrop-blur-none border-b lg:border-b-0 lg:border-r border-white/10">
       
-      <!-- Top Pill -->
-      <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold mb-8 shadow-sm">
-        <i class="fa-solid fa-bolt text-amber-400 text-xs"></i>
-        <span>¡Precios de Lanzamiento Activos! Descuentos de hasta 56% OFF en Plus y Pro</span>
+      <div class="max-w-xl">
+        <!-- Pill Top -->
+        <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs font-bold mb-6">
+          <span class="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(0,242,254,0.8)] animate-pulse"></span>
+          <span>Ecosistema Unificado Digital</span>
+        </div>
+
+        <!-- Huge Lumion Headline -->
+        <h1 class="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-white mb-6 font-heading leading-[1.06]">
+          Construcción &amp; <br>Arquitectura, <br>
+          <span class="text-gradient-cyan">sin límites.</span>
+        </h1>
+
+        <!-- Short Subtitle (Limpio y directo, sin saturación) -->
+        <p class="text-slate-300 text-sm sm:text-base lg:text-lg max-w-lg mb-8 font-normal leading-relaxed">
+          Visualiza proyectos ejecutivos, presupuesta con matrices APU oficiales y supervisa obras en tiempo real con el ecosistema líder en la nube.
+        </p>
+
+        <!-- Lumion Dual CTA Buttons -->
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 mb-8">
+          <button onclick="openAuthModal('register')" class="px-7 py-4 rounded-xl font-extrabold text-sm bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 text-slate-950 shadow-[0_0_25px_rgba(0,242,254,0.4)] transition transform hover:-translate-y-0.5 text-center flex items-center justify-center gap-2 cursor-pointer">
+            <span>Prueba Pro gratis</span>
+            <i class="fa-solid fa-arrow-right text-xs"></i>
+          </button>
+
+          <a href="#precios" class="px-7 py-4 rounded-xl font-bold text-sm bg-white/5 hover:bg-white/10 border border-white/15 hover:border-white/30 text-white transition text-center flex items-center justify-center gap-2">
+            <span>Ver planes</span>
+          </a>
+        </div>
+
+        <!-- Micro Trust Indicators -->
+        <div class="flex items-center gap-4 text-xs text-slate-400 flex-wrap">
+          <span class="flex items-center gap-1.5"><i class="fa-solid fa-check text-cyan-400 text-[11px]"></i> Plan Gratuito para siempre</span>
+          <span class="text-slate-600">&bull;</span>
+          <span class="flex items-center gap-1.5"><i class="fa-solid fa-shield-halved text-emerald-400 text-[11px]"></i> Sin tarjeta requerida</span>
+        </div>
       </div>
 
-      <!-- Main Headline -->
-      <h1 class="text-4xl sm:text-5xl md:text-7xl font-extrabold tracking-tight text-white mb-6 font-heading max-w-5xl mx-auto leading-tight">
-        El ecosistema unificado para <br class="hidden sm:inline">
-        <span class="text-gradient-amber">Construcción</span> &amp; <span class="text-gradient-blue">Arquitectura</span>
-      </h1>
+    </div>
 
-      <!-- Subtitle -->
-      <p class="text-slate-300 text-lg sm:text-xl max-w-3xl mx-auto mb-10 font-normal leading-relaxed">
-        Presupuestos con Matrices de Precios Unitarios (APU), catálogos oficiales y de Gobierno, cronogramas de obra, bitácora digital legal y control de proyectos ejecutivos.
-        <span class="text-white font-semibold">Usa el Plan Gratuito para siempre o escala con Plus y Pro.</span>
-      </p>
+  </section>
 
-      <!-- CTA Buttons -->
-      <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
-        <a href="#precios" class="w-full sm:w-auto px-8 py-4 rounded-xl font-bold text-sm bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 shadow-xl shadow-amber-500/20 transition transform hover:-translate-y-0.5 text-center flex items-center justify-center gap-2">
-          <i class="fa-solid fa-crown text-xs"></i>
-          <span>Ver Planes y Precios Oficiales</span>
-        </a>
-        <button onclick="scrollToEcosistema()" class="w-full sm:w-auto px-8 py-4 rounded-xl font-bold text-sm bg-slate-900 border border-slate-700/80 hover:bg-slate-800 text-slate-200 transition text-center flex items-center justify-center gap-2">
-          <span>Explorar Características</span>
-          <i class="fa-solid fa-arrow-down text-xs text-slate-400"></i>
-        </button>
+  <!-- ========================================================================= -->
+  <!-- 3. SECCIÓN NUEVO: HERRAMIENTAS INTELIGENTES (LUMION SCREENSHOT 2 & 3)     -->
+  <!-- ========================================================================= -->
+  <section id="ecosistema-visual" class="py-24 bg-[#07080c] relative z-10 border-t border-white/[0.07]">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      
+      <div class="max-w-3xl mx-auto mb-14">
+        <span class="text-xs font-bold text-cyan-400 uppercase tracking-widest font-mono block mb-3">NUEVO EN CUBIKAR</span>
+        <h2 class="text-3xl sm:text-5xl font-black text-white mb-5 font-heading">
+          Herramientas en la nube que siguen tus instrucciones
+        </h2>
+        <p class="text-slate-400 text-sm sm:text-base leading-relaxed mb-8">
+          Mejora, ajusta y explora presupuestos, cronogramas y memorias de diseño en tu navegador. Incluido en todos los planes de Cubikar.
+        </p>
+
+        <div class="flex items-center justify-center gap-4 flex-wrap">
+          <button onclick="openAuthModal('register')" class="px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-600 hover:from-cyan-300 hover:to-blue-500 text-slate-950 font-bold text-xs shadow-md transition cursor-pointer">
+            Descubre las herramientas de Cubikar
+          </button>
+          <a href="#flujo" class="px-6 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold text-xs transition">
+            Ver el flujo de trabajo
+          </a>
+        </div>
       </div>
 
-      <!-- ========================================================================= -->
-      <!-- ÁLBUM RULETA INTERACTIVO (SHOWCASE ESTILO LUMION & D5 RENDER)             -->
-      <!-- ========================================================================= -->
-      <div id="cubikar-showcase-mount" class="mt-4"></div>
+      <!-- TIRA VERTICAL MULTI-FASE ESTILO LUMION (SCREENSHOT 3) -->
+      <div class="relative w-full h-[400px] sm:h-[480px] rounded-3xl overflow-hidden border border-white/10 shadow-2xl flex items-stretch">
+        
+        <!-- Columna 1: Anteproyecto -->
+        <div class="lumion-slice-col flex-1 relative group cursor-pointer overflow-hidden border-r border-white/10">
+          <img src="assets/images/showcase/hero-app-alcances.png" alt="Anteproyecto" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+          <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent"></div>
+          <div class="absolute bottom-6 left-6 right-6 text-left">
+            <span class="text-[10px] font-mono font-bold text-cyan-400 uppercase tracking-wider block">Fase 01</span>
+            <h4 class="text-base sm:text-lg font-bold text-white font-heading">Anteproyecto &amp; Diseño</h4>
+            <p class="text-xs text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 mt-1 line-clamp-2">
+              Modelado y visualización de espacios con aprobación rápida del cliente.
+            </p>
+          </div>
+        </div>
+
+        <!-- Columna 2: Licitación & APU -->
+        <div class="lumion-slice-col flex-1 relative group cursor-pointer overflow-hidden border-r border-white/10">
+          <img src="assets/images/showcase/hero-app-apu.png" alt="Matrices APU" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+          <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent"></div>
+          <div class="absolute bottom-6 left-6 right-6 text-left">
+            <span class="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-wider block">Fase 02</span>
+            <h4 class="text-base sm:text-lg font-bold text-white font-heading">Matrices APU &amp; Licitación</h4>
+            <p class="text-xs text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 mt-1 line-clamp-2">
+              Catálogos oficiales y cálculo exacto del Factor de Salario Real (FASR).
+            </p>
+          </div>
+        </div>
+
+        <!-- Columna 3: Obra & Bitácora -->
+        <div class="lumion-slice-col flex-1 relative group cursor-pointer overflow-hidden border-r border-white/10">
+          <img src="assets/images/showcase/hero-app-erp.png" alt="Bitácora Legal" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+          <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent"></div>
+          <div class="absolute bottom-6 left-6 right-6 text-left">
+            <span class="text-[10px] font-mono font-bold text-cyan-400 uppercase tracking-wider block">Fase 03</span>
+            <h4 class="text-base sm:text-lg font-bold text-white font-heading">Ejecución &amp; Bitácora</h4>
+            <p class="text-xs text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 mt-1 line-clamp-2">
+              Asientos inmutables con geolocalización, clima y evidencia fotográfica.
+            </p>
+          </div>
+        </div>
+
+        <!-- Columna 4: Estimaciones & Cobros -->
+        <div class="lumion-slice-col flex-1 relative group cursor-pointer overflow-hidden">
+          <img src="assets/images/showcase/hero-app-estimaciones.png" alt="Estimaciones" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+          <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent"></div>
+          <div class="absolute bottom-6 left-6 right-6 text-left">
+            <span class="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-wider block">Fase 04</span>
+            <h4 class="text-base sm:text-lg font-bold text-white font-heading">Estimaciones &amp; Cobro</h4>
+            <p class="text-xs text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 mt-1 line-clamp-2">
+              Generadores de cobro, retenciones de fondo y estados de cuenta al día.
+            </p>
+          </div>
+        </div>
+
+      </div>
 
     </div>
   </section>
 
   <!-- ========================================================================= -->
-  <!-- 3. PLANES Y PRECIOS OFICIALES (100% SINCRONIZADOS CON ADM_CONST) -->
+  <!-- 4. UN ÚNICO FLUJO DE TRABAJO (LUMION SCREENSHOT 4 - 3 IMAGE CARDS)        -->
   <!-- ========================================================================= -->
-  <section id="precios" class="py-24 border-t border-slate-900 bg-slate-950 relative">
+  <section id="flujo" class="py-24 bg-[#090b10] border-t border-white/[0.07] relative z-10">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       
-      <div class="text-center max-w-4xl mx-auto mb-10">
-        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold mb-4">
-          <i class="fa-solid fa-crown text-amber-400 text-xs"></i>
-          <span>Elige la Suscripción Ideal para tus Proyectos</span>
+      <div class="text-center max-w-3xl mx-auto mb-16">
+        <h2 class="text-3xl sm:text-5xl font-black text-white mb-4 font-heading leading-tight">
+          Un único flujo de trabajo desde el diseño hasta la aprobación final.
+        </h2>
+        <p class="text-slate-400 text-sm sm:text-base leading-relaxed">
+          Impulsa tus proyectos con claridad visual, menos traspasos de responsabilidades y menos necesidad de reconstrucción.
+        </p>
+      </div>
+
+      <!-- 3 Visual Cards (Lumion Screenshot 4 Layout) -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        
+        <!-- Card 1: Visualiza el diseño -->
+        <div class="space-y-4 group">
+          <div class="rounded-2xl overflow-hidden border border-white/10 aspect-video relative bg-[#121520] shadow-lg">
+            <img src="assets/images/showcase/hero-app-alcances.png" alt="Visualiza el diseño" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
+          </div>
+          <h3 class="text-xl font-bold text-white font-heading">Visualiza el diseño</h3>
+          <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+            Convierte tu modelo CAD o especificaciones técnicas en un espacio que la gente pueda ver, comprender y al que pueda responder. Comunica tu intención con claridad.
+          </p>
         </div>
-        <h2 class="text-3xl sm:text-5xl font-extrabold text-white mb-4 font-heading">
+
+        <!-- Card 2: Refina más rápido con precisión -->
+        <div class="space-y-4 group">
+          <div class="rounded-2xl overflow-hidden border border-white/10 aspect-video relative bg-[#121520] shadow-lg">
+            <img src="assets/images/showcase/hero-app-apu.png" alt="Refina con precisión" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
+          </div>
+          <h3 class="text-xl font-bold text-white font-heading">Refina más rápido</h3>
+          <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+            Presupuesta analíticamente con Matrices APU, catálogos de gobierno y rendimientos reales. Ajusta insumos y costos unitarios sin perder el control del margen.
+          </p>
+        </div>
+
+        <!-- Card 3: Mantén a todos alineados -->
+        <div class="space-y-4 group">
+          <div class="rounded-2xl overflow-hidden border border-white/10 aspect-video relative bg-[#121520] shadow-lg">
+            <img src="assets/images/showcase/hero-app-especialistas.png" alt="Mantén a todos alineados" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
+          </div>
+          <h3 class="text-xl font-bold text-white font-heading">Mantén a todos alineados</h3>
+          <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+            Revisa el trabajo con tu equipo y clientes en un solo lugar. Recopila notas de bitácora foliadas, compara versiones de planos y mantén la retroalimentación conectada.
+          </p>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- 5. DA VIDA A LOS ESPACIOS (LUMION SCREENSHOT 5 - SPLIT CONTEXT SECTION)   -->
+  <!-- ========================================================================= -->
+  <section class="py-24 bg-[#07080c] border-t border-white/[0.07] relative z-10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+        
+        <!-- Text Left (5 Cols) -->
+        <div class="lg:col-span-5 space-y-6 text-left">
+          <h2 class="text-3xl sm:text-5xl font-black text-white font-heading leading-tight">
+            Da vida a los espacios
+          </h2>
+          
+          <p class="text-slate-300 text-sm sm:text-base leading-relaxed">
+            Las visualizaciones y controles de alta calidad deben impulsar su proyecto, no convertirse en un flujo de trabajo aparte.
+          </p>
+
+          <p class="text-slate-300 text-sm sm:text-base leading-relaxed">
+            <strong class="text-white">Cubikar</strong> te ofrece un control total sobre el contexto, los costos de obra, los cronogramas y los honorarios, para que puedas realizar presentaciones claras en cada etapa.
+          </p>
+
+          <p class="text-slate-400 text-xs sm:text-sm leading-relaxed">
+            Fácil de aprender. Fiable a diario. Diseñado para cumplir plazos de entrega.
+          </p>
+
+          <div class="flex items-center gap-4 pt-2">
+            <button onclick="openAuthModal('register')" class="px-6 py-3.5 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-600 hover:from-cyan-300 hover:to-blue-500 text-slate-950 font-extrabold text-xs shadow-md transition cursor-pointer">
+              Pruébalo gratis
+            </button>
+            <a href="#precios" class="px-6 py-3.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-white font-bold text-xs transition">
+              Explorar funciones
+            </a>
+          </div>
+        </div>
+
+        <!-- Render Right (7 Cols - Landscape Architectural Showcase) -->
+        <div class="lg:col-span-7">
+          <div class="rounded-3xl overflow-hidden border border-white/10 shadow-2xl relative bg-[#121520] group">
+            <img src="assets/images/showcase/hero-app-proyectos.png" alt="Portal Multi-Proyecto Cubikar" class="w-full h-auto object-cover group-hover:scale-102 transition-transform duration-700">
+            <div class="absolute bottom-4 left-4 right-4 flex items-center justify-between text-[11px] text-slate-400 bg-black/60 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10">
+              <span>Portal Multi-Proyecto &bull; Gestión y Ejecución en Tiempo Real</span>
+              <span class="text-cyan-400 font-bold">Cubikar Suite</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- 6. SOLUCIONES POR ROL (LUMION "SOLUTIONS FOR PROFESSIONALS")               -->
+  <!-- ========================================================================= -->
+  <section id="soluciones" class="py-24 bg-[#090b10] border-t border-white/[0.07] relative z-10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center max-w-3xl mx-auto mb-16">
+        <span class="text-xs font-bold text-cyan-400 uppercase tracking-widest font-mono block mb-3">SOLUCIONES A TU MEDIDA</span>
+        <h2 class="text-3xl sm:text-5xl font-black text-white mb-4 font-heading">
+          Cubikar para cada profesional del sector
+        </h2>
+        <p class="text-slate-400 text-sm sm:text-base leading-relaxed">
+          Ya sea que dirijas una constructora de obra pública, un despacho de arquitectura o supervises contratos como DRO.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        
+        <!-- Role 1: Constructores -->
+        <div class="d5-card d5-card-amber-hover rounded-2xl p-8 relative flex flex-col justify-between">
+          <div>
+            <div class="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center text-2xl mb-6">
+              <i class="fa-solid fa-helmet-safety"></i>
+            </div>
+            <span class="text-xs font-bold text-amber-400 uppercase tracking-wider font-mono">CONSTRUCTORAS &amp; CONTRATISTAS</span>
+            <h3 class="text-xl font-bold text-white mt-2 mb-4 font-heading">Licitaciones &amp; Control de Obras</h3>
+            <p class="text-xs sm:text-sm text-slate-300 leading-relaxed mb-6">
+              Presenta propuestas ganadoras con catálogos oficiales de gobierno, controla compras con 3 cotizaciones y cobra a tiempo con números generadores verificados.
+            </p>
+          </div>
+          <div class="pt-4 border-t border-white/10 text-xs text-amber-300 font-semibold flex items-center justify-between">
+            <span>Explorar Cubikar Construcción</span>
+            <i class="fa-solid fa-arrow-right"></i>
+          </div>
+        </div>
+
+        <!-- Role 2: Arquitectos -->
+        <div class="d5-card d5-card-hover rounded-2xl p-8 relative flex flex-col justify-between">
+          <div>
+            <div class="w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 flex items-center justify-center text-2xl mb-6">
+              <i class="fa-solid fa-compass-drafting"></i>
+            </div>
+            <span class="text-xs font-bold text-cyan-400 uppercase tracking-wider font-mono">ARQUITECTOS &amp; DESPACHOS</span>
+            <h3 class="text-xl font-bold text-white mt-2 mb-4 font-heading">Proyectos Ejecutivos &amp; Honorarios</h3>
+            <p class="text-xs sm:text-sm text-slate-300 leading-relaxed mb-6">
+              Centraliza las memorias y planos ejecutivos multidisciplinarios, coordina a estructuristas externos y asegura el cobro de cada fase por entregables.
+            </p>
+          </div>
+          <div class="pt-4 border-t border-white/10 text-xs text-cyan-300 font-semibold flex items-center justify-between">
+            <span>Explorar Cubikar Arquitectura</span>
+            <i class="fa-solid fa-arrow-right"></i>
+          </div>
+        </div>
+
+        <!-- Role 3: Supervisores & Clientes -->
+        <div class="d5-card d5-card-hover rounded-2xl p-8 relative flex flex-col justify-between">
+          <div>
+            <div class="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-2xl mb-6">
+              <i class="fa-solid fa-clipboard-check"></i>
+            </div>
+            <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider font-mono">SUPERVISORES &amp; DIRECCIÓN</span>
+            <h3 class="text-xl font-bold text-white mt-2 mb-4 font-heading">Transparencia y Bitácora Jurídica</h3>
+            <p class="text-xs sm:text-sm text-slate-300 leading-relaxed mb-6">
+              Supervisa el avance real vs. programado en cualquier momento. Revisa la bitácora legal inalterable y audita compras y estimaciones al instante.
+            </p>
+          </div>
+          <div class="pt-4 border-t border-white/10 text-xs text-emerald-300 font-semibold flex items-center justify-between">
+            <span>Ver Modo Supervisión</span>
+            <i class="fa-solid fa-arrow-right"></i>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- 7. PLANES Y PRECIOS OFICIALES (100% SINCRONIZADOS CON ADM_CONST)           -->
+  <!-- ========================================================================= -->
+  <section id="precios" class="py-24 border-t border-white/[0.07] bg-[#07080c] relative z-10 scroll-mt-20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center max-w-4xl mx-auto mb-12">
+        <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-bold mb-4">
+          <i class="fa-solid fa-crown text-amber-400 text-xs"></i>
+          <span>Elige la Suscripción Ideal para tu Equipo</span>
+        </div>
+        <h2 class="text-3xl sm:text-5xl font-black text-white mb-4 font-heading">
           Planes y Suscripciones Oficiales
         </h2>
-        <p class="text-slate-400 text-sm sm:text-base mb-6">
+        <p class="text-slate-400 text-sm sm:text-base mb-8">
           Comienza gratis para siempre con nuestro <strong>Plan Inicial</strong> o acelera tus obras con las herramientas profesionales de <strong>Plus</strong> y <strong>Pro</strong>.
         </p>
 
         <!-- SELECTOR DE PRODUCTO: CONSTRUCCIÓN / ARQUITECTURA / COMBO -->
-        <div class="flex flex-wrap items-center justify-center gap-2 p-1.5 rounded-2xl bg-slate-900 border border-slate-800 max-w-xl mx-auto mb-6">
-          <button id="tab-prod-const" onclick="selectPricingProduct('const')" class="flex-1 py-2 px-4 rounded-xl text-xs font-bold bg-amber-500 text-slate-950 shadow transition flex items-center justify-center gap-1.5 cursor-pointer">
+        <div class="flex flex-wrap items-center justify-center gap-2 p-1.5 rounded-2xl bg-[#121520] border border-white/10 max-w-xl mx-auto mb-6">
+          <button id="tab-prod-const" onclick="selectPricingProduct('const')" class="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-amber-500 text-slate-950 shadow transition flex items-center justify-center gap-1.5 cursor-pointer">
             <i class="fa-solid fa-helmet-safety text-xs"></i>
             <span>Cubikar Construcción</span>
           </button>
-          <button id="tab-prod-arq" onclick="selectPricingProduct('arq')" class="flex-1 py-2 px-4 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition flex items-center justify-center gap-1.5 cursor-pointer">
+          <button id="tab-prod-arq" onclick="selectPricingProduct('arq')" class="flex-1 py-2.5 px-4 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition flex items-center justify-center gap-1.5 cursor-pointer">
             <i class="fa-solid fa-compass-drafting text-xs"></i>
             <span>Cubikar Arquitectura</span>
           </button>
-          <button id="tab-prod-combo" onclick="selectPricingProduct('combo')" class="flex-1 py-2 px-4 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition flex items-center justify-center gap-1.5 cursor-pointer">
+          <button id="tab-prod-combo" onclick="selectPricingProduct('combo')" class="flex-1 py-2.5 px-4 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition flex items-center justify-center gap-1.5 cursor-pointer">
             <i class="fa-solid fa-cubes text-xs"></i>
             <span>Suite Combo</span>
           </button>
         </div>
 
         <!-- BARRA DE CICLO DE FACTURACIÓN (MENSUAL / ANUAL) -->
-        <div class="inline-flex items-center p-1 rounded-xl bg-slate-900/90 border border-slate-800 shadow-inner">
+        <div class="inline-flex items-center p-1 rounded-xl bg-[#121520] border border-white/10 shadow-inner">
           <button id="btn-cycle-monthly" onclick="setBillingCycle('monthly')" class="px-5 py-2 rounded-lg text-xs font-bold bg-white text-slate-950 shadow transition cursor-pointer">
             Mensual
           </button>
@@ -188,23 +463,19 @@
           </button>
         </div>
 
-        <div class="mt-3 text-xs text-amber-400 font-medium flex items-center justify-center gap-1.5">
-          <i class="fa-solid fa-bolt text-amber-500"></i>
+        <div class="mt-4 text-xs text-amber-300 font-medium flex items-center justify-center gap-1.5">
+          <i class="fa-solid fa-bolt text-amber-400"></i>
           <span>¡Precios de <strong>Lanzamiento</strong> activos! Descuentos de hasta <strong>56% OFF</strong> en Plus y Pro.</span>
         </div>
       </div>
 
-      <!-- ===================================================================== -->
       <!-- CONTENEDOR DINÁMICO DE LAS 3 TARJETAS (GRATUITA, PLUS, PRO) -->
-      <!-- ===================================================================== -->
       <div id="pricing-cards-container" class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch max-w-6xl mx-auto mb-16">
         <!-- Renderizado automáticamente por main.js sincronizado con ADM_CONST y ADM_ARQ -->
       </div>
 
-      <!-- ===================================================================== -->
       <!-- CONTENEDOR DINÁMICO DEL CUADRO COMPARATIVO -->
-      <!-- ===================================================================== -->
-      <div id="comparison-table-wrapper" class="max-w-5xl mx-auto rounded-3xl bg-slate-900 border border-slate-800 overflow-hidden shadow-2xl">
+      <div id="comparison-table-wrapper" class="max-w-5xl mx-auto rounded-3xl bg-[#0e111a] border border-white/10 overflow-hidden shadow-2xl">
         <!-- Renderizado automáticamente por main.js sincronizado con ADM_CONST y ADM_ARQ -->
       </div>
 
@@ -212,16 +483,16 @@
   </section>
 
   <!-- ========================================================================= -->
-  <!-- 4. RESPALDO Y PORTABILIDAD DE DATOS (REQUERIMIENTO DEL USUARIO) -->
+  <!-- 8. RESPALDO Y PORTABILIDAD DE DATOS (GARANTÍA EN ZIP)                      -->
   <!-- ========================================================================= -->
-  <section id="respaldo" class="py-20 border-t border-slate-900 bg-slate-900/30 relative">
+  <section id="respaldo" class="py-24 border-t border-white/[0.07] bg-[#090b10] relative z-10 scroll-mt-20">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       
       <div class="max-w-4xl mx-auto text-center mb-12">
-        <span class="px-3 py-1 rounded-full text-xs font-bold badge-combo mb-4 inline-block">
+        <span class="px-3.5 py-1 rounded-full text-xs font-bold badge-combo mb-4 inline-block">
           Garantía de Portabilidad Total
         </span>
-        <h2 class="text-3xl sm:text-4xl font-extrabold text-white mb-4 font-heading">
+        <h2 class="text-3xl sm:text-5xl font-black text-white mb-4 font-heading">
           Tus Datos Siempre Tuyos, Organizados en Carpetas
         </h2>
         <p class="text-slate-400 text-sm sm:text-base leading-relaxed">
@@ -230,29 +501,45 @@
         </p>
       </div>
 
-      <!-- Folder Structure Mockup -->
-      <div class="max-w-3xl mx-auto bg-slate-950 border border-slate-800 rounded-2xl p-6 shadow-2xl font-mono text-xs text-slate-300">
-        <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-800 text-slate-400">
-          <span>📁 Estructura del Respaldo Generado</span>
-          <span class="text-emerald-400 font-bold">&bull; Descargable en 1 Clic</span>
+      <!-- Folder Structure Mockup (D5 Render Obsidian Terminal Style) -->
+      <div class="max-w-3xl mx-auto bg-[#07080c] border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl font-mono text-xs text-slate-300">
+        <div class="flex items-center justify-between pb-3 mb-5 border-b border-white/10 text-slate-400">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+            <span class="ml-2 font-bold text-slate-300">Estructura del Respaldo Generado (.ZIP)</span>
+          </div>
+          <span class="text-emerald-400 font-bold flex items-center gap-1.5">
+            <i class="fa-solid fa-circle-check"></i>
+            <span>Descarga en 1 Clic</span>
+          </span>
         </div>
 
         <div class="space-y-1.5 leading-relaxed overflow-x-auto">
           <div class="text-amber-400 font-bold">📁 Cubikar - [Nombre de tu Empresa]/</div>
-          <div class="pl-4 text-slate-400">│</div>
+          <div class="pl-4 text-slate-600">│</div>
           <div class="pl-4 text-amber-300 font-semibold">├── 📁 Cubikar Construcción/</div>
           <div class="pl-8 text-slate-400">├── 📁 01. Presupuesto Base y APU/ <span class="text-slate-500 font-sans text-[11px]">(matrices_apu_conceptos.xlsx)</span></div>
           <div class="pl-8 text-slate-400">├── 📁 02. Cronograma de Obra/ <span class="text-slate-500 font-sans text-[11px]">(cronograma_jornadas_lluvias.xlsx)</span></div>
           <div class="pl-8 text-slate-400">├── 📁 03. Estimaciones de Avance/ <span class="text-slate-500 font-sans text-[11px]">(generadores_y_caratulas.xlsx)</span></div>
           <div class="pl-8 text-slate-400">├── 📁 04. Compras y Gastos ERP/ <span class="text-slate-500 font-sans text-[11px]">(facturas_comprobantes.pdf/xml)</span></div>
           <div class="pl-8 text-slate-400">└── 📁 05. Bitácora Digital de Obra/ <span class="text-slate-500 font-sans text-[11px]">(notas_foliadas_fotos_sitio.pdf)</span></div>
-          <div class="pl-4 text-slate-400">│</div>
-          <div class="pl-4 text-blue-300 font-semibold">└── 📁 Cubikar Arquitectura/</div>
+          <div class="pl-4 text-slate-600">│</div>
+          <div class="pl-4 text-cyan-300 font-semibold">└── 📁 Cubikar Arquitectura/</div>
           <div class="pl-8 text-slate-400">├── 📁 01. Tabla de Alcances/ <span class="text-slate-500 font-sans text-[11px]">(alcances_proyecto.xlsx)</span></div>
           <div class="pl-8 text-slate-400">├── 📁 02. Presupuesto Base y Honorarios/ <span class="text-slate-500 font-sans text-[11px]">(honorarios_cost_plus.xlsx)</span></div>
           <div class="pl-8 text-slate-400">├── 📁 03. Seguimiento y Control/ <span class="text-slate-500 font-sans text-[11px]">(minutas_acuerdos.pdf)</span></div>
           <div class="pl-8 text-slate-400">├── 📁 04. Cronograma y Entregas/ <span class="text-slate-500 font-sans text-[11px]">(calendario_entregas.pdf)</span></div>
           <div class="pl-8 text-slate-400">└── 📁 05. Cobros y Estimaciones/ <span class="text-slate-500 font-sans text-[11px]">(estado_cuenta_honorarios.xlsx)</span></div>
+        </div>
+
+        <div class="mt-6 pt-4 border-t border-white/10 flex items-center justify-between flex-wrap gap-3">
+          <span class="text-[11px] text-slate-400 font-sans">100% compatible con Microsoft Excel, Google Sheets y LibreOffice.</span>
+          <button onclick="handleDownloadMyBackup()" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition flex items-center gap-2 cursor-pointer shadow-md">
+            <i class="fa-solid fa-download"></i>
+            <span>Descargar Respaldo Ahora</span>
+          </button>
         </div>
       </div>
 
@@ -260,31 +547,124 @@
   </section>
 
   <!-- ========================================================================= -->
-  <!-- 5. FOOTER -->
+  <!-- 9. FINAL CALL TO ACTION (LUMION CONVERSION BANNER)                         -->
   <!-- ========================================================================= -->
-  <footer class="border-t border-slate-900 bg-slate-950 py-12 text-xs text-slate-500">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-6">
+  <section class="py-20 relative z-10 bg-[#07080c]">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
       
-      <div class="flex items-center space-x-3">
-        <img src="assets/branding/cubikar_icon_transparent.png" alt="cubikar" class="w-8 h-8 object-contain">
-        <span class="text-slate-400 font-semibold font-heading">Cubikar &copy; 2026. Todos los derechos reservados.</span>
+      <div class="d5-card rounded-3xl p-8 sm:p-14 text-center relative overflow-hidden border border-cyan-500/30 shadow-[0_0_80px_rgba(0,242,254,0.12)]">
+        <div class="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-48 bg-cyan-400/20 blur-3xl pointer-events-none rounded-full"></div>
+
+        <div class="relative z-10">
+          <span class="px-3.5 py-1 rounded-full text-xs font-bold bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 mb-6 inline-block">
+            Únete a la evolución de la industria
+          </span>
+
+          <h2 class="text-3xl sm:text-5xl font-black text-white mb-6 font-heading leading-tight">
+            Eleva el estándar de tus obras y proyectos arquitectónicos
+          </h2>
+
+          <p class="text-slate-300 text-sm sm:text-base max-w-2xl mx-auto mb-10 leading-relaxed">
+            Empieza hoy mismo con nuestro plan gratuito sin límite de tiempo. Controla costos, digitaliza tu bitácora y entrega proyectos ejecutivos de primer nivel.
+          </p>
+
+          <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <button onclick="openAuthModal('register')" class="w-full sm:w-auto px-8 py-4 rounded-xl font-extrabold text-sm bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 text-slate-950 shadow-[0_0_25px_rgba(0,242,254,0.5)] transition transform hover:-translate-y-0.5 cursor-pointer flex items-center justify-center gap-2">
+              <span>Crear Cuenta Gratuita</span>
+              <i class="fa-solid fa-arrow-right text-xs"></i>
+            </button>
+            <button onclick="openAuthModal('login')" class="w-full sm:w-auto px-8 py-4 rounded-xl font-bold text-sm bg-white/5 hover:bg-white/10 text-white border border-white/10 transition cursor-pointer">
+              <span>Acceso al Portal</span>
+            </button>
+          </div>
+        </div>
+
       </div>
 
-      <div class="flex items-center space-x-6">
-        <a href="#construccion" class="hover:text-slate-300 transition">Cubikar Construcción</a>
-        <a href="#arquitectura" class="hover:text-slate-300 transition">Cubikar Arquitectura</a>
-        <a href="#respaldo" class="hover:text-slate-300 transition">Políticas de Respaldo</a>
-        <a href="#precios" class="hover:text-slate-300 transition">Precios Oficiales</a>
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- 10. MEGA FOOTER (LUMION MULTI-COLUMN SITEMAP ARCHITECTURE)                 -->
+  <!-- ========================================================================= -->
+  <footer class="border-t border-white/[0.08] bg-[#050608] pt-16 pb-12 text-xs text-slate-400 relative z-10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <!-- Top Row: 4 Columns -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 pb-12 border-b border-white/[0.08]">
+        
+        <!-- Col 1: Brand & Status -->
+        <div class="lg:col-span-2 space-y-4">
+          <div class="flex items-center space-x-3">
+            <img src="assets/branding/cubikar_icon_transparent.png" alt="cubikar" class="w-9 h-9 object-contain">
+            <span class="font-black text-2xl tracking-tight text-white font-heading">cubikar<span class="text-cyan-400">.</span></span>
+          </div>
+          <p class="text-xs text-slate-400 max-w-sm leading-relaxed">
+            Ecosistema de software en la nube para la gestión y ejecución de obras de edificación, presupuestos APU, bitácoras oficiales y proyectos ejecutivos de arquitectura.
+          </p>
+          <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-bold">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+            <span>Todos los sistemas operativos (Cloud v2.0)</span>
+          </div>
+        </div>
+
+        <!-- Col 2: Soluciones -->
+        <div>
+          <h4 class="text-xs font-bold text-white uppercase tracking-wider font-mono mb-4">Soluciones</h4>
+          <ul class="space-y-2.5">
+            <li><a href="#soluciones" class="hover:text-amber-400 transition flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>Cubikar Construcción</a></li>
+            <li><a href="#soluciones" class="hover:text-cyan-400 transition flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>Cubikar Arquitectura</a></li>
+            <li><a href="#precios" class="hover:text-white transition">Suite Combo</a></li>
+            <li><a href="#respaldo" class="hover:text-white transition">Gestor de Respaldos</a></li>
+          </ul>
+        </div>
+
+        <!-- Col 3: Capacidades -->
+        <div>
+          <h4 class="text-xs font-bold text-white uppercase tracking-wider font-mono mb-4">Capacidades</h4>
+          <ul class="space-y-2.5">
+            <li><a href="#flujo" class="hover:text-white transition">Matrices de Precios APU</a></li>
+            <li><a href="#flujo" class="hover:text-white transition">Cronograma &amp; Ruta Crítica</a></li>
+            <li><a href="#flujo" class="hover:text-white transition">Bitácora Digital Legal</a></li>
+            <li><a href="#flujo" class="hover:text-white transition">Estimaciones de Avance</a></li>
+            <li><a href="#flujo" class="hover:text-white transition">Alcances Multidisciplinarios</a></li>
+          </ul>
+        </div>
+
+        <!-- Col 4: Recursos & Legal -->
+        <div>
+          <h4 class="text-xs font-bold text-white uppercase tracking-wider font-mono mb-4">Recursos</h4>
+          <ul class="space-y-2.5">
+            <li><a href="#precios" class="hover:text-white transition">Planes y Precios</a></li>
+            <li><a href="#respaldo" class="hover:text-white transition">Políticas de Portabilidad</a></li>
+            <li><a href="mailto:soporte@cubikar.app" class="hover:text-white transition">Contacto Técnico</a></li>
+            <li><a href="#" class="hover:text-white transition">Privacidad de Datos</a></li>
+            <li><a href="#" class="hover:text-white transition">Términos del Servicio</a></li>
+          </ul>
+        </div>
+
+      </div>
+
+      <!-- Bottom Bar -->
+      <div class="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+        <div>
+          Cubikar &copy; 2026. Todos los derechos reservados. Diseñado para la industria de la construcción y la arquitectura.
+        </div>
+        <div class="flex items-center space-x-6 text-slate-400 text-sm">
+          <a href="#" class="hover:text-cyan-400 transition" title="LinkedIn"><i class="fa-brands fa-linkedin"></i></a>
+          <a href="#" class="hover:text-cyan-400 transition" title="YouTube"><i class="fa-brands fa-youtube"></i></a>
+          <a href="#" class="hover:text-cyan-400 transition" title="GitHub"><i class="fa-brands fa-github"></i></a>
+        </div>
       </div>
 
     </div>
   </footer>
 
   <!-- ========================================================================= -->
-  <!-- MODAL 1: AUTH (INICIAR SESIÓN / REGISTRO) -->
+  <!-- MODAL 1: AUTH (INICIAR SESIÓN / REGISTRO)                                 -->
   <!-- ========================================================================= -->
-  <div id="modal-auth" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md p-6 sm:p-8 shadow-2xl relative text-left">
+  <div id="modal-auth" class="fixed inset-0 z-50 hidden bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-[#0e111a] border border-white/10 rounded-3xl w-full max-w-md p-6 sm:p-8 shadow-2xl relative text-left">
       
       <button onclick="closeAuthModal()" class="absolute top-5 right-5 text-slate-400 hover:text-white text-lg font-bold cursor-pointer">
         &times;
@@ -306,9 +686,9 @@
       </div>
 
       <div class="flex items-center my-4">
-        <div class="flex-grow border-t border-slate-800"></div>
-        <span class="px-3 text-[11px] text-slate-500 uppercase tracking-wider">o con tu correo</span>
-        <div class="flex-grow border-t border-slate-800"></div>
+        <div class="flex-grow border-t border-white/10"></div>
+        <span class="px-3 text-[11px] text-slate-500 uppercase tracking-wider font-mono">o con tu correo</span>
+        <div class="flex-grow border-t border-white/10"></div>
       </div>
 
       <div id="auth-error-msg" class="hidden text-xs text-rose-300 bg-rose-500/15 border border-rose-500/30 p-2.5 rounded-xl mb-3 text-center"></div>
@@ -318,32 +698,32 @@
       <form id="auth-form" onsubmit="handleAuthSubmit(event)" class="space-y-3.5">
         <div id="auth-name-container" class="hidden">
           <label class="block text-[11px] font-bold text-slate-300 uppercase mb-1">Nombre Completo</label>
-          <input type="text" id="auth-name" placeholder="Ej. Arq. Carlos Mendoza" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500">
+          <input type="text" id="auth-name" placeholder="Ej. Arq. Carlos Mendoza" class="w-full bg-[#07080c] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400">
         </div>
 
         <div id="auth-company-container" class="hidden">
           <label class="block text-[11px] font-bold text-slate-300 uppercase mb-1">Nombre de Empresa o Constructora</label>
-          <input type="text" id="auth-company" placeholder="Ej. Mendoza Construcciones" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500">
+          <input type="text" id="auth-company" placeholder="Ej. Mendoza Construcciones" class="w-full bg-[#07080c] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400">
         </div>
 
         <div>
           <label class="block text-[11px] font-bold text-slate-300 uppercase mb-1">Correo Electrónico</label>
-          <input type="email" id="auth-email" required placeholder="correo@ejemplo.com" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500">
+          <input type="email" id="auth-email" required placeholder="correo@ejemplo.com" class="w-full bg-[#07080c] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400">
         </div>
 
         <div>
           <label class="block text-[11px] font-bold text-slate-300 uppercase mb-1">Contraseña</label>
-          <input type="password" id="auth-password" required placeholder="••••••••" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500">
+          <input type="password" id="auth-password" required placeholder="••••••••" class="w-full bg-[#07080c] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400">
         </div>
 
-        <button type="submit" id="auth-submit-btn" class="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition cursor-pointer mt-2 shadow-lg shadow-blue-600/30">
+        <button type="submit" id="auth-submit-btn" class="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-600 hover:from-cyan-300 hover:to-blue-500 text-slate-950 font-bold text-xs transition cursor-pointer mt-2 shadow-[0_0_20px_rgba(0,242,254,0.3)]">
           Iniciar Sesión
         </button>
       </form>
 
       <div class="mt-4 text-center">
-        <button id="auth-toggle-mode-btn" onclick="toggleAuthMode()" class="text-xs text-slate-400 hover:text-blue-400 transition cursor-pointer">
-          ¿No tienes cuenta? <span class="font-bold text-blue-400">Regístrate aquí</span>
+        <button id="auth-toggle-mode-btn" onclick="toggleAuthMode()" class="text-xs text-slate-400 hover:text-cyan-400 transition cursor-pointer">
+          ¿No tienes cuenta? <span class="font-bold text-cyan-400">Regístrate aquí</span>
         </button>
       </div>
 
@@ -351,10 +731,10 @@
   </div>
 
   <!-- ========================================================================= -->
-  <!-- MODAL: APP CHOOSER (SELECTOR DE APLICACIÓN AL INICIAR SESIÓN) -->
+  <!-- MODAL: APP CHOOSER (SELECTOR DE APLICACIÓN AL INICIAR SESIÓN)              -->
   <!-- ========================================================================= -->
-  <div id="modal-app-chooser" class="fixed inset-0 z-50 hidden bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-2xl p-6 sm:p-8 shadow-2xl relative text-center animate-in fade-in zoom-in-95 duration-200">
+  <div id="modal-app-chooser" class="fixed inset-0 z-50 hidden bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-[#0e111a] border border-white/10 rounded-3xl w-full max-w-2xl p-6 sm:p-8 shadow-2xl relative text-center animate-in fade-in zoom-in-95 duration-200">
       
       <button onclick="closeAppChooserModal()" class="absolute top-5 right-5 text-slate-400 hover:text-white text-lg font-bold cursor-pointer">
         &times;
@@ -363,7 +743,7 @@
       <div class="mb-6">
         <img src="assets/branding/cubikar_icon_transparent.png" alt="cubikar" class="w-14 h-14 object-contain mx-auto mb-3 drop-shadow-md">
         <h3 class="text-2xl font-extrabold text-white font-heading">
-          ¡Bienvenido al Ecosistema, <span id="app-chooser-user-name" class="text-blue-400">Usuario</span>!
+          ¡Bienvenido al Ecosistema, <span id="app-chooser-user-name" class="text-cyan-400">Usuario</span>!
         </h3>
         <p class="text-xs sm:text-sm text-slate-400 mt-1">¿A cuál de tus aplicaciones deseas ingresar ahora?</p>
       </div>
@@ -371,7 +751,7 @@
       <!-- Opción Exclusiva SuperAdmin en Selector de Apps -->
       <div id="app-chooser-admin-section" class="hidden mb-6 text-left">
         <button type="button" onclick="closeAppChooserModal(); openCubikarAdminModal()"
-                class="w-full p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-blue-500/10 to-indigo-500/15 hover:from-amber-500/25 hover:to-indigo-500/25 border-2 border-amber-500/40 text-amber-300 hover:text-white transition flex items-center justify-between font-bold text-xs cursor-pointer shadow-xl group">
+                class="w-full p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-cyan-500/10 to-indigo-500/15 hover:from-amber-500/25 hover:to-indigo-500/25 border-2 border-amber-500/40 text-amber-300 hover:text-white transition flex items-center justify-between font-bold text-xs cursor-pointer shadow-xl group">
           <div class="flex items-center gap-3.5">
             <div class="w-10 h-10 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center text-lg font-black shrink-0 shadow-md group-hover:scale-105 transition">
               <i class="fa-solid fa-shield-halved"></i>
@@ -395,36 +775,36 @@
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-left mb-6">
         
         <!-- Opción 1: Cubikar Construcción -->
-        <div onclick="launchApp('const')" class="group p-5 sm:p-6 rounded-2xl bg-slate-950 border-2 border-amber-500/30 hover:border-amber-500 hover:bg-slate-950/90 transition transform hover:-translate-y-1 cursor-pointer flex flex-col justify-between shadow-xl">
+        <div onclick="launchApp('const')" class="group p-5 sm:p-6 rounded-2xl bg-[#07080c] border-2 border-amber-500/30 hover:border-amber-500 hover:bg-[#0d0f17] transition transform hover:-translate-y-1 cursor-pointer flex flex-col justify-between shadow-xl">
           <div>
             <div class="w-12 h-12 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition shrink-0">
               <i class="fa-solid fa-helmet-safety"></i>
             </div>
-            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase tracking-wider">Obras &amp; Costos</span>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase tracking-wider font-mono">Obras &amp; Costos</span>
             <h4 class="text-lg font-extrabold text-white mt-2 group-hover:text-amber-400 transition font-heading">Cubikar Construcción</h4>
             <p class="text-xs text-slate-400 mt-2 leading-relaxed">
               Presupuestos con Matrices APU y Catálogos Oficiales, cronogramas de obra, bitácora digital legal, compras ERP y estimaciones.
             </p>
           </div>
-          <div class="mt-6 pt-4 border-t border-slate-800 flex items-center justify-between text-amber-400 font-bold text-xs group-hover:translate-x-1 transition">
+          <div class="mt-6 pt-4 border-t border-white/10 flex items-center justify-between text-amber-400 font-bold text-xs group-hover:translate-x-1 transition">
             <span>Entrar a Construcción</span>
             <i class="fa-solid fa-arrow-right"></i>
           </div>
         </div>
 
         <!-- Opción 2: Cubikar Arquitectura -->
-        <div onclick="launchApp('arq')" class="group p-5 sm:p-6 rounded-2xl bg-slate-950 border-2 border-blue-500/30 hover:border-blue-500 hover:bg-slate-950/90 transition transform hover:-translate-y-1 cursor-pointer flex flex-col justify-between shadow-xl">
+        <div onclick="launchApp('arq')" class="group p-5 sm:p-6 rounded-2xl bg-[#07080c] border-2 border-cyan-500/30 hover:border-cyan-400 hover:bg-[#0d0f17] transition transform hover:-translate-y-1 cursor-pointer flex flex-col justify-between shadow-xl">
           <div>
-            <div class="w-12 h-12 rounded-xl bg-blue-500/20 text-blue-400 border border-blue-400/40 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition shrink-0">
+            <div class="w-12 h-12 rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-400/40 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition shrink-0">
               <i class="fa-solid fa-compass-drafting"></i>
             </div>
-            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/30 uppercase tracking-wider">Diseño &amp; Honorarios</span>
-            <h4 class="text-lg font-extrabold text-white mt-2 group-hover:text-blue-400 transition font-heading">Cubikar Arquitectura</h4>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 uppercase tracking-wider font-mono">Diseño &amp; Honorarios</span>
+            <h4 class="text-lg font-extrabold text-white mt-2 group-hover:text-cyan-400 transition font-heading">Cubikar Arquitectura</h4>
             <p class="text-xs text-slate-400 mt-2 leading-relaxed">
               Coordina alcances ejecutivos, genera presupuestos base, asigna tareas en calendario y gestiona estimaciones y pagos a proveedores.
             </p>
           </div>
-          <div class="mt-6 pt-4 border-t border-slate-800 flex items-center justify-between text-blue-400 font-bold text-xs group-hover:translate-x-1 transition">
+          <div class="mt-6 pt-4 border-t border-white/10 flex items-center justify-between text-cyan-400 font-bold text-xs group-hover:translate-x-1 transition">
             <span>Entrar a Arquitectura</span>
             <i class="fa-solid fa-arrow-right"></i>
           </div>
@@ -433,12 +813,12 @@
       </div>
 
       <!-- Opciones secundarias -->
-      <div class="pt-3 border-t border-slate-800/80 flex items-center justify-between flex-wrap gap-2 text-xs">
+      <div class="pt-3 border-t border-white/10 flex items-center justify-between flex-wrap gap-2 text-xs">
         <button onclick="closeAppChooserModal()" class="text-slate-400 hover:text-white transition cursor-pointer">
           Permanecer en el portal central (planes y facturación)
         </button>
         <button onclick="closeAppChooserModal(); handleDownloadMyBackup()" class="text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1.5 transition cursor-pointer">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+          <i class="fa-solid fa-download"></i>
           <span>Descargar respaldo completo (.zip)</span>
         </button>
       </div>
@@ -447,30 +827,30 @@
   </div>
 
   <!-- ========================================================================= -->
-  <!-- MODAL 2: USER DASHBOARD (MI CUENTA & ACCESO DIRECTO) -->
+  <!-- MODAL 2: USER DASHBOARD (MI CUENTA & ACCESO DIRECTO)                       -->
   <!-- ========================================================================= -->
-  <div id="modal-dashboard" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-xl p-6 sm:p-8 shadow-2xl relative text-left">
+  <div id="modal-dashboard" class="fixed inset-0 z-50 hidden bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-[#0e111a] border border-white/10 rounded-3xl w-full max-w-xl p-6 sm:p-8 shadow-2xl relative text-left">
       
       <button onclick="closeUserDashboard()" class="absolute top-5 right-5 text-slate-400 hover:text-white text-lg font-bold cursor-pointer">
         &times;
       </button>
 
       <!-- User Header -->
-      <div class="flex items-center space-x-4 mb-6 pb-6 border-b border-slate-800">
-        <div class="w-14 h-14 rounded-2xl bg-amber-500 flex items-center justify-center text-xl font-bold text-slate-950 shadow-lg">
+      <div class="flex items-center space-x-4 mb-6 pb-6 border-b border-white/10">
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-xl font-black text-slate-950 shadow-lg">
           <span id="dash-user-initial">U</span>
         </div>
         <div>
           <h3 id="dash-user-name" class="text-xl font-bold text-white font-heading">Usuario</h3>
           <p id="dash-user-email" class="text-xs text-slate-400">correo@ejemplo.com</p>
-          <span id="dash-user-company" class="inline-block mt-1 text-[11px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md">Mi Empresa</span>
+          <span id="dash-user-company" class="inline-block mt-1 text-[11px] font-bold text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-md">Mi Empresa</span>
         </div>
       </div>
 
       <!-- Panel Exclusivo SuperAdmin / Administración de las Aplicaciones -->
       <div id="dash-admin-section" class="hidden mb-6">
-        <div class="p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-blue-500/10 to-indigo-500/15 border-2 border-amber-500/40 shadow-lg">
+        <div class="p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-cyan-500/10 to-indigo-500/15 border-2 border-amber-500/40 shadow-lg">
           <div class="flex items-center justify-between mb-2">
             <div class="flex items-center gap-2">
               <div class="w-7 h-7 rounded-lg bg-amber-500 text-slate-950 flex items-center justify-center font-bold text-xs shadow-xs">
@@ -492,13 +872,13 @@
       </div>
 
       <!-- Active Apps Access Buttons -->
-      <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Tus Aplicaciones Disponibles</h4>
+      <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider font-mono mb-3">Tus Aplicaciones Disponibles</h4>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
         
         <!-- App Const Button -->
-        <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 flex flex-col justify-between">
+        <div class="p-4 rounded-xl bg-[#07080c] border border-white/10 flex flex-col justify-between">
           <div>
-            <span class="text-[10px] font-bold badge-const px-2 py-0.5 rounded">const.cubikar.app</span>
+            <span class="text-[10px] font-bold badge-const px-2 py-0.5 rounded font-mono">const.cubikar.app</span>
             <h5 class="text-sm font-bold text-white mt-2">Cubikar Construcción</h5>
             <p class="text-[11px] text-slate-400 mt-1">Presupuestos APU, bitácoras y estimaciones.</p>
           </div>
@@ -508,13 +888,13 @@
         </div>
 
         <!-- App Arq Button -->
-        <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 flex flex-col justify-between">
+        <div class="p-4 rounded-xl bg-[#07080c] border border-white/10 flex flex-col justify-between">
           <div>
-            <span class="text-[10px] font-bold badge-arq px-2 py-0.5 rounded">arq.cubikar.app</span>
+            <span class="text-[10px] font-bold badge-arq px-2 py-0.5 rounded font-mono">arq.cubikar.app</span>
             <h5 class="text-sm font-bold text-white mt-2">Cubikar Arquitectura</h5>
             <p class="text-[11px] text-slate-400 mt-1">Gestión de proyectos ejecutivos y honorarios.</p>
           </div>
-          <button onclick="launchApp('arq')" class="mt-4 w-full py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition cursor-pointer">
+          <button onclick="launchApp('arq')" class="mt-4 w-full py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs transition cursor-pointer">
             Abrir Aplicación &rarr;
           </button>
         </div>
@@ -522,13 +902,13 @@
       </div>
 
       <!-- Export & Management Actions -->
-      <div class="space-y-2 border-t border-slate-800 pt-4">
+      <div class="space-y-2 border-t border-white/10 pt-4">
         <button onclick="handleDownloadMyBackup()" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer shadow">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+          <i class="fa-solid fa-download"></i>
           <span>Descargar Respaldo Completo (.zip)</span>
         </button>
 
-        <button onclick="handleStripePortal()" class="w-full py-2.5 rounded-xl bg-slate-950 border border-slate-800 hover:bg-slate-800 text-slate-300 font-semibold text-xs transition cursor-pointer">
+        <button onclick="handleStripePortal()" class="w-full py-2.5 rounded-xl bg-[#07080c] border border-white/10 hover:bg-white/5 text-slate-300 font-semibold text-xs transition cursor-pointer">
           Gestionar Suscripción y Facturación (Stripe Portal)
         </button>
 
@@ -541,10 +921,10 @@
   </div>
 
   <!-- ========================================================================= -->
-  <!-- MODAL MAESTRO: BASES DE DATOS CUBIKAR (SUPERADMIN) -->
+  <!-- MODAL MAESTRO: BASES DE DATOS CUBIKAR (SUPERADMIN)                         -->
   <!-- ========================================================================= -->
-  <div id="modal-admin-cubikar" onclick="if (event.target === this) closeCubikarAdminModal()" style="z-index: 100000;" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[100000] hidden items-center justify-center p-2 sm:p-4">
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl w-full max-w-[99vw] 2xl:max-w-[1850px] h-[96vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+  <div id="modal-admin-cubikar" onclick="if (event.target === this) closeCubikarAdminModal()" style="z-index: 100000;" class="fixed inset-0 bg-black/90 backdrop-blur-md z-[100000] hidden items-center justify-center p-2 sm:p-4">
+    <div class="bg-[#0e111a] border border-white/10 rounded-2xl shadow-2xl w-full max-w-[99vw] 2xl:max-w-[1850px] h-[96vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
       
       <!-- Encabezado Estilo Hoja de Cálculo Cubikar (Azul Corporativo Exacto) -->
       <div class="bg-[#1b506f] text-white px-5 py-3 flex flex-wrap items-center justify-between gap-3 shrink-0 border-b border-sky-900 shadow-md">
@@ -604,52 +984,52 @@
       </div>
 
       <!-- Tarjetas de Métricas Ejecutivas (KPIs) -->
-      <div class="bg-slate-950/70 px-5 py-3 border-b border-slate-800 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 shrink-0">
-        <div class="bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2">
-          <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Total Usuarios</span>
+      <div class="bg-black/60 px-5 py-3 border-b border-white/10 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 shrink-0">
+        <div class="bg-[#121520] border border-white/10 rounded-xl px-3.5 py-2">
+          <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider font-mono">Total Usuarios</span>
           <span id="admin-kpi-total-users" class="text-base font-extrabold text-white font-mono">0</span>
         </div>
-        <div class="bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2">
-          <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Usuarios Activos (≤15d)</span>
+        <div class="bg-[#121520] border border-white/10 rounded-xl px-3.5 py-2">
+          <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider font-mono">Usuarios Activos (≤15d)</span>
           <span id="admin-kpi-active-users" class="text-base font-extrabold text-emerald-400 font-mono">0</span>
         </div>
-        <div class="bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2">
-          <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Ingreso por Suscripción</span>
+        <div class="bg-[#121520] border border-white/10 rounded-xl px-3.5 py-2">
+          <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider font-mono">Ingreso por Suscripción</span>
           <span id="admin-kpi-revenue" class="text-base font-extrabold text-white font-mono">$ 0.00</span>
         </div>
-        <div class="bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2">
-          <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Costo Técnico Recursos</span>
+        <div class="bg-[#121520] border border-white/10 rounded-xl px-3.5 py-2">
+          <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider font-mono">Costo Técnico Recursos</span>
           <span id="admin-kpi-cost" class="text-base font-extrabold text-amber-400 font-mono">$ 0.00</span>
         </div>
-        <div class="bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 col-span-2 sm:col-span-1">
-          <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Margen Bruto</span>
+        <div class="bg-[#121520] border border-white/10 rounded-xl px-3.5 py-2 col-span-2 sm:col-span-1">
+          <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider font-mono">Margen Bruto</span>
           <span id="admin-kpi-margin" class="text-base font-extrabold text-emerald-400 font-mono">0.0%</span>
         </div>
       </div>
 
       <!-- Barra de Filtros: Búsqueda, Filtro de Aplicación y Estados -->
-      <div class="bg-slate-900 px-5 py-2.5 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 shrink-0 text-xs">
+      <div class="bg-[#0e111a] px-5 py-2.5 border-b border-white/10 flex flex-wrap items-center justify-between gap-3 shrink-0 text-xs">
         <div class="flex items-center gap-3 flex-1 max-w-lg">
           <div class="relative w-full">
             <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-500 text-xs"></i>
             <input type="text" oninput="setAdminTableSearch(this.value)" placeholder="Buscar por nombre o correo de cliente..."
-                   class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-hidden focus:border-blue-500 transition">
+                   class="w-full bg-[#07080c] border border-white/10 rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-hidden focus:border-cyan-400 transition">
           </div>
         </div>
 
         <div class="flex items-center gap-3 flex-wrap">
           <!-- Filtro Alcance de Aplicación -->
-          <div class="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
-            <span class="text-[10.5px] text-slate-400 font-bold px-2 uppercase">Filtrar Aplicación:</span>
-            <button type="button" id="admin-scope-all" onclick="setAdminAppScope('all')" class="px-2.5 py-1 rounded-lg font-bold text-xs transition bg-blue-600 text-white shadow-xs">🌐 Todo el Ecosistema</button>
+          <div class="flex items-center gap-1 bg-[#07080c] p-1 rounded-xl border border-white/10 text-xs">
+            <span class="text-[10.5px] text-slate-400 font-bold px-2 uppercase font-mono">Filtrar:</span>
+            <button type="button" id="admin-scope-all" onclick="setAdminAppScope('all')" class="px-2.5 py-1 rounded-lg font-bold text-xs transition bg-cyan-500 text-slate-950 shadow-xs">🌐 Todo el Ecosistema</button>
             <button type="button" id="admin-scope-const" onclick="setAdminAppScope('const')" class="px-2.5 py-1 rounded-lg font-bold text-xs transition text-slate-400 hover:text-white">🏗️ Construcción</button>
             <button type="button" id="admin-scope-arq" onclick="setAdminAppScope('arq')" class="px-2.5 py-1 rounded-lg font-bold text-xs transition text-slate-400 hover:text-white">📐 Arquitectura</button>
           </div>
 
           <!-- Filtro Actividad -->
           <div class="flex items-center gap-1.5">
-            <span class="text-[11px] text-slate-400 font-bold">Actividad:</span>
-            <select onchange="setAdminFilterActivity(this.value)" class="bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded-lg px-2.5 py-1 focus:outline-hidden focus:border-blue-500 cursor-pointer">
+            <span class="text-[11px] text-slate-400 font-bold font-mono">Actividad:</span>
+            <select onchange="setAdminFilterActivity(this.value)" class="bg-[#07080c] border border-white/10 text-slate-200 text-xs rounded-lg px-2.5 py-1 focus:outline-hidden focus:border-cyan-400 cursor-pointer">
               <option value="all">Todas (Todos los estados)</option>
               <option value="activo">🟢 Activo (≤15 días)</option>
               <option value="reposo">🟡 Reposo (>15 días)</option>
@@ -660,15 +1040,15 @@
       </div>
 
       <!-- Tabla Maestra con Ambas Aplicaciones -->
-      <div class="flex-1 overflow-auto custom-scroll bg-slate-950/80">
-        <table id="admin-cubikar-table" class="w-full text-left border-collapse border border-slate-800 text-xs min-w-[1700px]">
+      <div class="flex-1 overflow-auto custom-scroll bg-black/80">
+        <table id="admin-cubikar-table" class="w-full text-left border-collapse border border-white/10 text-xs min-w-[1700px]">
           <thead class="sticky top-0 z-20 bg-[#1b506f] text-white select-none shadow-sm">
             <tr>
               <th class="px-2.5 py-2.5 font-bold border-r border-sky-800 text-center w-10">
                 <input type="checkbox" id="admin-select-all-checkbox" onchange="toggleSelectAllAdminUsers(this.checked)" 
                        class="rounded border-slate-700 text-rose-600 focus:ring-rose-500 cursor-pointer w-4 h-4" title="Seleccionar todos">
               </th>
-              <th class="px-3 py-2.5 font-bold border-r border-sky-800 text-center w-14">no</th>
+              <th class="px-3 py-2.5 font-bold border-r border-sky-800 text-center w-14 font-mono">no</th>
               <th class="px-3.5 py-2.5 font-bold border-r border-sky-800">Nombre de usuario</th>
               <th class="px-3.5 py-2.5 font-bold border-r border-sky-800">Correo</th>
               <th class="px-3 py-2.5 font-bold border-r border-sky-800 text-center">Aplicación</th>
@@ -684,14 +1064,14 @@
               <th class="px-3.5 py-2.5 font-bold text-right min-w-[140px]">% Consumo vs Plan</th>
             </tr>
           </thead>
-          <tbody id="admin-cubikar-table-body" class="divide-y divide-slate-800/80 bg-slate-900/60 font-sans">
+          <tbody id="admin-cubikar-table-body" class="divide-y divide-white/5 bg-[#0a0c12] font-sans">
             <!-- Inyectado dinámicamente por renderCubikarAdminTable() -->
           </tbody>
         </table>
       </div>
 
       <!-- Pie del Panel Maestro -->
-      <div class="bg-slate-900 px-5 py-2.5 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-2 shrink-0 text-xs text-slate-400">
+      <div class="bg-[#0e111a] px-5 py-2.5 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-2 shrink-0 text-xs text-slate-400">
         <div class="flex items-center gap-3">
           <span class="inline-flex items-center gap-1.5"><i class="fa-solid fa-circle text-[7px] text-emerald-400"></i> Activo (≤15 días)</span>
           <span class="inline-flex items-center gap-1.5"><i class="fa-solid fa-moon text-[8px] text-amber-400"></i> Reposo (>15 días)</span>
@@ -707,14 +1087,14 @@
   </div>
 
   <!-- ========================================================================= -->
-  <!-- SUB-MODAL: GESTIÓN DE CO-ADMINISTRADORES -->
+  <!-- SUB-MODAL: GESTIÓN DE CO-ADMINISTRADORES                                  -->
   <!-- ========================================================================= -->
-  <div id="modal-admin-coadmins" onclick="if (event.target === this) closeCoAdminsModal()" style="z-index: 100003;" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[100003] hidden items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl max-w-xl w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+  <div id="modal-admin-coadmins" onclick="if (event.target === this) closeCoAdminsModal()" style="z-index: 100003;" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-[100003] hidden items-center justify-center p-4">
+    <div class="bg-[#0e111a] border border-white/10 rounded-3xl shadow-2xl max-w-xl w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
       
-      <div class="bg-gradient-to-r from-blue-900 via-slate-900 to-indigo-950 p-5 text-white flex items-center justify-between border-b border-slate-800">
+      <div class="bg-gradient-to-r from-blue-900 via-slate-900 to-indigo-950 p-5 text-white flex items-center justify-between border-b border-white/10">
         <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-xl bg-blue-500/20 text-blue-400 border border-blue-500/30 flex items-center justify-center text-sm shadow-inner">
+          <div class="w-9 h-9 rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 flex items-center justify-center text-sm shadow-inner">
             <i class="fa-solid fa-user-shield"></i>
           </div>
           <div>
@@ -746,26 +1126,26 @@
         </div>
 
         <!-- Formulario para Invitar Nuevo Administrador -->
-        <form onsubmit="event.preventDefault(); const em = document.getElementById('coadmin-email-input').value; const nm = document.getElementById('coadmin-name-input').value; if(addCoAdmin(em, nm)) { document.getElementById('coadmin-email-input').value=''; document.getElementById('coadmin-name-input').value=''; }" class="p-3.5 bg-slate-950 border border-slate-800 rounded-2xl space-y-3">
+        <form onsubmit="event.preventDefault(); const em = document.getElementById('coadmin-email-input').value; const nm = document.getElementById('coadmin-name-input').value; if(addCoAdmin(em, nm)) { document.getElementById('coadmin-email-input').value=''; document.getElementById('coadmin-name-input').value=''; }" class="p-3.5 bg-[#07080c] border border-white/10 rounded-2xl space-y-3">
           <div class="text-xs font-bold text-white flex items-center gap-1.5">
-            <i class="fa-solid fa-user-plus text-blue-400"></i>
+            <i class="fa-solid fa-user-plus text-cyan-400"></i>
             <span>Invitar Nuevo Administrador</span>
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div>
               <label class="block text-[10px] font-bold text-slate-400 mb-1">Nombre (Opcional)</label>
               <input type="text" id="coadmin-name-input" placeholder="Ej. Ing. Carlos Ruiz"
-                     class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-hidden focus:border-blue-500">
+                     class="w-full bg-[#121520] border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-hidden focus:border-cyan-400">
             </div>
             <div>
               <label class="block text-[10px] font-bold text-slate-400 mb-1">Correo Electrónico *</label>
               <input type="email" id="coadmin-email-input" required placeholder="admin@constructora.com"
-                     class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-hidden focus:border-blue-500">
+                     class="w-full bg-[#121520] border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-hidden focus:border-cyan-400">
             </div>
           </div>
           <div class="flex items-center justify-between pt-1">
             <span class="text-[10px] text-slate-500">Tendrá acceso SuperAdmin para ver y gestionar ambas aplicaciones.</span>
-            <button type="submit" class="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition flex items-center gap-1.5 cursor-pointer shadow-md">
+            <button type="submit" class="px-3.5 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs transition flex items-center gap-1.5 cursor-pointer shadow-md">
               <i class="fa-solid fa-paper-plane text-[10px]"></i>
               <span>Dar Acceso</span>
             </button>
@@ -774,15 +1154,15 @@
 
         <!-- Lista de Co-Administradores Activos -->
         <div class="space-y-2">
-          <div class="text-xs font-bold text-slate-400">Co-Administradores con Acceso</div>
+          <div class="text-xs font-bold text-slate-400 font-mono">Co-Administradores con Acceso</div>
           <div id="coadmins-list-container" class="space-y-2 max-h-56 overflow-y-auto custom-scroll pr-1">
             <!-- Inyectado por renderCoAdminsListUI() -->
           </div>
         </div>
       </div>
 
-      <div class="bg-slate-950 px-5 py-3 border-t border-slate-800 flex justify-end">
-        <button type="button" onclick="closeCoAdminsModal()" class="px-4 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition cursor-pointer">
+      <div class="bg-[#07080c] px-5 py-3 border-t border-white/10 flex justify-end">
+        <button type="button" onclick="closeCoAdminsModal()" class="px-4 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs transition cursor-pointer">
           Cerrar
         </button>
       </div>
@@ -791,12 +1171,12 @@
   </div>
 
   <!-- ========================================================================= -->
-  <!-- SUB-MODAL: CONFIGURACIÓN DE TARIFAS DE MERCADO -->
+  <!-- SUB-MODAL: CONFIGURACIÓN DE TARIFAS DE MERCADO                            -->
   <!-- ========================================================================= -->
-  <div id="modal-admin-market-rates" onclick="if (event.target === this) closeMarketRatesModal()" style="z-index: 100003;" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[100003] hidden items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+  <div id="modal-admin-market-rates" onclick="if (event.target === this) closeMarketRatesModal()" style="z-index: 100003;" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-[100003] hidden items-center justify-center p-4">
+    <div class="bg-[#0e111a] border border-white/10 rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
       
-      <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-5 text-white flex items-center justify-between border-b border-slate-800">
+      <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-5 text-white flex items-center justify-between border-b border-white/10">
         <div class="flex items-center gap-3">
           <div class="w-9 h-9 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center text-sm shadow-inner">
             <i class="fa-solid fa-sliders"></i>
@@ -814,10 +1194,10 @@
       <div class="p-5 space-y-4">
         <div>
           <label class="block text-xs font-bold text-slate-300 mb-1">
-            <i class="fa-solid fa-brain text-sky-400 mr-1"></i> Costo de IA por cada 1,000 Tokens ($ MXN)
+            <i class="fa-solid fa-brain text-cyan-400 mr-1"></i> Costo de IA por cada 1,000 Tokens ($ MXN)
           </label>
           <input type="number" step="0.0001" id="input-rate-ai"
-                 class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-hidden focus:border-blue-500">
+                 class="w-full bg-[#07080c] border border-white/10 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-hidden focus:border-cyan-400">
           <span class="text-[10px] text-slate-500 mt-1 block">Tarifa ponderada Gemini 1.5/2.0 Flash / OpenAI (promedio $0.004 MXN / 1k tokens).</span>
         </div>
 
@@ -826,7 +1206,7 @@
             <i class="fa-solid fa-database text-indigo-400 mr-1"></i> Almacenamiento por MB al mes ($ MXN)
           </label>
           <input type="number" step="0.00001" id="input-rate-storage"
-                 class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-hidden focus:border-blue-500">
+                 class="w-full bg-[#07080c] border border-white/10 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-hidden focus:border-cyan-400">
           <span class="text-[10px] text-slate-500 mt-1 block">Costo base Supabase / AWS S3 (~$0.0005 MXN por MB/mes).</span>
         </div>
 
@@ -835,16 +1215,16 @@
             <i class="fa-solid fa-bolt text-teal-400 mr-1"></i> Transferencia y Realtime por MB ($ MXN)
           </label>
           <input type="number" step="0.0001" id="input-rate-bandwidth"
-                 class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-hidden focus:border-blue-500">
+                 class="w-full bg-[#07080c] border border-white/10 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-hidden focus:border-cyan-400">
           <span class="text-[10px] text-slate-500 mt-1 block">Consumo de ancho de banda y WebSockets Realtime (~$0.002 MXN por MB).</span>
         </div>
       </div>
 
-      <div class="bg-slate-950 px-5 py-3 border-t border-slate-800 flex items-center justify-between">
-        <button type="button" onclick="closeMarketRatesModal()" class="px-4 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition cursor-pointer">
+      <div class="bg-[#07080c] px-5 py-3 border-t border-white/10 flex items-center justify-between">
+        <button type="button" onclick="closeMarketRatesModal()" class="px-4 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs transition cursor-pointer">
           Cancelar
         </button>
-        <button type="button" onclick="saveMarketRatesFromModal()" class="px-4 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition cursor-pointer shadow-md">
+        <button type="button" onclick="saveMarketRatesFromModal()" class="px-4 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs transition cursor-pointer shadow-md">
           Guardar Tarifas
         </button>
       </div>
@@ -853,7 +1233,7 @@
   </div>
 
   <!-- Scripts -->
-  <script type="module" src="assets/js/main.js?v=20261114_16"></script>
+  <script type="module" src="assets/js/main.js?v=20261114_18"></script>
 
 </body>
 </html>
