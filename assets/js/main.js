@@ -805,3 +805,47 @@ export function switchSliceTab(type) {
 }
 window.switchSliceTab = switchSliceTab;
 
+let collabModeTimer = null;
+let currentCollabMode = 'owned';
+
+export function switchCollabMode(mode, manual = true) {
+  currentCollabMode = mode;
+  const btnOwned = document.getElementById('btn-collab-owned');
+  const btnInvited = document.getElementById('btn-collab-invited');
+  const viewOwned = document.getElementById('collab-view-owned');
+  const viewInvited = document.getElementById('collab-view-invited');
+  const statusText = document.getElementById('collab-status-text');
+
+  if (!btnOwned || !btnInvited || !viewOwned || !viewInvited) return;
+
+  if (mode === 'owned') {
+    btnOwned.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-2 cursor-pointer bg-gradient-to-r from-cyan-400 to-blue-600 text-slate-950 shadow-sm';
+    btnInvited.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-2 cursor-pointer text-slate-400 hover:text-white hover:bg-white/10';
+    viewOwned.classList.remove('hidden');
+    viewInvited.classList.add('hidden');
+    if (statusText) statusText.innerHTML = 'Modo: Propietario de Obra &bull; 2 proyectos locales';
+  } else {
+    btnInvited.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-2 cursor-pointer bg-gradient-to-r from-cyan-400 to-blue-600 text-slate-950 shadow-sm';
+    btnOwned.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-2 cursor-pointer text-slate-400 hover:text-white hover:bg-white/10';
+    viewInvited.classList.remove('hidden');
+    viewOwned.classList.add('hidden');
+    if (statusText) statusText.innerHTML = 'Modo: Invitado Colaborador &bull; Proyecto compartido por Arq. Carlos Mendoza';
+  }
+
+  if (manual && collabModeTimer) {
+    clearInterval(collabModeTimer);
+    collabModeTimer = null;
+  }
+}
+window.switchCollabMode = switchCollabMode;
+
+function initCollabAutoCycle() {
+  if (collabModeTimer) clearInterval(collabModeTimer);
+  collabModeTimer = setInterval(() => {
+    const nextMode = currentCollabMode === 'owned' ? 'invited' : 'owned';
+    switchCollabMode(nextMode, false);
+  }, 6500);
+}
+initCollabAutoCycle();
+
+

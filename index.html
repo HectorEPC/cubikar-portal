@@ -453,49 +453,210 @@
   </section>
 
   <!-- ========================================================================= -->
-  <!-- 5. DA VIDA A LOS ESPACIOS (LUMION SCREENSHOT 5 - SPLIT CONTEXT SECTION)   -->
+  <!-- 5. COLABORACIÓN EN TIEMPO REAL & MODO DE TRABAJO                           -->
   <!-- ========================================================================= -->
-  <section class="py-24 bg-[#07080c] border-t border-white/[0.07] relative z-10">
+  <section id="colaboracion" class="py-24 bg-[#07080c] border-t border-white/[0.07] relative z-10">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
         
         <!-- Text Left (5 Cols) -->
         <div class="lg:col-span-5 space-y-6 text-left">
+          <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs font-bold">
+            <span class="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(0,242,254,0.8)] animate-pulse"></span>
+            <span>COLABORACIÓN EN TIEMPO REAL</span>
+          </div>
+
           <h2 class="text-3xl sm:text-5xl font-black text-white font-heading leading-tight">
-            Da vida a los espacios
+            Trabaja en equipo en tiempo real, desde el despacho hasta la obra.
           </h2>
           
           <p class="text-slate-300 text-sm sm:text-base leading-relaxed">
-            Las visualizaciones y controles de alta calidad deben impulsar su proyecto, no convertirse en un flujo de trabajo aparte.
+            Olvídate de versiones desactualizadas en Excel o planos perdidos por correo. Con <strong class="text-white">Cubikar</strong>, tu equipo de arquitectos, residentes de obra, calculistas y clientes colaboran simultáneamente sobre la misma información en la nube.
           </p>
 
           <p class="text-slate-300 text-sm sm:text-base leading-relaxed">
-            <strong class="text-white">Cubikar</strong> te ofrece un control total sobre el contexto, los costos de obra, los cronogramas y los honorarios, para que puedas realizar presentaciones claras en cada etapa.
+            Con el selector inteligente <strong class="text-cyan-400">Modo de Trabajo</strong>, puedes alternar en un solo clic entre <strong class="text-white">"Mis Proyectos"</strong> (obras que tú administras) y los proyectos de <strong class="text-white">los usuarios o despachos que te invitaron</strong>, con roles y permisos específicos para cada participante.
           </p>
 
-          <p class="text-slate-400 text-xs sm:text-sm leading-relaxed">
-            Fácil de aprender. Fiable a diario. Diseñado para cumplir plazos de entrega.
-          </p>
+          <ul class="space-y-3 text-xs sm:text-sm text-slate-300 pt-1">
+            <li class="flex items-start gap-3">
+              <div class="w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0 mt-0.5">
+                <i class="fa-solid fa-users-gear text-xs"></i>
+              </div>
+              <span><strong>Invitaciones con roles granulares:</strong> Asigna permisos de Administrador, Residente de Obra, Estimador o Solo Lectura para clientes.</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <div class="w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0 mt-0.5">
+                <i class="fa-solid fa-arrows-rotate text-xs"></i>
+              </div>
+              <span><strong>Sincronización instantánea:</strong> Cambios en matrices, bitácoras o entregables reflejados en tiempo real.</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <div class="w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0 mt-0.5">
+                <i class="fa-solid fa-shield-halved text-xs"></i>
+              </div>
+              <span><strong>Privacidad garantizada:</strong> Cada despacho o empresa mantiene sus datos financieros y clientes totalmente aislados.</span>
+            </li>
+          </ul>
 
-          <div class="flex items-center gap-4 pt-2">
-            <button onclick="openAuthModal('register')" class="px-6 py-3.5 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-600 hover:from-cyan-300 hover:to-blue-500 text-slate-950 font-extrabold text-xs shadow-md transition cursor-pointer">
-              Pruébalo gratis
+          <div class="flex items-center gap-4 pt-3">
+            <button onclick="openAuthModal('register')" class="px-6 py-3.5 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-600 hover:from-cyan-300 hover:to-blue-500 text-slate-950 font-extrabold text-xs shadow-md transition cursor-pointer flex items-center gap-2">
+              <span>Invita a tu equipo gratis</span>
+              <i class="fa-solid fa-arrow-right text-[10px]"></i>
             </button>
-            <a href="#precios" class="px-6 py-3.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-white font-bold text-xs transition">
-              Explorar funciones
+            <a href="#respaldo" class="px-6 py-3.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-white font-bold text-xs transition">
+              Seguridad &amp; Respaldos
             </a>
           </div>
         </div>
 
-        <!-- Render Right (7 Cols - Landscape Architectural Showcase) -->
+        <!-- Showcase Right (7 Cols - Simulación Interactiva Modo de Trabajo) -->
         <div class="lg:col-span-7">
-          <div class="rounded-3xl overflow-hidden border border-white/10 shadow-2xl relative bg-[#121520] group">
-            <img src="assets/images/showcase/hero-app-proyectos.png" alt="Portal Multi-Proyecto Cubikar" class="w-full h-auto object-cover group-hover:scale-102 transition-transform duration-700">
-            <div class="absolute bottom-4 left-4 right-4 flex items-center justify-between text-[11px] text-slate-400 bg-black/60 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10">
-              <span>Portal Multi-Proyecto &bull; Gestión y Ejecución en Tiempo Real</span>
-              <span class="text-cyan-400 font-bold">Cubikar Suite</span>
+          <div class="rounded-3xl overflow-hidden border border-white/15 shadow-[0_0_60px_rgba(0,0,0,0.9),0_0_35px_rgba(0,242,254,0.15)] relative bg-[#0e111a] flex flex-col">
+            
+            <!-- Window Top Header: Real Portal Header -->
+            <div class="px-4 py-3 bg-[#0a0d14] border-b border-white/10 flex items-center justify-between gap-3 select-none">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 text-sm">
+                  <i class="fa-solid fa-cubes-stacked text-xs"></i>
+                </div>
+                <div>
+                  <h4 class="text-xs font-bold text-white tracking-wide leading-none">PORTAL MULTI-PROYECTO</h4>
+                  <span class="text-[10px] text-slate-400 font-mono">Gestión Colaborativa en la Nube</span>
+                </div>
+              </div>
+
+              <!-- Collaborators Online Badge -->
+              <div class="flex items-center gap-2">
+                <div class="flex -space-x-2">
+                  <span class="w-6 h-6 rounded-full bg-cyan-500 text-slate-950 font-black text-[9px] flex items-center justify-center border-2 border-[#0a0d14]" title="Tú">TÚ</span>
+                  <span class="w-6 h-6 rounded-full bg-blue-600 text-white font-black text-[9px] flex items-center justify-center border-2 border-[#0a0d14]" title="Arq. Carlos Mendoza">CM</span>
+                  <span class="w-6 h-6 rounded-full bg-emerald-500 text-slate-950 font-black text-[9px] flex items-center justify-center border-2 border-[#0a0d14]" title="Ing. Sofia Lara">SL</span>
+                </div>
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span class="text-[10px] font-bold text-emerald-400 hidden sm:inline">3 en línea</span>
+              </div>
             </div>
+
+            <!-- Interactive "Modo de Trabajo" Switcher Bar (Matching Cubikar's exact UI) -->
+            <div class="px-4 py-3 bg-[#121622] border-b border-white/10 flex flex-wrap items-center justify-between gap-3 select-none">
+              
+              <div class="flex items-center gap-2.5">
+                <div class="w-7 h-7 rounded-lg bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400 text-xs">
+                  <i class="fa-solid fa-briefcase"></i>
+                </div>
+                <span class="text-xs font-bold text-white">Modo de Trabajo:</span>
+              </div>
+
+              <!-- Interactive Tabs for Modo de Trabajo -->
+              <div class="flex items-center gap-1.5 p-1 rounded-xl bg-black/70 border border-white/10">
+                <button id="btn-collab-owned" onclick="window.switchCollabMode('owned')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-2 cursor-pointer bg-gradient-to-r from-cyan-400 to-blue-600 text-slate-950 shadow-sm">
+                  <i class="fa-solid fa-user text-[10px]"></i>
+                  <span>Mis Proyectos</span>
+                </button>
+                <button id="btn-collab-invited" onclick="window.switchCollabMode('invited')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-2 cursor-pointer text-slate-400 hover:text-white hover:bg-white/10">
+                  <i class="fa-solid fa-user-check text-[10px]"></i>
+                  <span>Arq. Carlos Mendoza (Invitación)</span>
+                </button>
+              </div>
+
+            </div>
+
+            <!-- Content Area: Toggled by Modo de Trabajo -->
+            <div class="p-4 sm:p-5 relative min-h-[340px] bg-[#07080c] flex flex-col justify-between">
+              
+              <!-- VIEW 1: MIS PROYECTOS (Owned) -->
+              <div id="collab-view-owned" class="space-y-3 transition-opacity duration-300">
+                <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
+                  <span>Mostrando proyectos donde eres <strong class="text-white">Propietario / Titular</strong></span>
+                  <span class="px-2 py-0.5 rounded-md bg-cyan-500/10 text-cyan-300 font-mono text-[10px] font-bold">2 Obras Activas</span>
+                </div>
+
+                <!-- Project Card 1: Residencia Laura -->
+                <div class="p-4 rounded-2xl bg-[#0e111a] border border-white/10 hover:border-cyan-500/40 transition flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg">
+                  <div class="space-y-1">
+                    <div class="flex items-center gap-2">
+                      <span class="px-2 py-0.5 rounded-md bg-white/10 text-[10px] font-bold text-slate-300">Vivienda Residencial</span>
+                      <span class="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 text-[10px] font-bold">✓ Presupuesto Saludable</span>
+                    </div>
+                    <h5 class="text-base font-bold text-white font-heading">Residencia Laura</h5>
+                    <p class="text-xs text-slate-400">HEMA Arquitectos &bull; Pachuca, Hgo. &bull; <span class="text-cyan-400">Rol: Administrador General</span></p>
+                  </div>
+                  <div class="text-right sm:text-right w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-white/10">
+                    <span class="text-sm font-mono font-bold text-white block">$1,512,215.00 MXN</span>
+                    <span class="text-[11px] text-cyan-400 font-medium">85% Avance Estimado</span>
+                  </div>
+                </div>
+
+                <!-- Project Card 2: Pabellón Central -->
+                <div class="p-4 rounded-2xl bg-[#0e111a] border border-white/10 hover:border-cyan-500/40 transition flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg">
+                  <div class="space-y-1">
+                    <div class="flex items-center gap-2">
+                      <span class="px-2 py-0.5 rounded-md bg-white/10 text-[10px] font-bold text-slate-300">Proyecto Ejecutivo</span>
+                      <span class="px-2 py-0.5 rounded-md bg-cyan-500/20 text-cyan-300 text-[10px] font-bold">En Revisión</span>
+                    </div>
+                    <h5 class="text-base font-bold text-white font-heading">Pabellón Lago Contemporáneo</h5>
+                    <p class="text-xs text-slate-400">Estudio Propio &bull; <span class="text-cyan-400">Rol: Administrador General</span></p>
+                  </div>
+                  <div class="text-right sm:text-right w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-white/10">
+                    <span class="text-sm font-mono font-bold text-white block">$940,000.00 MXN</span>
+                    <span class="text-[11px] text-cyan-400 font-medium">40% Avance de Entregables</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- VIEW 2: PROYECTOS DONDE FUISTE INVITADO (Invitations) -->
+              <div id="collab-view-invited" class="hidden space-y-3 transition-opacity duration-300">
+                <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
+                  <span>Proyectos compartidos por <strong class="text-cyan-400">Arq. Carlos Mendoza</strong></span>
+                  <span class="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-300 font-mono text-[10px] font-bold">Invitación Activa</span>
+                </div>
+
+                <!-- Invited Banner Alert -->
+                <div class="p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-between gap-3 text-xs text-cyan-200">
+                  <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-handshake text-cyan-400"></i>
+                    <span>Estás colaborando como <strong>Residente de Obra &amp; Estimador</strong></span>
+                  </div>
+                  <span class="text-[10px] font-mono text-cyan-400 bg-cyan-500/20 px-2 py-0.5 rounded">Permiso: Edición &amp; Bitácora</span>
+                </div>
+
+                <!-- Project Card: Torre Corporativa Reforma -->
+                <div class="p-4 rounded-2xl bg-[#0e111a] border border-cyan-500/40 shadow-[0_0_20px_rgba(0,242,254,0.1)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div class="space-y-1">
+                    <div class="flex items-center gap-2">
+                      <span class="px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-300 text-[10px] font-bold">Edificación Corporativa</span>
+                      <span class="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 text-[10px] font-bold">Colaboración Activa</span>
+                    </div>
+                    <h5 class="text-base font-bold text-white font-heading">Torre Corporativa Reforma</h5>
+                    <p class="text-xs text-slate-400">Grupo Constructor Metrópoli &bull; CDMX &bull; <span class="text-emerald-400">✓ Sincronizado hace 1 min</span></p>
+                  </div>
+                  <div class="text-right sm:text-right w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-white/10">
+                    <span class="text-sm font-mono font-bold text-white block">$472,942.50 USD</span>
+                    <span class="text-[11px] text-amber-400 font-medium">42% Avance Físico</span>
+                  </div>
+                </div>
+
+                <!-- Real-time Activity Feed -->
+                <div class="p-2.5 rounded-xl bg-[#0a0d14] border border-white/5 flex items-center gap-2.5 text-[11px] text-slate-400">
+                  <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+                  <span><strong class="text-white">Arq. Carlos Mendoza</strong> acaba de autorizar la Estimación No. 03</span>
+                  <span class="text-slate-600 ml-auto font-mono text-[10px]">Ahora mismo</span>
+                </div>
+              </div>
+
+              <!-- Footer Bar -->
+              <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-400 select-none">
+                <div class="flex items-center gap-2">
+                  <i class="fa-solid fa-cloud-arrow-up text-cyan-400"></i>
+                  <span id="collab-status-text">Modo: Propietario de Obra &bull; 2 proyectos locales</span>
+                </div>
+                <span class="text-[10px] font-mono text-slate-500">Haz clic en las pestañas para simular el cambio</span>
+              </div>
+
+            </div>
+
           </div>
         </div>
 
@@ -1396,7 +1557,7 @@
   </div>
 
   <!-- Scripts -->
-  <script type="module" src="assets/js/main.js?v=20261114_slice_tabs_1"></script>
+  <script type="module" src="assets/js/main.js?v=20261114_collab_mode_1"></script>
 
 </body>
 </html>
