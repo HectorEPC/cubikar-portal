@@ -142,11 +142,13 @@ async function tryHydrateSsoSession(sb) {
   scrubSsoHashParams();
   let tokens = hashTokens;
   const closedList = getClosedSessionsList();
+  const lastSignOutTs = getLastSignOutTimestamp();
+
   if (!tokens) {
     const cookieTokens = readSharedSsoCookie();
-    const lastSignOutTs = getLastSignOutTimestamp();
     const cookieEmail = (cookieTokens?.email || '').toLowerCase().trim();
-    if (cookieTokens?.refreshToken && !closedList.includes(cookieEmail) && !(lastSignOutTs > 0 && cookieTokens.ts > 0 && cookieTokens.ts <= lastSignOutTs)) {
+    const isNewerCookie = cookieTokens?.ts > 0 && lastSignOutTs > 0 && cookieTokens.ts > lastSignOutTs;
+    if (cookieTokens?.refreshToken && (!closedList.includes(cookieEmail) || isNewerCookie)) {
       tokens = cookieTokens;
     }
   }
@@ -157,7 +159,10 @@ async function tryHydrateSsoSession(sb) {
       : await sb.auth.refreshSession({ refresh_token: tokens.refreshToken });
     if (error || !data?.session?.user) return null;
     const userEmail = (data.session.user.email || '').toLowerCase().trim();
-    if (closedList.includes(userEmail)) {
+    const isExplicitSso = Boolean(tokens.fromHash || (tokens.ts && tokens.ts > lastSignOutTs));
+    if (isExplicitSso) {
+      markSessionOpen(userEmail);
+    } else if (closedList.includes(userEmail)) {
       clearLocalSupabaseTokens();
       try {
         await sb.auth.signOut({ scope: 'local' });
@@ -268,7 +273,7 @@ export async function initAuth(onStateChange) {
     }
     if (session?.user && !error) {
       const userEmail = (session.user.email || '').toLowerCase().trim();
-      if (closedList.includes(userEmail)) {
+      if (getClosedSessionsList().includes(userEmail)) {
         if (onStateChange) onStateChange(null);
         return;
       }

@@ -9,12 +9,13 @@ import { isUserAdmin, openCubikarAdminModal } from './cubikarAdmin.js?v=20261115
 import { 
   initAuth, 
   loginWithEmail, 
+  loginWithGoogle,
   registerWithEmail, 
   mountGoogleSignInButton, 
   logout, 
   getCurrentState,
   buildSsoUrl
-} from './auth.js?v=20261115_auth_ok';
+} from './auth.js?v=20261115_auth_v2';
 
 let currentBillingCycle = 'monthly'; // 'monthly' | 'annual'
 let currentPricingProduct = 'const'; // 'const' | 'arq' | 'combo'
@@ -604,11 +605,17 @@ async function setupModalGoogleButton(forceRefresh = false) {
 export async function handleGoogleSignIn() {
   hideAuthMessages();
   try {
-    await setupModalGoogleButton(true);
-    showAuthSuccess('Botón de Google listo. Haz clic nuevamente para elegir tu cuenta.');
+    const submitBtn = document.getElementById('auth-submit-btn');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.classList.add('opacity-60', 'cursor-not-allowed');
+    }
+    showAuthSuccess('Conectando con Google...');
+    await loginWithGoogle();
   } catch (err) {
     console.error('[Google Sign-In Error]:', err);
-    showAuthError(err?.message || 'No se pudo cargar Google Sign-In. Usa tu correo o desactiva bloqueadores.');
+    showAuthError(err?.message || 'No se pudo iniciar sesión con Google.');
+    resetModalAuthControls();
   }
 }
 
