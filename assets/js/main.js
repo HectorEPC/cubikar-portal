@@ -836,10 +836,12 @@ export function switchCollabMode(mode, manual = true) {
     if (createBtn) createBtn.innerHTML = '<i class="fa-solid fa-plus mr-1"></i><span>Nuevo Proyecto</span>';
     if (badge) {
       badge.innerHTML = `
-        <div class="flex items-center gap-2 bg-slate-900/90 border border-amber-500/40 px-3.5 py-1.5 rounded-xl shadow-inner text-xs">
-          <i class="fa-solid fa-crown text-amber-400 text-xs"></i>
-          <span class="text-slate-300 text-xs">🏷️ Membresía activa: <strong class="text-white">Plan Pro</strong></span>
-          <span class="text-amber-300 font-mono text-[10px] bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/30 font-bold">(2/5 obras)</span>
+        <div class="flex items-center gap-2 bg-slate-950/80 border border-amber-500/40 px-3 py-1 rounded-xl text-xs w-full justify-between sm:justify-start">
+          <div class="flex items-center gap-1.5">
+            <i class="fa-solid fa-crown text-amber-400 text-xs"></i>
+            <span class="text-slate-300 text-xs">🏷️ Membresía activa: <strong class="text-white">Plan Pro</strong></span>
+          </div>
+          <span class="text-amber-300 font-mono text-[10px] bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/30 font-bold ml-auto sm:ml-2">(2/5 obras)</span>
         </div>
       `;
     }
@@ -851,10 +853,12 @@ export function switchCollabMode(mode, manual = true) {
     if (createBtn) createBtn.innerHTML = '<i class="fa-solid fa-plus mr-1"></i><span>Crear en espacio de Carlos</span>';
     if (badge) {
       badge.innerHTML = `
-        <div class="flex items-center gap-2 bg-emerald-950/70 border border-emerald-500/50 px-3.5 py-1.5 rounded-xl shadow-inner text-xs">
-          <i class="fa-solid fa-circle-check text-emerald-400 text-xs"></i>
-          <span class="text-emerald-200 text-xs">🏷️ Membresía: <strong class="text-white">Plan Empresarial</strong> (1/15 obras)</span>
-          <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded-md font-bold text-[10.5px]">⭐ Editor (Puedes crear obras)</span>
+        <div class="flex items-center gap-2 bg-emerald-950/70 border border-emerald-500/50 px-3 py-1 rounded-xl text-xs w-full justify-between sm:justify-start">
+          <div class="flex items-center gap-1.5">
+            <i class="fa-solid fa-circle-check text-emerald-400 text-xs"></i>
+            <span class="text-emerald-200 text-xs">🏷️ Membresía: <strong class="text-white">Plan Empresarial</strong> (1/15 obras)</span>
+          </div>
+          <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded-md font-bold text-[10px] ml-auto sm:ml-2">⭐ Editor (Puedes crear obras)</span>
         </div>
       `;
     }

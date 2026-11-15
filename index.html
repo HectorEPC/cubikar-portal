@@ -731,46 +731,42 @@
           <div class="rounded-3xl overflow-hidden border border-slate-700/80 shadow-[0_0_60px_rgba(0,0,0,0.9),0_0_35px_rgba(0,242,254,0.12)] relative bg-slate-950 flex flex-col font-sans text-slate-100">
             
             <!-- Window Top Chrome: SISTEMA CONTROL DE OBRA • Portal Multi-Proyecto -->
-            <div class="px-4 py-2.5 bg-slate-950 border-b border-slate-800 flex items-center justify-between gap-3 select-none">
+            <div class="px-4 py-2 bg-slate-950 border-b border-slate-800 flex items-center justify-between gap-3 select-none">
               <!-- Left: Window controls & Logo -->
-              <div class="flex items-center gap-3">
-                <div class="flex items-center gap-1.5">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div class="flex items-center gap-1.5 shrink-0">
                   <span class="w-2.5 h-2.5 rounded-full bg-rose-500/80"></span>
                   <span class="w-2.5 h-2.5 rounded-full bg-amber-500/80"></span>
                   <span class="w-2.5 h-2.5 rounded-full bg-emerald-500/80"></span>
                 </div>
-                <div class="h-3.5 w-px bg-slate-800 mx-1"></div>
-                <div class="flex items-center gap-2.5">
-                  <div class="w-7 h-7 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow text-white font-bold text-xs">
+                <div class="h-3.5 w-px bg-slate-800 mx-1 shrink-0"></div>
+                <div class="flex items-center gap-2 min-w-0">
+                  <div class="w-7 h-7 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow text-white font-bold text-xs shrink-0">
                     <i class="fa-solid fa-cubes-stacked text-xs"></i>
                   </div>
-                  <div>
+                  <div class="min-w-0">
                     <div class="flex items-center gap-1.5 leading-none">
-                      <span class="font-bold text-xs tracking-tight text-white font-mono">SISTEMA CONTROL DE OBRA</span>
-                      <span class="bg-blue-500/10 text-blue-400 text-[9px] px-1.5 py-0.5 rounded-full font-medium border border-blue-500/20">Portal Multi-Proyecto</span>
+                      <span class="font-bold text-xs tracking-tight text-white font-mono whitespace-nowrap">SISTEMA CONTROL DE OBRA</span>
+                      <span class="hidden sm:inline bg-blue-500/10 text-blue-400 text-[9px] px-1.5 py-0.5 rounded-full font-medium border border-blue-500/20 whitespace-nowrap">Portal Multi-Proyecto</span>
                     </div>
-                    <p class="text-[10px] text-slate-400 leading-tight mt-0.5">Presupuestos Base &bull; APU &bull; Insumos Generales</p>
+                    <p class="text-[10px] text-slate-400 leading-tight mt-0.5 truncate hidden sm:block">Presupuestos Base &bull; APU &bull; Insumos Generales</p>
                   </div>
                 </div>
               </div>
 
-              <!-- Right: Comparison button, Notification Bell & User profile -->
-              <div class="flex items-center gap-2 sm:gap-3">
-                <span class="hidden md:inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-500/10 text-amber-300 border border-amber-500/30 text-[10px] font-semibold">
-                  <i class="fa-solid fa-circle-info text-[9px] text-amber-400"></i>
-                  <span>Ver Análisis: Antes vs Después</span>
-                </span>
-                <div class="relative text-slate-400 hover:text-white transition">
+              <!-- Right: Notification Bell & User profile -->
+              <div class="flex items-center gap-2 sm:gap-2.5 shrink-0">
+                <div class="relative text-slate-400 hover:text-white transition cursor-pointer">
                   <i class="fa-solid fa-bell text-xs"></i>
                   <span class="absolute -top-1 -right-1 w-2 h-2 bg-rose-500 rounded-full animate-pulse"></span>
                 </div>
-                <div class="flex items-center gap-2 pl-2 py-1 pr-2.5 bg-slate-900 border border-slate-800 rounded-full text-xs">
-                  <div class="w-6 h-6 rounded-full bg-gradient-to-tr from-amber-500 to-amber-300 text-slate-950 font-bold text-[10px] flex items-center justify-center ring-1 ring-amber-400/30">
+                <div class="flex items-center gap-1.5 pl-2 py-0.5 pr-2.5 bg-slate-900 border border-slate-800 rounded-full text-xs">
+                  <div class="w-5 h-5 rounded-full bg-gradient-to-tr from-amber-500 to-amber-300 text-slate-950 font-bold text-[9px] flex items-center justify-center ring-1 ring-amber-400/30">
                     H9
                   </div>
                   <div class="text-left hidden sm:block">
-                    <div class="text-[11px] font-semibold text-slate-200 leading-tight">Hepc 90</div>
-                    <div class="text-[9px] text-slate-400 leading-tight">Admin General</div>
+                    <div class="text-[10px] font-semibold text-slate-200 leading-tight">Hepc 90</div>
+                    <div class="text-[8.5px] text-slate-400 leading-tight">Admin General</div>
                   </div>
                 </div>
               </div>
@@ -802,48 +798,51 @@
                 </div>
               </div>
 
-              <!-- EXACT MODO DE TRABAJO TOOLBAR (FROM portalController.js) -->
-              <div class="bg-gradient-to-r from-slate-900 via-slate-900/95 to-slate-950 border border-slate-800 rounded-2xl p-3 shadow-xl flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 select-none">
-                <div class="flex flex-col sm:flex-row sm:items-center gap-3 flex-1 min-w-0">
+              <!-- EXACT MODO DE TRABAJO TOOLBAR (FROM portalController.js - Responsive 2-tier to prevent any overlap) -->
+              <div class="bg-gradient-to-r from-slate-900 via-slate-900/95 to-slate-950 border border-slate-800 rounded-2xl p-3 shadow-xl flex flex-col gap-2.5 select-none">
+                <!-- Row 1: Modo de Trabajo + Dropdown Selector + Invitaciones Button -->
+                <div class="flex flex-wrap items-center justify-between gap-2.5">
                   <div class="flex items-center gap-2 shrink-0">
-                    <div class="w-8 h-8 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 text-sm">
+                    <div class="w-7 h-7 rounded-lg bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 text-xs">
                       <i class="fa-solid fa-briefcase"></i>
                     </div>
                     <div>
-                      <span class="text-xs font-bold text-white block">Modo de Trabajo:</span>
+                      <span class="text-xs font-bold text-white block whitespace-nowrap">Modo de Trabajo:</span>
                     </div>
                   </div>
 
-                  <div class="flex items-center gap-2 shrink-0">
+                  <div class="flex items-center gap-2 flex-1 sm:flex-initial justify-end min-w-0">
                     <!-- Menú desplegable real de Modo de Trabajo -->
-                    <div class="relative w-44 sm:w-56 min-w-0">
+                    <div class="relative w-40 sm:w-48 min-w-[140px]">
                       <select id="projectScopeModeSelect" onchange="window.switchCollabMode(this.value, true)"
-                              class="w-full appearance-none bg-slate-950 border border-slate-700 hover:border-blue-500 focus:border-blue-500 text-white font-semibold text-xs rounded-xl pl-3 pr-8 py-2 transition outline-none cursor-pointer shadow-inner truncate">
+                              class="w-full appearance-none bg-slate-950 border border-slate-700 hover:border-blue-500 focus:border-blue-500 text-white font-semibold text-xs rounded-xl pl-3 pr-7 py-1.5 transition outline-none cursor-pointer shadow-inner truncate">
                         <option value="owned" selected>Mis proyectos</option>
                         <option value="invited">Arq. Carlos Mendoza</option>
                         <option value="all">Todos los proyectos</option>
                       </select>
-                      <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-blue-400">
-                        <i class="fa-solid fa-chevron-down text-xs"></i>
+                      <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-blue-400">
+                        <i class="fa-solid fa-chevron-down text-[10px]"></i>
                       </div>
                     </div>
 
                     <!-- Botón de Invitaciones al Plan al lado derecho del menú desplegable -->
                     <button type="button" 
-                            class="shrink-0 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs px-3 py-2 rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer border border-blue-400/30"
+                            class="shrink-0 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs px-2.5 py-1.5 rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer border border-blue-400/30"
                             title="Invitar usuarios a tu plan de suscripción">
-                      <i class="fa-solid fa-user-plus text-xs"></i>
-                      <span class="whitespace-nowrap">Invitaciones</span>
+                      <i class="fa-solid fa-user-plus text-[11px]"></i>
+                      <span class="whitespace-nowrap hidden sm:inline text-xs">Invitaciones</span>
                     </button>
                   </div>
                 </div>
 
-                <!-- Indicador visual del modo actual y membresía gobernante -->
-                <div id="mode-status-badge" class="shrink-0 flex items-center gap-2 text-xs">
-                  <div class="flex items-center gap-2 bg-slate-900/90 border border-amber-500/40 px-3 py-1.5 rounded-xl shadow-inner text-xs">
-                    <i class="fa-solid fa-crown text-amber-400 text-xs"></i>
-                    <span class="text-slate-300 text-xs">🏷️ Membresía activa: <strong class="text-white">Plan Pro</strong></span>
-                    <span class="text-amber-300 font-mono text-[10px] bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/30 font-bold">(2/5 obras)</span>
+                <!-- Row 2: Indicador visual del modo actual y membresía gobernante (Full width, no collision) -->
+                <div id="mode-status-badge" class="pt-2 border-t border-slate-800/80 flex items-center text-xs">
+                  <div class="flex items-center gap-2 bg-slate-950/80 border border-amber-500/40 px-3 py-1 rounded-xl text-xs w-full justify-between sm:justify-start">
+                    <div class="flex items-center gap-1.5">
+                      <i class="fa-solid fa-crown text-amber-400 text-xs"></i>
+                      <span class="text-slate-300 text-xs">🏷️ Membresía activa: <strong class="text-white">Plan Pro</strong></span>
+                    </div>
+                    <span class="text-amber-300 font-mono text-[10px] bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/30 font-bold ml-auto sm:ml-2">(2/5 obras)</span>
                   </div>
                 </div>
               </div>
@@ -2108,7 +2107,7 @@
   </div>
 
   <!-- Scripts -->
-  <script type="module" src="assets/js/main.js?v=20261115_real_portal_ui"></script>
+  <script type="module" src="assets/js/main.js?v=20261115_fix_overlap_2"></script>
 
 </body>
 </html>
