@@ -784,6 +784,8 @@ export function switchSliceTab(type) {
   const tabConst = document.getElementById('tab-slice-const');
   const panelArq = document.getElementById('slice-panel-arq');
   const panelConst = document.getElementById('slice-panel-const');
+  const gridArq = document.getElementById('arq-capabilities-grid');
+  const gridConst = document.getElementById('const-capabilities-grid');
 
   if (!tabArq || !tabConst || !panelArq || !panelConst) return;
 
@@ -794,6 +796,8 @@ export function switchSliceTab(type) {
     panelArq.classList.add('flex');
     panelConst.classList.remove('flex');
     panelConst.classList.add('hidden');
+    if (gridArq) gridArq.classList.remove('hidden');
+    if (gridConst) gridConst.classList.add('hidden');
   } else {
     tabConst.className = 'px-7 py-3 rounded-xl font-extrabold text-xs transition-all duration-300 flex items-center gap-2.5 cursor-pointer bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 shadow-[0_0_20px_rgba(245,158,11,0.35)]';
     tabArq.className = 'px-7 py-3 rounded-xl font-extrabold text-xs transition-all duration-300 flex items-center gap-2.5 cursor-pointer text-slate-400 hover:text-white hover:bg-white/5';
@@ -801,6 +805,8 @@ export function switchSliceTab(type) {
     panelConst.classList.add('flex');
     panelArq.classList.remove('flex');
     panelArq.classList.add('hidden');
+    if (gridConst) gridConst.classList.remove('hidden');
+    if (gridArq) gridArq.classList.add('hidden');
   }
 }
 window.switchSliceTab = switchSliceTab;
