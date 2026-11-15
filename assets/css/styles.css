@@ -71,13 +71,33 @@ body {
   pointer-events: none;
 }
 
-/* Vertical slices strip (Lumion Screenshot 3) */
+/* Vertical slices strip (Interactive Software Showcase - Expanded Horizontal Visibility) */
 .lumion-slice-col {
-  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  flex: 1 1 0%;
+  min-width: 0;
+  transition: flex-grow 0.65s cubic-bezier(0.16, 1, 0.3, 1),
+              filter 0.4s ease,
+              opacity 0.4s ease,
+              box-shadow 0.4s ease;
+  will-change: flex-grow;
 }
 
 .lumion-slice-col:hover {
-  flex-grow: 2.2;
+  flex-grow: 7; /* Expande la imagen a más del 70% del ancho total para revelar todas las columnas */
+  z-index: 10;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 242, 254, 0.15);
+}
+
+/* Atenuación sutil de las columnas hermanas no activas para enfocar la imagen en hover */
+#slice-panel-arq:hover .lumion-slice-col:not(:hover),
+#slice-panel-const:hover .lumion-slice-col:not(:hover) {
+  opacity: 0.6;
+  filter: brightness(0.75) contrast(1.05);
+}
+
+#slice-panel-arq:hover .lumion-slice-col:not(:hover) .slice-desc,
+#slice-panel-const:hover .lumion-slice-col:not(:hover) .slice-desc {
+  display: none !important;
 }
 
 /* =========================================================================

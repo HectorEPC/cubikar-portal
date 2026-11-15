@@ -880,4 +880,38 @@ function initCollabAutoCycle() {
 }
 initCollabAutoCycle();
 
+/* =========================================================================
+   LIGHTBOX SHOWCASE INTERACTIVO
+   ========================================================================= */
+export function openShowcaseLightbox(src, title) {
+  const modal = document.getElementById('modal-showcase-lightbox');
+  const img = document.getElementById('lightbox-img');
+  const titleEl = document.getElementById('lightbox-title');
+  if (modal && img) {
+    img.src = src;
+    if (titleEl && title) titleEl.innerHTML = title;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+  }
+}
+window.openShowcaseLightbox = openShowcaseLightbox;
+
+export function closeShowcaseLightbox() {
+  const modal = document.getElementById('modal-showcase-lightbox');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    document.body.style.overflow = '';
+  }
+}
+window.closeShowcaseLightbox = closeShowcaseLightbox;
+
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closeShowcaseLightbox();
+  }
+});
+
+
 
