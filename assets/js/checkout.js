@@ -7,6 +7,9 @@
 // false: Modo comercial oficial. Stripe activo y plan gratuito inicial estándar.
 // =========================================================================
 export const CUBIKAR_SUB_TEST_MODE = true;
+if (typeof window !== 'undefined') {
+  window.CUBIKAR_SUB_TEST_MODE = CUBIKAR_SUB_TEST_MODE;
+}
 
 export const STRIPE_PAYMENT_LINKS = {
   const: {

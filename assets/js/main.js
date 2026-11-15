@@ -1,11 +1,11 @@
 // assets/js/main.js
 // Controlador interactivo sincronizado al 100% con ADM_CONST y ADM_ARQ
 
-import { CONST_TIERS, ARQ_TIERS, COMBO_TIERS, redirectToStripeCheckout, CUBIKAR_SUB_TEST_MODE } from './checkout.js';
-import { downloadFullEcosystemBackup } from './exportBackup.js';
-import { initAppSwitcher } from './appSwitcher.js?v=20261114_11';
-import { initShowcaseRuleta } from './showcaseRuleta.js?v=20261115_clean_ruleta';
-import { isUserAdmin, openCubikarAdminModal } from './cubikarAdmin.js?v=20261114_15';
+import { CONST_TIERS, ARQ_TIERS, COMBO_TIERS, redirectToStripeCheckout, CUBIKAR_SUB_TEST_MODE } from './checkout.js?v=20261115_auth_ok';
+import { downloadFullEcosystemBackup } from './exportBackup.js?v=20261115_auth_ok';
+import { initAppSwitcher } from './appSwitcher.js?v=20261115_auth_ok';
+import { initShowcaseRuleta } from './showcaseRuleta.js?v=20261115_auth_ok';
+import { isUserAdmin, openCubikarAdminModal } from './cubikarAdmin.js?v=20261115_auth_ok';
 import { 
   initAuth, 
   loginWithEmail, 
@@ -14,7 +14,7 @@ import {
   logout, 
   getCurrentState,
   buildSsoUrl
-} from './auth.js?v=20261114_14';
+} from './auth.js?v=20261115_auth_ok';
 
 let currentBillingCycle = 'monthly'; // 'monthly' | 'annual'
 let currentPricingProduct = 'const'; // 'const' | 'arq' | 'combo'
