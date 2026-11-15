@@ -816,26 +816,48 @@ let currentCollabMode = 'owned';
 
 export function switchCollabMode(mode, manual = true) {
   currentCollabMode = mode;
-  const btnOwned = document.getElementById('btn-collab-owned');
-  const btnInvited = document.getElementById('btn-collab-invited');
+  const select = document.getElementById('projectScopeModeSelect');
   const viewOwned = document.getElementById('collab-view-owned');
   const viewInvited = document.getElementById('collab-view-invited');
-  const statusText = document.getElementById('collab-status-text');
+  const badge = document.getElementById('mode-status-badge');
+  const title = document.getElementById('portal-collab-title');
+  const count = document.getElementById('portal-collab-count');
+  const createBtn = document.getElementById('portal-collab-create-btn');
 
-  if (!btnOwned || !btnInvited || !viewOwned || !viewInvited) return;
+  if (select && select.value !== mode) {
+    select.value = mode;
+  }
 
   if (mode === 'owned') {
-    btnOwned.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-2 cursor-pointer bg-gradient-to-r from-cyan-400 to-blue-600 text-slate-950 shadow-sm';
-    btnInvited.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-2 cursor-pointer text-slate-400 hover:text-white hover:bg-white/10';
-    viewOwned.classList.remove('hidden');
-    viewInvited.classList.add('hidden');
-    if (statusText) statusText.innerHTML = 'Modo: Propietario de Obra &bull; 2 proyectos locales';
+    if (viewOwned) viewOwned.classList.remove('hidden');
+    if (viewInvited) viewInvited.classList.add('hidden');
+    if (title) title.textContent = 'Mis Proyectos de Obra';
+    if (count) count.textContent = '2 Obras Activas';
+    if (createBtn) createBtn.innerHTML = '<i class="fa-solid fa-plus mr-1"></i><span>Nuevo Proyecto</span>';
+    if (badge) {
+      badge.innerHTML = `
+        <div class="flex items-center gap-2 bg-slate-900/90 border border-amber-500/40 px-3.5 py-1.5 rounded-xl shadow-inner text-xs">
+          <i class="fa-solid fa-crown text-amber-400 text-xs"></i>
+          <span class="text-slate-300 text-xs">🏷️ Membresía activa: <strong class="text-white">Plan Pro</strong></span>
+          <span class="text-amber-300 font-mono text-[10px] bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/30 font-bold">(2/5 obras)</span>
+        </div>
+      `;
+    }
   } else {
-    btnInvited.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-2 cursor-pointer bg-gradient-to-r from-cyan-400 to-blue-600 text-slate-950 shadow-sm';
-    btnOwned.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-2 cursor-pointer text-slate-400 hover:text-white hover:bg-white/10';
-    viewInvited.classList.remove('hidden');
-    viewOwned.classList.add('hidden');
-    if (statusText) statusText.innerHTML = 'Modo: Invitado Colaborador &bull; Proyecto compartido por Arq. Carlos Mendoza';
+    if (viewInvited) viewInvited.classList.remove('hidden');
+    if (viewOwned) viewOwned.classList.add('hidden');
+    if (title) title.textContent = 'Proyectos de Arq. Carlos Mendoza';
+    if (count) count.textContent = '1 Obra Asignada';
+    if (createBtn) createBtn.innerHTML = '<i class="fa-solid fa-plus mr-1"></i><span>Crear en espacio de Carlos</span>';
+    if (badge) {
+      badge.innerHTML = `
+        <div class="flex items-center gap-2 bg-emerald-950/70 border border-emerald-500/50 px-3.5 py-1.5 rounded-xl shadow-inner text-xs">
+          <i class="fa-solid fa-circle-check text-emerald-400 text-xs"></i>
+          <span class="text-emerald-200 text-xs">🏷️ Membresía: <strong class="text-white">Plan Empresarial</strong> (1/15 obras)</span>
+          <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded-md font-bold text-[10.5px]">⭐ Editor (Puedes crear obras)</span>
+        </div>
+      `;
+    }
   }
 
   if (manual && collabModeTimer) {

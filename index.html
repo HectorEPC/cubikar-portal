@@ -726,153 +726,339 @@
           </div>
         </div>
 
-        <!-- Showcase Right (7 Cols - Simulación Interactiva Modo de Trabajo) -->
+        <!-- Showcase Right (7 Cols - Software Real de Cubikar: Modo de Trabajo y Portal) -->
         <div class="lg:col-span-7">
-          <div class="rounded-3xl overflow-hidden border border-white/15 shadow-[0_0_60px_rgba(0,0,0,0.9),0_0_35px_rgba(0,242,254,0.15)] relative bg-[#0e111a] flex flex-col">
+          <div class="rounded-3xl overflow-hidden border border-slate-700/80 shadow-[0_0_60px_rgba(0,0,0,0.9),0_0_35px_rgba(0,242,254,0.12)] relative bg-slate-950 flex flex-col font-sans text-slate-100">
             
-            <!-- Window Top Header: Real Portal Header -->
-            <div class="px-4 py-3 bg-[#0a0d14] border-b border-white/10 flex items-center justify-between gap-3 select-none">
+            <!-- Window Top Chrome: SISTEMA CONTROL DE OBRA • Portal Multi-Proyecto -->
+            <div class="px-4 py-2.5 bg-slate-950 border-b border-slate-800 flex items-center justify-between gap-3 select-none">
+              <!-- Left: Window controls & Logo -->
               <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 text-sm">
-                  <i class="fa-solid fa-cubes-stacked text-xs"></i>
+                <div class="flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded-full bg-rose-500/80"></span>
+                  <span class="w-2.5 h-2.5 rounded-full bg-amber-500/80"></span>
+                  <span class="w-2.5 h-2.5 rounded-full bg-emerald-500/80"></span>
                 </div>
-                <div>
-                  <h4 class="text-xs font-bold text-white tracking-wide leading-none">PORTAL MULTI-PROYECTO</h4>
-                  <span class="text-[10px] text-slate-400 font-mono">Gestión Colaborativa en la Nube</span>
-                </div>
-              </div>
-
-              <!-- Collaborators Online Badge -->
-              <div class="flex items-center gap-2">
-                <div class="flex -space-x-2">
-                  <span class="w-6 h-6 rounded-full bg-cyan-500 text-slate-950 font-black text-[9px] flex items-center justify-center border-2 border-[#0a0d14]" title="Tú">TÚ</span>
-                  <span class="w-6 h-6 rounded-full bg-blue-600 text-white font-black text-[9px] flex items-center justify-center border-2 border-[#0a0d14]" title="Arq. Carlos Mendoza">CM</span>
-                  <span class="w-6 h-6 rounded-full bg-emerald-500 text-slate-950 font-black text-[9px] flex items-center justify-center border-2 border-[#0a0d14]" title="Ing. Sofia Lara">SL</span>
-                </div>
-                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span class="text-[10px] font-bold text-emerald-400 hidden sm:inline">3 en línea</span>
-              </div>
-            </div>
-
-            <!-- Interactive "Modo de Trabajo" Switcher Bar (Matching Cubikar's exact UI) -->
-            <div class="px-4 py-3 bg-[#121622] border-b border-white/10 flex flex-wrap items-center justify-between gap-3 select-none">
-              
-              <div class="flex items-center gap-2.5">
-                <div class="w-7 h-7 rounded-lg bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400 text-xs">
-                  <i class="fa-solid fa-briefcase"></i>
-                </div>
-                <span class="text-xs font-bold text-white">Modo de Trabajo:</span>
-              </div>
-
-              <!-- Interactive Tabs for Modo de Trabajo -->
-              <div class="flex items-center gap-1.5 p-1 rounded-xl bg-black/70 border border-white/10">
-                <button id="btn-collab-owned" onclick="window.switchCollabMode('owned')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-2 cursor-pointer bg-gradient-to-r from-cyan-400 to-blue-600 text-slate-950 shadow-sm">
-                  <i class="fa-solid fa-user text-[10px]"></i>
-                  <span>Mis Proyectos</span>
-                </button>
-                <button id="btn-collab-invited" onclick="window.switchCollabMode('invited')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-2 cursor-pointer text-slate-400 hover:text-white hover:bg-white/10">
-                  <i class="fa-solid fa-user-check text-[10px]"></i>
-                  <span>Arq. Carlos Mendoza (Invitación)</span>
-                </button>
-              </div>
-
-            </div>
-
-            <!-- Content Area: Toggled by Modo de Trabajo -->
-            <div class="p-4 sm:p-5 relative min-h-[340px] bg-[#07080c] flex flex-col justify-between">
-              
-              <!-- VIEW 1: MIS PROYECTOS (Owned) -->
-              <div id="collab-view-owned" class="space-y-3 transition-opacity duration-300">
-                <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
-                  <span>Mostrando proyectos donde eres <strong class="text-white">Propietario / Titular</strong></span>
-                  <span class="px-2 py-0.5 rounded-md bg-cyan-500/10 text-cyan-300 font-mono text-[10px] font-bold">2 Obras Activas</span>
-                </div>
-
-                <!-- Project Card 1: Residencia Laura -->
-                <div class="p-4 rounded-2xl bg-[#0e111a] border border-white/10 hover:border-cyan-500/40 transition flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg">
-                  <div class="space-y-1">
-                    <div class="flex items-center gap-2">
-                      <span class="px-2 py-0.5 rounded-md bg-white/10 text-[10px] font-bold text-slate-300">Vivienda Residencial</span>
-                      <span class="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 text-[10px] font-bold">✓ Presupuesto Saludable</span>
-                    </div>
-                    <h5 class="text-base font-bold text-white font-heading">Residencia Laura</h5>
-                    <p class="text-xs text-slate-400">HEMA Arquitectos &bull; Pachuca, Hgo. &bull; <span class="text-cyan-400">Rol: Administrador General</span></p>
+                <div class="h-3.5 w-px bg-slate-800 mx-1"></div>
+                <div class="flex items-center gap-2.5">
+                  <div class="w-7 h-7 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow text-white font-bold text-xs">
+                    <i class="fa-solid fa-cubes-stacked text-xs"></i>
                   </div>
-                  <div class="text-right sm:text-right w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-white/10">
-                    <span class="text-sm font-mono font-bold text-white block">$1,512,215.00 MXN</span>
-                    <span class="text-[11px] text-cyan-400 font-medium">85% Avance Estimado</span>
+                  <div>
+                    <div class="flex items-center gap-1.5 leading-none">
+                      <span class="font-bold text-xs tracking-tight text-white font-mono">SISTEMA CONTROL DE OBRA</span>
+                      <span class="bg-blue-500/10 text-blue-400 text-[9px] px-1.5 py-0.5 rounded-full font-medium border border-blue-500/20">Portal Multi-Proyecto</span>
+                    </div>
+                    <p class="text-[10px] text-slate-400 leading-tight mt-0.5">Presupuestos Base &bull; APU &bull; Insumos Generales</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Right: Comparison button, Notification Bell & User profile -->
+              <div class="flex items-center gap-2 sm:gap-3">
+                <span class="hidden md:inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-500/10 text-amber-300 border border-amber-500/30 text-[10px] font-semibold">
+                  <i class="fa-solid fa-circle-info text-[9px] text-amber-400"></i>
+                  <span>Ver Análisis: Antes vs Después</span>
+                </span>
+                <div class="relative text-slate-400 hover:text-white transition">
+                  <i class="fa-solid fa-bell text-xs"></i>
+                  <span class="absolute -top-1 -right-1 w-2 h-2 bg-rose-500 rounded-full animate-pulse"></span>
+                </div>
+                <div class="flex items-center gap-2 pl-2 py-1 pr-2.5 bg-slate-900 border border-slate-800 rounded-full text-xs">
+                  <div class="w-6 h-6 rounded-full bg-gradient-to-tr from-amber-500 to-amber-300 text-slate-950 font-bold text-[10px] flex items-center justify-center ring-1 ring-amber-400/30">
+                    H9
+                  </div>
+                  <div class="text-left hidden sm:block">
+                    <div class="text-[11px] font-semibold text-slate-200 leading-tight">Hepc 90</div>
+                    <div class="text-[9px] text-slate-400 leading-tight">Admin General</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Body: Exactly matching Cubikar's Portal UI -->
+            <div class="p-4 sm:p-5 bg-slate-950 text-slate-100 space-y-3.5">
+
+              <!-- Header Section with KPIs & New Project Button -->
+              <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+                <div>
+                  <div class="flex items-center gap-2 text-[11px] font-medium text-blue-400 mb-0.5">
+                    <span>PORTAL DE PROYECTOS</span>
+                    <span>&bull;</span>
+                    <span class="text-emerald-400 font-semibold" id="portal-collab-count">2 Obras Activas</span>
+                  </div>
+                  <h3 class="text-xl sm:text-2xl font-extrabold text-white tracking-tight" id="portal-collab-title">Mis Proyectos de Obra</h3>
+                  <p class="text-xs text-slate-400 mt-0.5">
+                    Supervisión integral de presupuestos base, análisis de precios unitarios (APU), matrices de insumos y control de sobrecostos.
+                  </p>
+                </div>
+
+                <!-- Quick Action: Primary Button -->
+                <div class="flex items-center gap-2 shrink-0">
+                  <button id="portal-collab-create-btn" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs transition shadow-lg shadow-blue-600/30 active:scale-95 cursor-pointer">
+                    <i class="fa-solid fa-plus text-[10px]"></i>
+                    <span>Nuevo Proyecto</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- EXACT MODO DE TRABAJO TOOLBAR (FROM portalController.js) -->
+              <div class="bg-gradient-to-r from-slate-900 via-slate-900/95 to-slate-950 border border-slate-800 rounded-2xl p-3 shadow-xl flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 select-none">
+                <div class="flex flex-col sm:flex-row sm:items-center gap-3 flex-1 min-w-0">
+                  <div class="flex items-center gap-2 shrink-0">
+                    <div class="w-8 h-8 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 text-sm">
+                      <i class="fa-solid fa-briefcase"></i>
+                    </div>
+                    <div>
+                      <span class="text-xs font-bold text-white block">Modo de Trabajo:</span>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center gap-2 shrink-0">
+                    <!-- Menú desplegable real de Modo de Trabajo -->
+                    <div class="relative w-44 sm:w-56 min-w-0">
+                      <select id="projectScopeModeSelect" onchange="window.switchCollabMode(this.value, true)"
+                              class="w-full appearance-none bg-slate-950 border border-slate-700 hover:border-blue-500 focus:border-blue-500 text-white font-semibold text-xs rounded-xl pl-3 pr-8 py-2 transition outline-none cursor-pointer shadow-inner truncate">
+                        <option value="owned" selected>Mis proyectos</option>
+                        <option value="invited">Arq. Carlos Mendoza</option>
+                        <option value="all">Todos los proyectos</option>
+                      </select>
+                      <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-blue-400">
+                        <i class="fa-solid fa-chevron-down text-xs"></i>
+                      </div>
+                    </div>
+
+                    <!-- Botón de Invitaciones al Plan al lado derecho del menú desplegable -->
+                    <button type="button" 
+                            class="shrink-0 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs px-3 py-2 rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer border border-blue-400/30"
+                            title="Invitar usuarios a tu plan de suscripción">
+                      <i class="fa-solid fa-user-plus text-xs"></i>
+                      <span class="whitespace-nowrap">Invitaciones</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Indicador visual del modo actual y membresía gobernante -->
+                <div id="mode-status-badge" class="shrink-0 flex items-center gap-2 text-xs">
+                  <div class="flex items-center gap-2 bg-slate-900/90 border border-amber-500/40 px-3 py-1.5 rounded-xl shadow-inner text-xs">
+                    <i class="fa-solid fa-crown text-amber-400 text-xs"></i>
+                    <span class="text-slate-300 text-xs">🏷️ Membresía activa: <strong class="text-white">Plan Pro</strong></span>
+                    <span class="text-amber-300 font-mono text-[10px] bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/30 font-bold">(2/5 obras)</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Toolbar: Search, Filters & View Toggle (from portalController.js) -->
+              <div class="bg-slate-950/80 border border-slate-800 rounded-2xl p-2 shadow-xl flex flex-col md:flex-row items-center justify-between gap-2 text-xs">
+                <div class="relative w-full md:w-60">
+                  <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-500">
+                    <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                  </span>
+                  <input type="text" placeholder="Buscar por nombre, empresa o ciudad..." class="w-full pl-8 pr-8 py-1.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 outline-none" readonly value="">
+                  <span class="absolute right-2 top-1.5 text-[9px] bg-slate-800 border border-slate-700 text-slate-400 px-1 py-0.5 rounded pointer-events-none">⌘K</span>
+                </div>
+
+                <div class="flex items-center gap-2 w-full md:w-auto overflow-x-auto">
+                  <div class="px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 text-[11px] flex items-center gap-1.5 whitespace-nowrap">
+                    <span>Todas las empresas</span>
+                    <i class="fa-solid fa-chevron-down text-[8px] text-slate-500"></i>
+                  </div>
+                  <div class="px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 text-[11px] flex items-center gap-1.5 whitespace-nowrap">
+                    <span>Todos los tipos</span>
+                    <i class="fa-solid fa-chevron-down text-[8px] text-slate-500"></i>
+                  </div>
+                  <div class="px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 text-[11px] flex items-center gap-1.5 whitespace-nowrap">
+                    <span>Todos los estados</span>
+                    <i class="fa-solid fa-chevron-down text-[8px] text-slate-500"></i>
+                  </div>
+                </div>
+              </div>
+
+              <!-- VIEW 1: MIS PROYECTOS (Owned) -->
+              <div id="collab-view-owned" class="grid grid-cols-1 sm:grid-cols-2 gap-3 transition-opacity duration-300">
+                
+                <!-- Project Card 1: Residencia Laura -->
+                <div class="project-card bg-slate-900/80 border border-slate-800 hover:border-blue-500/50 rounded-2xl p-4 transition shadow-lg flex flex-col justify-between">
+                  <div>
+                    <div class="flex items-start justify-between gap-2 mb-2">
+                      <div class="flex items-center gap-2.5 min-w-0">
+                        <div class="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-300 font-bold text-xs tracking-wider shrink-0">
+                          HA
+                        </div>
+                        <div class="min-w-0 flex-1">
+                          <span class="text-[10px] font-semibold text-blue-400 tracking-wide uppercase block truncate">HEMA ARQUITECTOS</span>
+                          <h4 class="text-sm font-bold text-white truncate">Residencia Laura</h4>
+                        </div>
+                      </div>
+                      <span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-500/10 text-blue-300 border border-blue-500/20 shrink-0">
+                        Vivienda
+                      </span>
+                    </div>
+
+                    <div class="flex items-center justify-between text-[11px] text-slate-400 mb-2.5 pb-2 border-b border-slate-800">
+                      <span class="flex items-center gap-1 text-slate-300 truncate">
+                        <i class="fa-solid fa-location-dot text-rose-400 text-[10px]"></i>
+                        <span>Col. Mangas, Tezontepec, Hgo.</span>
+                      </span>
+                      <span class="text-[10px] text-slate-500">01 Nov 2026</span>
+                    </div>
+
+                    <div class="flex items-center justify-between gap-2 mb-1.5 text-xs">
+                      <div>
+                        <span class="text-[10px] text-slate-400 block">Presupuesto Base</span>
+                        <span class="text-xs font-mono font-bold text-white">$1,512,215.00 MXN</span>
+                      </div>
+                      <div class="text-right">
+                        <span class="text-[10px] text-slate-400 block">Avance estimado</span>
+                        <span class="text-xs font-mono font-bold text-emerald-400">85%</span>
+                      </div>
+                    </div>
+
+                    <!-- Progress bar -->
+                    <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden mb-2.5">
+                      <div class="h-full bg-gradient-to-r from-emerald-500 to-cyan-400 rounded-full" style="width: 85%;"></div>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center justify-between pt-2 border-t border-slate-800 text-[10px]">
+                    <span class="text-slate-400 flex items-center gap-1">
+                      <i class="fa-solid fa-layer-group text-[9px]"></i> 4 conceptos APU
+                    </span>
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                      Sobrecosto: 0.00%
+                    </span>
                   </div>
                 </div>
 
                 <!-- Project Card 2: Pabellón Central -->
-                <div class="p-4 rounded-2xl bg-[#0e111a] border border-white/10 hover:border-cyan-500/40 transition flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg">
-                  <div class="space-y-1">
-                    <div class="flex items-center gap-2">
-                      <span class="px-2 py-0.5 rounded-md bg-white/10 text-[10px] font-bold text-slate-300">Proyecto Ejecutivo</span>
-                      <span class="px-2 py-0.5 rounded-md bg-cyan-500/20 text-cyan-300 text-[10px] font-bold">En Revisión</span>
+                <div class="project-card bg-slate-900/80 border border-slate-800 hover:border-blue-500/50 rounded-2xl p-4 transition shadow-lg flex flex-col justify-between">
+                  <div>
+                    <div class="flex items-start justify-between gap-2 mb-2">
+                      <div class="flex items-center gap-2.5 min-w-0">
+                        <div class="w-9 h-9 rounded-xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-300 font-bold text-xs tracking-wider shrink-0">
+                          EC
+                        </div>
+                        <div class="min-w-0 flex-1">
+                          <span class="text-[10px] font-semibold text-blue-400 tracking-wide uppercase block truncate">ESTUDIO CENTRAL</span>
+                          <h4 class="text-sm font-bold text-white truncate">Pabellón Lago Contemporáneo</h4>
+                        </div>
+                      </div>
+                      <span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-500/10 text-blue-300 border border-blue-500/20 shrink-0">
+                        Edificación
+                      </span>
                     </div>
-                    <h5 class="text-base font-bold text-white font-heading">Pabellón Lago Contemporáneo</h5>
-                    <p class="text-xs text-slate-400">Estudio Propio &bull; <span class="text-cyan-400">Rol: Administrador General</span></p>
+
+                    <div class="flex items-center justify-between text-[11px] text-slate-400 mb-2.5 pb-2 border-b border-slate-800">
+                      <span class="flex items-center gap-1 text-slate-300 truncate">
+                        <i class="fa-solid fa-location-dot text-rose-400 text-[10px]"></i>
+                        <span>Valle de Bravo, Edo. Méx.</span>
+                      </span>
+                      <span class="text-[10px] text-slate-500">12 Oct 2026</span>
+                    </div>
+
+                    <div class="flex items-center justify-between gap-2 mb-1.5 text-xs">
+                      <div>
+                        <span class="text-[10px] text-slate-400 block">Presupuesto Base</span>
+                        <span class="text-xs font-mono font-bold text-white">$940,000.00 MXN</span>
+                      </div>
+                      <div class="text-right">
+                        <span class="text-[10px] text-slate-400 block">Avance estimado</span>
+                        <span class="text-xs font-mono font-bold text-cyan-400">40%</span>
+                      </div>
+                    </div>
+
+                    <!-- Progress bar -->
+                    <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden mb-2.5">
+                      <div class="h-full bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full" style="width: 40%;"></div>
+                    </div>
                   </div>
-                  <div class="text-right sm:text-right w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-white/10">
-                    <span class="text-sm font-mono font-bold text-white block">$940,000.00 MXN</span>
-                    <span class="text-[11px] text-cyan-400 font-medium">40% Avance de Entregables</span>
+
+                  <div class="flex items-center justify-between pt-2 border-t border-slate-800 text-[10px]">
+                    <span class="text-slate-400 flex items-center gap-1">
+                      <i class="fa-solid fa-layer-group text-[9px]"></i> 2 conceptos APU
+                    </span>
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                      Sobrecosto: 0.00%
+                    </span>
                   </div>
                 </div>
+
               </div>
 
               <!-- VIEW 2: PROYECTOS DONDE FUISTE INVITADO (Invitations) -->
-              <div id="collab-view-invited" class="hidden space-y-3 transition-opacity duration-300">
-                <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
-                  <span>Proyectos compartidos por <strong class="text-cyan-400">Arq. Carlos Mendoza</strong></span>
-                  <span class="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-300 font-mono text-[10px] font-bold">Invitación Activa</span>
-                </div>
-
-                <!-- Invited Banner Alert -->
-                <div class="p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-between gap-3 text-xs text-cyan-200">
-                  <div class="flex items-center gap-2">
-                    <i class="fa-solid fa-handshake text-cyan-400"></i>
-                    <span>Estás colaborando como <strong>Residente de Obra &amp; Estimador</strong></span>
+              <div id="collab-view-invited" class="hidden transition-opacity duration-300 space-y-3">
+                
+                <!-- Banner de anfitrión -->
+                <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between gap-3 text-xs">
+                  <div class="flex items-center gap-2 text-slate-300">
+                    <i class="fa-solid fa-handshake text-emerald-400"></i>
+                    <span>Estás en el espacio de trabajo de <strong class="text-white">Arq. Carlos Mendoza</strong></span>
                   </div>
-                  <span class="text-[10px] font-mono text-cyan-400 bg-cyan-500/20 px-2 py-0.5 rounded">Permiso: Edición &amp; Bitácora</span>
+                  <span class="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Permiso: Editor &bull; Control Completo</span>
                 </div>
 
                 <!-- Project Card: Torre Corporativa Reforma -->
-                <div class="p-4 rounded-2xl bg-[#0e111a] border border-cyan-500/40 shadow-[0_0_20px_rgba(0,242,254,0.1)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                  <div class="space-y-1">
-                    <div class="flex items-center gap-2">
-                      <span class="px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-300 text-[10px] font-bold">Edificación Corporativa</span>
-                      <span class="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 text-[10px] font-bold">Colaboración Activa</span>
+                <div class="project-card bg-slate-900/90 border border-slate-800 hover:border-amber-500/50 rounded-2xl p-4 transition shadow-lg">
+                  <div class="flex items-start justify-between gap-3 mb-2.5">
+                    <div class="flex items-center gap-3 min-w-0">
+                      <div class="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-indigo-300 font-bold text-xs tracking-wider shrink-0">
+                        GCM
+                      </div>
+                      <div class="min-w-0 flex-1">
+                        <span class="text-[10px] font-semibold text-blue-400 tracking-wide uppercase block truncate">GRUPO CONSTRUCTOR METRÓPOLI</span>
+                        <h4 class="text-sm font-bold text-white truncate">Torre Corporativa Reforma</h4>
+                      </div>
                     </div>
-                    <h5 class="text-base font-bold text-white font-heading">Torre Corporativa Reforma</h5>
-                    <p class="text-xs text-slate-400">Grupo Constructor Metrópoli &bull; CDMX &bull; <span class="text-emerald-400">✓ Sincronizado hace 1 min</span></p>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                      <span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-500/10 text-blue-300 border border-blue-500/20">
+                        Edificación
+                      </span>
+                    </div>
                   </div>
-                  <div class="text-right sm:text-right w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-white/10">
-                    <span class="text-sm font-mono font-bold text-white block">$472,942.50 USD</span>
-                    <span class="text-[11px] text-amber-400 font-medium">42% Avance Físico</span>
+
+                  <div class="flex flex-wrap items-center justify-between gap-y-1 gap-x-3 text-xs text-slate-400 mb-2.5 pb-2 border-b border-slate-800">
+                    <span class="flex items-center gap-1.5 text-slate-300 text-xs">
+                      <i class="fa-solid fa-location-dot text-rose-400 text-xs"></i>
+                      <span>Paseo de la Reforma 405, Cuauhtémoc, CDMX</span>
+                    </span>
+                    <span class="text-xs text-slate-500">01 Nov 2026</span>
+                  </div>
+
+                  <div class="flex items-center justify-between gap-3 mb-2 text-xs">
+                    <div>
+                      <span class="text-[10px] text-slate-400 block">Presupuesto Base Contratado</span>
+                      <span class="text-xs font-mono font-bold text-white">$472,942.50 USD</span>
+                    </div>
+                    <div class="text-right">
+                      <span class="text-[10px] text-slate-400 block">Avance Físico</span>
+                      <span class="text-xs font-mono font-bold text-amber-400">42%</span>
+                    </div>
+                  </div>
+
+                  <!-- Progress bar -->
+                  <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden mb-2.5">
+                    <div class="h-full bg-gradient-to-r from-amber-500 to-orange-400 rounded-full" style="width: 42%;"></div>
+                  </div>
+
+                  <div class="flex items-center justify-between pt-2 border-t border-slate-800 text-[11px]">
+                    <span class="text-slate-400 flex items-center gap-1.5 text-[10px]">
+                      <i class="fa-solid fa-layer-group text-slate-500 text-[9px]"></i> 12 conceptos APU
+                    </span>
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30 animate-pulse">
+                      <i class="fa-solid fa-triangle-exclamation text-amber-400 text-[9px]"></i>
+                      Sobrecosto: +22.50%
+                    </span>
                   </div>
                 </div>
 
-                <!-- Real-time Activity Feed -->
-                <div class="p-2.5 rounded-xl bg-[#0a0d14] border border-white/5 flex items-center gap-2.5 text-[11px] text-slate-400">
-                  <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
-                  <span><strong class="text-white">Arq. Carlos Mendoza</strong> acaba de autorizar la Estimación No. 03</span>
-                  <span class="text-slate-600 ml-auto font-mono text-[10px]">Ahora mismo</span>
-                </div>
-              </div>
-
-              <!-- Footer Bar -->
-              <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-400 select-none">
-                <div class="flex items-center gap-2">
-                  <i class="fa-solid fa-cloud-arrow-up text-cyan-400"></i>
-                  <span id="collab-status-text">Modo: Propietario de Obra &bull; 2 proyectos locales</span>
-                </div>
-                <span class="text-[10px] font-mono text-slate-500">Haz clic en las pestañas para simular el cambio</span>
               </div>
 
             </div>
 
           </div>
+        </div>
         </div>
 
       </div>
@@ -1922,7 +2108,7 @@
   </div>
 
   <!-- Scripts -->
-  <script type="module" src="assets/js/main.js?v=20261115_rm_backup_btn"></script>
+  <script type="module" src="assets/js/main.js?v=20261115_real_portal_ui"></script>
 
 </body>
 </html>
