@@ -1,228 +1,115 @@
 // assets/js/showcaseRuleta.js
-// Showcase Dual Cinemático: Video Publicitario Oficial & Ruleta de Capturas Cubikar
+// Álbum Ruleta Publicitario Oficial — Modo Limpio sin Barras de Botones (1 al 6 en Loop Infinito)
 
 export const HERO_SLIDES = [
   {
-    id: 'apu',
-    app: 'const',
-    title: 'Catálogo Base & Matrices APU',
-    product: 'Cubikar Construcción',
-    badgeClass: 'badge-const',
-    image: 'assets/images/showcase/hero-app-apu.png',
-    tag: 'Presupuestos & Precios Unitarios'
+    id: 'slide-1',
+    sequence: 1,
+    title: 'Ecosistema Unificado Digital',
+    product: 'Cubikar Oficial',
+    image: 'assets/images/showcase/ruleta/1 cubikar_animacion_logo.gif',
+    tag: 'Animación Oficial & Branding',
+    duration: 6200
   },
   {
-    id: 'alcances',
-    app: 'arq',
-    title: 'Alcances de Proyecto Ejecutivo',
+    id: 'slide-2',
+    sequence: 2,
+    title: 'Control de Proyectos & Portafolio',
     product: 'Cubikar Arquitectura',
-    badgeClass: 'badge-arq',
-    image: 'assets/images/showcase/hero-app-alcances.png',
-    tag: 'Coordinación Multidisciplinaria'
+    image: 'assets/images/showcase/ruleta/2.png',
+    tag: 'Gestión Integral & Entregables',
+    duration: 5000
   },
   {
-    id: 'erp',
-    app: 'const',
+    id: 'slide-3',
+    sequence: 3,
+    title: 'Catálogo de Insumos & Matrices APU',
+    product: 'Cubikar Construcción',
+    image: 'assets/images/showcase/ruleta/3.png',
+    tag: 'Presupuestos Oficiales & Precios Unitarios',
+    duration: 5000
+  },
+  {
+    id: 'slide-4',
+    sequence: 4,
     title: 'Tablero Financiero ERP & Compras',
     product: 'Cubikar Construcción',
-    badgeClass: 'badge-const',
-    image: 'assets/images/showcase/hero-app-erp.png',
-    tag: 'Control de Egresos & Semáforo'
+    image: 'assets/images/showcase/ruleta/4.png',
+    tag: 'Control de Egresos & Proveedores',
+    duration: 5000
   },
   {
-    id: 'estimaciones',
-    app: 'const',
+    id: 'slide-5',
+    sequence: 5,
     title: 'Estimaciones & Números Generadores',
     product: 'Cubikar Construcción',
-    badgeClass: 'badge-const',
-    image: 'assets/images/showcase/hero-app-estimaciones.png',
-    tag: 'Avance Real & Cobros de Obra'
+    image: 'assets/images/showcase/ruleta/5.png',
+    tag: 'Avance Real & Cobros de Obra',
+    duration: 5000
   },
   {
-    id: 'especialistas',
-    app: 'arq',
-    title: 'Control de Pagos a Especialistas',
-    product: 'Cubikar Arquitectura',
-    badgeClass: 'badge-arq',
-    image: 'assets/images/showcase/hero-app-especialistas.png',
-    tag: 'Honorarios & Subcontratos'
+    id: 'slide-6',
+    sequence: 6,
+    title: 'Supervisión en Vivo & Nube Segura',
+    product: 'Cubikar Ecosistema',
+    image: 'assets/images/showcase/ruleta/6.png',
+    tag: 'Sincronización Cloud & Respaldos',
+    duration: 5000
   }
 ];
 
-let currentMode = 'video'; // 'video' | 'gallery'
 let currentIndex = 0;
-let autoPlayInterval = null;
+let autoPlayTimer = null;
 let isPaused = false;
-let isMuted = true;
-const SLIDE_DURATION = 5000;
+let progressStartTime = 0;
+let remainingTime = 0;
 
 export function initShowcaseRuleta() {
   const mount = document.getElementById('cubikar-showcase-mount');
   if (!mount) return;
 
-  renderShowcaseStructure(mount);
-  bindShowcaseEvents();
-  setMode('video');
+  renderRuletaStructure(mount);
+  bindRuletaEvents();
+  updateSlide(0, false);
+  startSlideAutoPlay(HERO_SLIDES[0].duration);
 }
 
-function renderShowcaseStructure(container) {
+function renderRuletaStructure(container) {
   container.innerHTML = `
     <div id="hero-showcase-wrapper" class="relative w-full h-full min-h-[500px] lg:min-h-[700px] select-none flex items-center justify-center lg:justify-end lg:pr-6 xl:pr-12 p-3 sm:p-6 lg:p-8">
       
-      <!-- Ambient Glow Behind Hero Showcase (D5 Render Cyan/Indigo Aura) -->
+      <!-- Aura de resplandor ambiental detrás del Álbum Ruleta (Cian & Azul Índigo) -->
       <div class="absolute -inset-10 bg-gradient-to-tr from-cyan-500/10 via-blue-600/10 to-indigo-500/10 rounded-full blur-3xl opacity-70 pointer-events-none"></div>
 
-      <!-- Main Studio Window Container -->
-      <div class="relative w-full max-w-4xl xl:max-w-5xl z-10 rounded-2xl sm:rounded-3xl overflow-hidden border border-white/15 bg-black shadow-[0_0_60px_rgba(0,0,0,0.9),0_0_35px_rgba(0,242,254,0.18)] flex flex-col">
+      <!-- Ventana Principal del Álbum Ruleta (Diseño Limpio Sin Barras) -->
+      <div id="ruleta-window-container" class="relative w-full max-w-4xl xl:max-w-5xl z-10 rounded-2xl sm:rounded-3xl overflow-hidden border border-white/15 bg-black shadow-[0_0_60px_rgba(0,0,0,0.9),0_0_35px_rgba(0,242,254,0.18)] flex flex-col">
         
-        <!-- ================================================================= -->
-        <!-- STUDIO WINDOW TOP BAR (Integrated Mode Switcher + Studio Status) -->
-        <!-- ================================================================= -->
-        <div class="px-3 sm:px-4 py-2 sm:py-2.5 bg-[#0e111a]/95 backdrop-blur-md border-b border-white/10 flex items-center justify-between gap-2 select-none z-20">
+        <!-- VIEWPORT PRINCIPAL 16:10 TOTALMENTE LIMPIO -->
+        <div id="ruleta-viewport" class="relative w-full aspect-[16/10] bg-[#021026] overflow-hidden">
           
-          <!-- Left: Mac Window Controls + Seamless Mode Switcher Tabs -->
-          <div class="flex items-center gap-2 sm:gap-3">
-            <div class="hidden sm:flex items-center gap-1.5">
-              <span class="w-2.5 h-2.5 rounded-full bg-red-500/80"></span>
-              <span class="w-2.5 h-2.5 rounded-full bg-amber-500/80"></span>
-              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500/80"></span>
-              <div class="h-3 w-px bg-white/15 mx-1"></div>
-            </div>
-
-            <!-- Mode Tabs integrated directly in header -->
-            <div class="flex items-center gap-1 p-0.5 rounded-xl bg-black/60 border border-white/10">
-              <button id="showcase-tab-video" class="px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer bg-gradient-to-r from-cyan-400 to-blue-500 text-slate-950 shadow-sm">
-                <i class="fa-solid fa-play text-[9px]"></i>
-                <span>Video Publicitario</span>
-              </button>
-              <button id="showcase-tab-gallery" class="px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer text-slate-400 hover:text-white hover:bg-white/10">
-                <i class="fa-solid fa-images text-[9px]"></i>
-                <span>Capturas de App</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Right: Video Controls (Audio & 1080p) OR Gallery Dots -->
-          <div class="flex items-center gap-2">
-            
-            <!-- Video Specific Controls (Hidden in gallery mode) -->
-            <div id="header-video-controls" class="flex items-center gap-2">
-              <span class="hidden sm:inline-block px-2 py-0.5 rounded-md bg-white/10 text-[10px] font-mono font-bold text-cyan-300">1080p HD</span>
-              
-              <button id="video-sound-btn" class="px-2.5 sm:px-3 py-1 rounded-lg bg-white/5 hover:bg-white/15 border border-white/10 text-slate-300 hover:text-white text-[11px] font-bold flex items-center gap-1.5 transition cursor-pointer">
-                <i id="video-sound-icon" class="fa-solid fa-volume-xmark text-slate-400"></i>
-                <span id="video-sound-label" class="hidden sm:inline">Activar Audio</span>
-                <span class="sm:hidden">Audio</span>
-              </button>
-            </div>
-
-            <!-- Gallery Specific Dots (Hidden in video mode) -->
-            <div id="header-gallery-dots" class="hidden flex items-center gap-1.5 p-1 rounded-full bg-white/5 border border-white/10">
-              ${HERO_SLIDES.map((_, idx) => `
-                <button onclick="window.goToHeroSlide(${idx})" class="w-2 h-2 rounded-full transition-all duration-300 ${idx === 0 ? 'bg-cyan-400 w-5' : 'bg-white/30 hover:bg-white/60'}" id="carousel-dot-${idx}"></button>
-              `).join('')}
-            </div>
-
-          </div>
-
-        </div>
-
-        <!-- ================================================================= -->
-        <!-- WINDOW BODY: 16:9 VIEWPORT (VIDEO O GALERÍA)                     -->
-        <!-- ================================================================= -->
-        <div class="relative w-full aspect-video bg-black overflow-hidden">
-          
-          <!-- VISTA 1: VIDEO PUBLICITARIO OFICIAL MP4 CUBIKAR -->
-          <div id="hero-video-view" class="absolute inset-0 w-full h-full z-10 transition-opacity duration-300 flex items-center justify-center bg-black">
-            <video 
-              id="hero-cubikar-video"
-              class="w-full h-full object-cover cursor-pointer"
-              src="assets/videos/cubikar_promo.mp4"
-              autoplay
-              muted
-              loop
-              playsinline
-              preload="auto"
-              title="Video Publicitario Oficial de Cubikar"
-            ></video>
-            <div id="video-play-hint" class="pointer-events-none absolute bottom-3 left-3 px-2.5 py-1 rounded-md bg-black/70 border border-white/10 text-[10px] font-mono text-cyan-300 backdrop-blur-md">
-              <i class="fa-solid fa-circle-play mr-1 text-cyan-400"></i> Video Publicitario Oficial Cubikar Full HD
-            </div>
-          </div>
-
-          <!-- VISTA 2: RULETA DE CAPTURAS DE LA APP -->
-          <div id="hero-gallery-view" class="hidden absolute inset-0 w-full h-full z-10 transition-opacity duration-300">
-            
-            <div id="hero-carousel-images" class="absolute inset-0 w-full h-full">
-              ${HERO_SLIDES.map((slide, idx) => `
-                <div id="carousel-slide-${idx}" class="carousel-slide ${idx === 0 ? 'active' : 'inactive'} absolute inset-0 w-full h-full">
-                  <img src="${slide.image}" alt="${slide.title}" class="w-full h-full object-cover object-left-top transform transition-transform duration-[7000ms] ease-out ${idx === 0 ? 'scale-100' : 'scale-105'}">
-                  <div class="absolute inset-0 bg-gradient-to-t from-[#07080c] via-transparent to-black/30 pointer-events-none"></div>
-                  <div class="absolute inset-0 bg-gradient-to-r from-[#07080c] via-transparent to-transparent opacity-80 lg:opacity-40 pointer-events-none"></div>
-                </div>
-              `).join('')}
-            </div>
-
-          </div>
-
-        </div>
-
-        <!-- ================================================================= -->
-        <!-- STUDIO WINDOW BOTTOM STATUS BAR                                   -->
-        <!-- ================================================================= -->
-        <div class="px-4 py-2.5 bg-gradient-to-r from-[#0e111a] via-[#07080c] to-[#0e111a] border-t border-white/10 flex items-center justify-between text-[11px] text-slate-400 select-none z-20">
-          
-          <!-- Bottom Left Info -->
-          <div class="flex items-center gap-2 sm:gap-3">
-            <div id="bottom-video-info" class="flex items-center gap-2">
-              <span class="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(0,242,254,0.9)] animate-pulse"></span>
-              <span class="text-cyan-400 font-bold">Video Oficial</span>
-              <span class="hidden md:inline text-slate-500">| Conoce el flujo de trabajo en la nube</span>
-            </div>
-
-            <div id="bottom-gallery-info" class="hidden flex items-center gap-2">
-              <span id="carousel-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold ${HERO_SLIDES[0].badgeClass}">
-                ${HERO_SLIDES[0].product}
-              </span>
-              <span id="carousel-title" class="text-xs font-bold text-white tracking-wide truncate max-w-[200px] sm:max-w-xs">
-                ${HERO_SLIDES[0].title}
-              </span>
-            </div>
-          </div>
-
-          <!-- Bottom Right Controls -->
-          <div class="flex items-center gap-2 sm:gap-3">
-            
-            <!-- Video Status / Fullscreen -->
-            <div id="bottom-video-actions" class="flex items-center gap-3">
-              <span class="text-[10px] font-mono text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
-                1080p Full HD &bull; MP4
-              </span>
-              <button onclick="window.toggleVideoFullscreen()" class="hover:text-cyan-400 transition flex items-center gap-1.5 text-[11px] font-medium cursor-pointer" title="Pantalla Completa">
-                <i class="fa-solid fa-expand text-[10px]"></i>
-                <span class="hidden sm:inline">Pantalla Completa</span>
-              </button>
-            </div>
-
-            <!-- Gallery Navigation Controls -->
-            <div id="bottom-gallery-actions" class="hidden flex items-center gap-1.5">
-              <button id="carousel-btn-prev" class="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer" title="Anterior">
-                <i class="fa-solid fa-chevron-left text-[10px]"></i>
-              </button>
-              
-              <div class="px-1 text-xs font-mono font-bold text-slate-300 min-w-[42px] text-center">
-                <span id="carousel-current-num" class="text-cyan-400">01</span><span class="text-slate-600">/</span><span>05</span>
+          <!-- Contenedor de Slides (1 al 6) -->
+          <div id="hero-carousel-images" class="absolute inset-0 w-full h-full">
+            ${HERO_SLIDES.map((slide, idx) => `
+              <div 
+                id="carousel-slide-${idx}" 
+                class="carousel-slide ${idx === 0 ? 'active' : 'inactive'} absolute inset-0 w-full h-full flex items-center justify-center bg-[#021026]"
+              >
+                <img 
+                  src="${slide.image}" 
+                  alt="${slide.title}" 
+                  class="w-full h-full object-contain sm:object-cover object-center transform transition-transform duration-[6000ms] ease-out ${idx === 0 ? 'scale-100' : 'scale-105'}"
+                  loading="${idx < 2 ? 'eager' : 'lazy'}"
+                >
+                <!-- Sombras sutiles de viñeta cinematográfica para integración limpia -->
+                <div class="absolute inset-0 bg-gradient-to-t from-[#07080c]/50 via-transparent to-black/15 pointer-events-none"></div>
+                <div class="absolute inset-0 bg-gradient-to-r from-[#07080c]/50 via-transparent to-transparent pointer-events-none"></div>
               </div>
+            `).join('')}
+          </div>
 
-              <button id="carousel-btn-next" class="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer" title="Siguiente">
-                <i class="fa-solid fa-chevron-right text-[10px]"></i>
-              </button>
-
-              <button id="carousel-btn-pause" class="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/20 text-slate-400 hover:text-white flex items-center justify-center transition cursor-pointer ml-1" title="Pausar / Reproducir">
-                <i id="carousel-pause-icon" class="fa-solid fa-pause text-[10px]"></i>
-              </button>
-            </div>
-
+          <!-- Barra de progreso sutil y ultra-fina (1.5px) en la base inferior -->
+          <div class="absolute bottom-0 left-0 right-0 h-[2px] bg-white/10 z-30 pointer-events-none">
+            <div id="ruleta-progress-bar" class="h-full bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 shadow-[0_0_10px_rgba(0,242,254,0.8)] w-0 transition-none"></div>
           </div>
 
         </div>
@@ -233,276 +120,153 @@ function renderShowcaseStructure(container) {
   `;
 }
 
-export function setMode(mode) {
-  currentMode = mode;
-  const tabVideo = document.getElementById('showcase-tab-video');
-  const tabGallery = document.getElementById('showcase-tab-gallery');
-  const viewVideo = document.getElementById('hero-video-view');
-  const viewGallery = document.getElementById('hero-gallery-view');
-  
-  const headerVideoControls = document.getElementById('header-video-controls');
-  const headerGalleryDots = document.getElementById('header-gallery-dots');
-  
-  const bottomVideoInfo = document.getElementById('bottom-video-info');
-  const bottomGalleryInfo = document.getElementById('bottom-gallery-info');
-  const bottomVideoActions = document.getElementById('bottom-video-actions');
-  const bottomGalleryActions = document.getElementById('bottom-gallery-actions');
-
-  if (mode === 'video') {
-    if (tabVideo) {
-      tabVideo.className = 'px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer bg-gradient-to-r from-cyan-400 to-blue-500 text-slate-950 shadow-sm';
-    }
-    if (tabGallery) {
-      tabGallery.className = 'px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer text-slate-400 hover:text-white hover:bg-white/10';
-    }
-    
-    if (viewVideo) viewVideo.classList.remove('hidden');
-    if (viewGallery) viewGallery.classList.add('hidden');
-
-    if (headerVideoControls) headerVideoControls.classList.remove('hidden');
-    if (headerGalleryDots) headerGalleryDots.classList.add('hidden');
-
-    if (bottomVideoInfo) bottomVideoInfo.classList.remove('hidden');
-    if (bottomGalleryInfo) bottomGalleryInfo.classList.add('hidden');
-    if (bottomVideoActions) bottomVideoActions.classList.remove('hidden');
-    if (bottomGalleryActions) bottomGalleryActions.classList.add('hidden');
-
-    stopAutoPlay();
-    const vid = document.getElementById('hero-cubikar-video');
-    if (vid) {
-      vid.play().catch(() => {});
-    }
-  } else {
-    if (tabGallery) {
-      tabGallery.className = 'px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer bg-gradient-to-r from-cyan-400 to-blue-500 text-slate-950 shadow-sm';
-    }
-    if (tabVideo) {
-      tabVideo.className = 'px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer text-slate-400 hover:text-white hover:bg-white/10';
-    }
-
-    if (viewVideo) viewVideo.classList.add('hidden');
-    if (viewGallery) viewGallery.classList.remove('hidden');
-
-    if (headerVideoControls) headerVideoControls.classList.add('hidden');
-    if (headerGalleryDots) headerGalleryDots.classList.remove('hidden');
-
-    if (bottomVideoInfo) bottomVideoInfo.classList.add('hidden');
-    if (bottomGalleryInfo) bottomGalleryInfo.classList.remove('hidden');
-    if (bottomVideoActions) bottomVideoActions.classList.add('hidden');
-    if (bottomGalleryActions) bottomGalleryActions.classList.remove('hidden');
-
-    const vid = document.getElementById('hero-cubikar-video');
-    if (vid) {
-      vid.pause();
-    }
-    updateSlide(currentIndex);
-    startAutoPlay();
-  }
-}
-
-export function toggleVideoSound() {
-  const vid = document.getElementById('hero-cubikar-video');
-  isMuted = !isMuted;
-  if (vid) {
-    vid.muted = isMuted;
-    if (!isMuted && vid.paused) {
-      vid.play().catch(() => {});
-    }
-  }
-
-  const btn = document.getElementById('video-sound-btn');
-  const icon = document.getElementById('video-sound-icon');
-  const label = document.getElementById('video-sound-label');
-
-  if (btn && icon && label) {
-    if (isMuted) {
-      icon.className = 'fa-solid fa-volume-xmark text-slate-400';
-      label.textContent = 'Activar Audio';
-      btn.className = 'px-2.5 sm:px-3 py-1 rounded-lg bg-white/5 hover:bg-white/15 border border-white/10 text-slate-300 hover:text-white text-[11px] font-bold flex items-center gap-1.5 transition cursor-pointer';
-    } else {
-      icon.className = 'fa-solid fa-volume-high text-cyan-400 animate-pulse';
-      label.textContent = 'Audio Activado';
-      btn.className = 'px-2.5 sm:px-3 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 text-[11px] font-bold flex items-center gap-1.5 transition cursor-pointer shadow-[0_0_15px_rgba(0,242,254,0.3)]';
-    }
-  }
-}
-
-function bindShowcaseEvents() {
-  const tabVideo = document.getElementById('showcase-tab-video');
-  const tabGallery = document.getElementById('showcase-tab-gallery');
-  const soundBtn = document.getElementById('video-sound-btn');
-  const vid = document.getElementById('hero-cubikar-video');
-
-  if (tabVideo) tabVideo.addEventListener('click', () => setMode('video'));
-  if (tabGallery) tabGallery.addEventListener('click', () => setMode('gallery'));
-  if (soundBtn) soundBtn.addEventListener('click', toggleVideoSound);
-
-  if (vid) {
-    vid.addEventListener('click', () => {
-      if (vid.paused) {
-        vid.play().catch(() => {});
-      } else {
-        vid.pause();
-      }
-    });
-  }
-
-  const btnPrev = document.getElementById('carousel-btn-prev');
-  const btnNext = document.getElementById('carousel-btn-next');
-  const btnPause = document.getElementById('carousel-btn-pause');
-
-  if (btnPrev) {
-    btnPrev.addEventListener('click', () => {
-      prevSlide();
-      resetTimer();
-    });
-  }
-
-  if (btnNext) {
-    btnNext.addEventListener('click', () => {
-      nextSlide();
-      resetTimer();
-    });
-  }
-
-  if (btnPause) {
-    btnPause.addEventListener('click', () => {
-      togglePause();
-    });
-  }
-
-  const wrapper = document.getElementById('hero-gallery-view');
-  if (wrapper) {
-    wrapper.addEventListener('mouseenter', () => {
+function bindRuletaEvents() {
+  const viewport = document.getElementById('ruleta-viewport');
+  if (viewport) {
+    viewport.addEventListener('mouseenter', () => {
       isPaused = true;
+      pauseProgressBar();
     });
-    wrapper.addEventListener('mouseleave', () => {
+    viewport.addEventListener('mouseleave', () => {
       isPaused = false;
+      resumeProgressBar();
     });
   }
 }
 
-function updateSlide(newIdx) {
+function updateSlide(newIdx, animateProgress = true) {
   HERO_SLIDES.forEach((_, idx) => {
     const el = document.getElementById(`carousel-slide-${idx}`);
-    const dot = document.getElementById(`carousel-dot-${idx}`);
     if (el) {
       if (idx === newIdx) {
-        el.className = 'carousel-slide active absolute inset-0 w-full h-full';
+        el.className = 'carousel-slide active absolute inset-0 w-full h-full flex items-center justify-center bg-[#021026]';
         const img = el.querySelector('img');
         if (img) img.classList.replace('scale-105', 'scale-100');
       } else {
-        el.className = 'carousel-slide inactive absolute inset-0 w-full h-full';
+        el.className = 'carousel-slide inactive absolute inset-0 w-full h-full flex items-center justify-center bg-[#021026]';
         const img = el.querySelector('img');
         if (img) img.classList.replace('scale-100', 'scale-105');
       }
     }
-    if (dot) {
-      if (idx === newIdx) {
-        dot.className = 'w-5 h-2 rounded-full bg-cyan-400 transition-all duration-300';
-      } else {
-        dot.className = 'w-2 h-2 rounded-full bg-white/30 hover:bg-white/60 transition-all duration-300';
-      }
-    }
   });
 
-  const slide = HERO_SLIDES[newIdx];
-  const titleEl = document.getElementById('carousel-title');
-  const badgeEl = document.getElementById('carousel-badge');
-  const numEl = document.getElementById('carousel-current-num');
-
-  if (titleEl) titleEl.textContent = slide.title;
-  if (badgeEl) {
-    badgeEl.textContent = slide.product;
-    badgeEl.className = `px-2 py-0.5 rounded-full text-[10px] font-bold ${slide.badgeClass}`;
-  }
-  if (numEl) numEl.textContent = `0${newIdx + 1}`;
-
   currentIndex = newIdx;
+
+  if (animateProgress && !isPaused) {
+    startSlideAutoPlay(HERO_SLIDES[newIdx].duration);
+  }
 }
 
 function nextSlide() {
   const nextIdx = (currentIndex + 1) % HERO_SLIDES.length;
-  updateSlide(nextIdx);
+  updateSlide(nextIdx, true);
 }
 
 function prevSlide() {
   const prevIdx = (currentIndex - 1 + HERO_SLIDES.length) % HERO_SLIDES.length;
-  updateSlide(prevIdx);
+  updateSlide(prevIdx, true);
 }
 
-function startAutoPlay() {
+function startSlideAutoPlay(duration) {
   stopAutoPlay();
-  autoPlayInterval = setInterval(() => {
-    if (!isPaused && currentMode === 'gallery') {
+  
+  const bar = document.getElementById('ruleta-progress-bar');
+  if (bar) {
+    bar.style.transition = 'none';
+    bar.style.width = '0%';
+    void bar.offsetWidth; // Forzar reflow
+    bar.style.transition = `width ${duration}ms linear`;
+    bar.style.width = '100%';
+  }
+
+  progressStartTime = Date.now();
+  remainingTime = duration;
+
+  autoPlayTimer = setTimeout(() => {
+    if (!isPaused) {
       nextSlide();
     }
-  }, SLIDE_DURATION);
+  }, duration);
 }
 
 function stopAutoPlay() {
-  if (autoPlayInterval) {
-    clearInterval(autoPlayInterval);
-    autoPlayInterval = null;
+  if (autoPlayTimer) {
+    clearTimeout(autoPlayTimer);
+    autoPlayTimer = null;
   }
+}
+
+function pauseProgressBar() {
+  stopAutoPlay();
+  const bar = document.getElementById('ruleta-progress-bar');
+  if (bar) {
+    const computedWidth = window.getComputedStyle(bar).width;
+    bar.style.transition = 'none';
+    bar.style.width = computedWidth;
+  }
+  const elapsed = Date.now() - progressStartTime;
+  remainingTime = Math.max(500, remainingTime - elapsed);
+}
+
+function resumeProgressBar() {
+  const bar = document.getElementById('ruleta-progress-bar');
+  if (bar && remainingTime > 0) {
+    bar.style.transition = `width ${remainingTime}ms linear`;
+    bar.style.width = '100%';
+  }
+  progressStartTime = Date.now();
+  autoPlayTimer = setTimeout(() => {
+    if (!isPaused) {
+      nextSlide();
+    }
+  }, remainingTime);
 }
 
 function resetTimer() {
-  stopAutoPlay();
-  startAutoPlay();
+  const duration = HERO_SLIDES[currentIndex].duration || 5000;
+  startSlideAutoPlay(duration);
 }
 
-function togglePause() {
-  isPaused = !isPaused;
-  const icon = document.getElementById('carousel-pause-icon');
-  if (icon) {
-    if (isPaused) {
-      icon.className = 'fa-solid fa-play text-[10px] text-cyan-400';
-    } else {
-      icon.className = 'fa-solid fa-pause text-[10px]';
-    }
-  }
-}
-
-// Global scope helpers
+// Global scope helpers para compatibilidad
 window.goToHeroSlide = (idx) => {
-  setMode('gallery');
-  updateSlide(idx);
-  resetTimer();
+  isPaused = false;
+  updateSlide(idx, true);
 };
 
 window.switchAppToConst = () => {
-  setMode('gallery');
-  const constIdx = HERO_SLIDES.findIndex(s => s.app === 'const');
+  const constIdx = HERO_SLIDES.findIndex(s => s.product.includes('Construcción'));
   if (constIdx !== -1) {
-    updateSlide(constIdx);
+    window.goToHeroSlide(constIdx);
   }
   const el = document.getElementById('hero-section');
   if (el) el.scrollIntoView({ behavior: 'smooth' });
 };
 
 window.switchAppToArq = () => {
-  setMode('gallery');
-  const arqIdx = HERO_SLIDES.findIndex(s => s.app === 'arq');
+  const arqIdx = HERO_SLIDES.findIndex(s => s.product.includes('Arquitectura'));
   if (arqIdx !== -1) {
-    updateSlide(arqIdx);
+    window.goToHeroSlide(arqIdx);
   }
   const el = document.getElementById('hero-section');
   if (el) el.scrollIntoView({ behavior: 'smooth' });
 };
 
-window.toggleHeroVideoSound = toggleVideoSound;
-window.setHeroShowcaseMode = setMode;
-
-window.toggleVideoFullscreen = function() {
-  const vid = document.getElementById('hero-cubikar-video');
-  if (!vid) return;
-  if (vid.requestFullscreen) {
-    vid.requestFullscreen();
-  } else if (vid.webkitRequestFullscreen) {
-    vid.webkitRequestFullscreen();
-  } else if (vid.msRequestFullscreen) {
-    vid.msRequestFullscreen();
+window.toggleRuletaFullscreen = function() {
+  const container = document.getElementById('ruleta-window-container');
+  if (!container) return;
+  if (!document.fullscreenElement) {
+    if (container.requestFullscreen) {
+      container.requestFullscreen();
+    } else if (container.webkitRequestFullscreen) {
+      container.webkitRequestFullscreen();
+    }
+  } else {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    }
   }
 };
 
+window.toggleHeroVideoSound = () => {};
+window.setHeroShowcaseMode = () => {};
+window.toggleVideoFullscreen = window.toggleRuletaFullscreen;
