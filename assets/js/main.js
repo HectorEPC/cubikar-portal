@@ -778,3 +778,30 @@ export async function handleLogout() {
 export function handleStripePortal() {
   alert('Accediendo al Portal de Facturación y Suscripción de Stripe de Cubikar...');
 }
+
+export function switchSliceTab(type) {
+  const tabArq = document.getElementById('tab-slice-arq');
+  const tabConst = document.getElementById('tab-slice-const');
+  const panelArq = document.getElementById('slice-panel-arq');
+  const panelConst = document.getElementById('slice-panel-const');
+
+  if (!tabArq || !tabConst || !panelArq || !panelConst) return;
+
+  if (type === 'arq') {
+    tabArq.className = 'px-7 py-3 rounded-xl font-extrabold text-xs transition-all duration-300 flex items-center gap-2.5 cursor-pointer bg-gradient-to-r from-cyan-400 to-blue-600 text-slate-950 shadow-[0_0_20px_rgba(0,242,254,0.35)]';
+    tabConst.className = 'px-7 py-3 rounded-xl font-extrabold text-xs transition-all duration-300 flex items-center gap-2.5 cursor-pointer text-slate-400 hover:text-white hover:bg-white/5';
+    panelArq.classList.remove('hidden');
+    panelArq.classList.add('flex');
+    panelConst.classList.remove('flex');
+    panelConst.classList.add('hidden');
+  } else {
+    tabConst.className = 'px-7 py-3 rounded-xl font-extrabold text-xs transition-all duration-300 flex items-center gap-2.5 cursor-pointer bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 shadow-[0_0_20px_rgba(245,158,11,0.35)]';
+    tabArq.className = 'px-7 py-3 rounded-xl font-extrabold text-xs transition-all duration-300 flex items-center gap-2.5 cursor-pointer text-slate-400 hover:text-white hover:bg-white/5';
+    panelConst.classList.remove('hidden');
+    panelConst.classList.add('flex');
+    panelArq.classList.remove('flex');
+    panelArq.classList.add('hidden');
+  }
+}
+window.switchSliceTab = switchSliceTab;
+

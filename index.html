@@ -160,38 +160,89 @@
           Mejora, ajusta y explora presupuestos, cronogramas y memorias de diseño en tu navegador. Incluido en todos los planes de Cubikar.
         </p>
 
-        <div class="flex items-center justify-center gap-4 flex-wrap">
-          <button onclick="openAuthModal('register')" class="px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-600 hover:from-cyan-300 hover:to-blue-500 text-slate-950 font-bold text-xs shadow-md transition cursor-pointer">
-            Descubre las herramientas de Cubikar
+        <!-- CONMUTADOR DE PESTAÑAS (ARQUITECTURA / CONSTRUCCIÓN) -->
+        <div class="inline-flex items-center p-1.5 rounded-2xl bg-[#0e111a] border border-white/10 shadow-2xl gap-2 mb-2">
+          <button id="tab-slice-arq" onclick="window.switchSliceTab('arq')" class="px-7 py-3 rounded-xl font-extrabold text-xs transition-all duration-300 flex items-center gap-2.5 cursor-pointer bg-gradient-to-r from-cyan-400 to-blue-600 text-slate-950 shadow-[0_0_20px_rgba(0,242,254,0.35)]">
+            <i class="fa-solid fa-compass-drafting text-xs"></i>
+            <span>Cubikar Arquitectura</span>
           </button>
-          <a href="#flujo" class="px-6 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold text-xs transition">
-            Ver el flujo de trabajo
-          </a>
+          <button id="tab-slice-const" onclick="window.switchSliceTab('const')" class="px-7 py-3 rounded-xl font-extrabold text-xs transition-all duration-300 flex items-center gap-2.5 cursor-pointer text-slate-400 hover:text-white hover:bg-white/5">
+            <i class="fa-solid fa-trowel-bricks text-xs"></i>
+            <span>Cubikar Construcción</span>
+          </button>
         </div>
       </div>
 
-      <!-- TIRA VERTICAL MULTI-FASE ESTILO LUMION (SCREENSHOT 3) -->
-      <div class="relative w-full h-[400px] sm:h-[480px] rounded-3xl overflow-hidden border border-white/10 shadow-2xl flex items-stretch">
+      <!-- =================================================================== -->
+      <!-- PANEL 1: CUBIKAR ARQUITECTURA (TIRA MULTI-FASE)                     -->
+      <!-- =================================================================== -->
+      <div id="slice-panel-arq" class="relative w-full h-[400px] sm:h-[480px] rounded-3xl overflow-hidden border border-white/10 shadow-2xl flex items-stretch transition-all duration-500">
         
-        <!-- Columna 1: Anteproyecto -->
+        <!-- Columna 1: Alcances & Anteproyecto -->
         <div class="lumion-slice-col flex-1 relative group cursor-pointer overflow-hidden border-r border-white/10">
-          <img src="assets/images/showcase/hero-app-alcances.png" alt="Anteproyecto" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+          <img src="assets/images/showcase/hero-app-alcances.png" alt="Alcances de Proyecto" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
           <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent"></div>
           <div class="absolute bottom-6 left-6 right-6 text-left">
             <span class="text-[10px] font-mono font-bold text-cyan-400 uppercase tracking-wider block">Fase 01</span>
-            <h4 class="text-base sm:text-lg font-bold text-white font-heading">Anteproyecto &amp; Diseño</h4>
+            <h4 class="text-base sm:text-lg font-bold text-white font-heading">Alcances &amp; Anteproyecto</h4>
             <p class="text-xs text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 mt-1 line-clamp-2">
-              Modelado y visualización de espacios con aprobación rápida del cliente.
+              Definición de planos, niveles de detalle y memorias de diseño ejecutivo.
             </p>
           </div>
         </div>
 
-        <!-- Columna 2: Licitación & APU -->
+        <!-- Columna 2: Seguimiento Operativo -->
+        <div class="lumion-slice-col flex-1 relative group cursor-pointer overflow-hidden border-r border-white/10">
+          <img src="assets/images/showcase/hero-app-seguimiento.png" alt="Seguimiento Operativo" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+          <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent"></div>
+          <div class="absolute bottom-6 left-6 right-6 text-left">
+            <span class="text-[10px] font-mono font-bold text-cyan-400 uppercase tracking-wider block">Fase 02</span>
+            <h4 class="text-base sm:text-lg font-bold text-white font-heading">Seguimiento Operativo</h4>
+            <p class="text-xs text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 mt-1 line-clamp-2">
+              Cronogramas de diseño, avance por entregables y control de cambios en vivo.
+            </p>
+          </div>
+        </div>
+
+        <!-- Columna 3: Pagos a Especialistas -->
+        <div class="lumion-slice-col flex-1 relative group cursor-pointer overflow-hidden border-r border-white/10">
+          <img src="assets/images/showcase/hero-app-especialistas.png" alt="Pagos a Especialistas" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+          <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent"></div>
+          <div class="absolute bottom-6 left-6 right-6 text-left">
+            <span class="text-[10px] font-mono font-bold text-cyan-400 uppercase tracking-wider block">Fase 03</span>
+            <h4 class="text-base sm:text-lg font-bold text-white font-heading">Pagos a Especialistas</h4>
+            <p class="text-xs text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 mt-1 line-clamp-2">
+              Cobranza y pagos a ingenieros estructurales, MEP, interioristas y bioclimáticos.
+            </p>
+          </div>
+        </div>
+
+        <!-- Columna 4: Portafolio & Aprobación -->
+        <div class="lumion-slice-col flex-1 relative group cursor-pointer overflow-hidden">
+          <img src="assets/images/showcase/hero-app-proyectos.png" alt="Portafolio de Proyectos" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+          <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent"></div>
+          <div class="absolute bottom-6 left-6 right-6 text-left">
+            <span class="text-[10px] font-mono font-bold text-cyan-400 uppercase tracking-wider block">Fase 04</span>
+            <h4 class="text-base sm:text-lg font-bold text-white font-heading">Portafolio &amp; Aprobación</h4>
+            <p class="text-xs text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 mt-1 line-clamp-2">
+              Presentaciones claras y entregas aprobadas listas para construcción.
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- =================================================================== -->
+      <!-- PANEL 2: CUBIKAR CONSTRUCCIÓN (TIRA MULTI-FASE)                     -->
+      <!-- =================================================================== -->
+      <div id="slice-panel-const" class="hidden relative w-full h-[400px] sm:h-[480px] rounded-3xl overflow-hidden border border-white/10 shadow-2xl items-stretch transition-all duration-500">
+        
+        <!-- Columna 1: Matrices APU & Licitación -->
         <div class="lumion-slice-col flex-1 relative group cursor-pointer overflow-hidden border-r border-white/10">
           <img src="assets/images/showcase/hero-app-apu.png" alt="Matrices APU" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
           <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent"></div>
           <div class="absolute bottom-6 left-6 right-6 text-left">
-            <span class="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-wider block">Fase 02</span>
+            <span class="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-wider block">Fase 01</span>
             <h4 class="text-base sm:text-lg font-bold text-white font-heading">Matrices APU &amp; Licitación</h4>
             <p class="text-xs text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 mt-1 line-clamp-2">
               Catálogos oficiales y cálculo exacto del Factor de Salario Real (FASR).
@@ -199,31 +250,46 @@
           </div>
         </div>
 
-        <!-- Columna 3: Obra & Bitácora -->
+        <!-- Columna 2: Tablero Financiero ERP -->
         <div class="lumion-slice-col flex-1 relative group cursor-pointer overflow-hidden border-r border-white/10">
-          <img src="assets/images/showcase/hero-app-erp.png" alt="Bitácora Legal" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+          <img src="assets/images/showcase/hero-app-erp.png" alt="Tablero Financiero ERP" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
           <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent"></div>
           <div class="absolute bottom-6 left-6 right-6 text-left">
-            <span class="text-[10px] font-mono font-bold text-cyan-400 uppercase tracking-wider block">Fase 03</span>
-            <h4 class="text-base sm:text-lg font-bold text-white font-heading">Ejecución &amp; Bitácora</h4>
+            <span class="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-wider block">Fase 02</span>
+            <h4 class="text-base sm:text-lg font-bold text-white font-heading">Tablero Financiero ERP</h4>
             <p class="text-xs text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 mt-1 line-clamp-2">
-              Asientos inmutables con geolocalización, clima y evidencia fotográfica.
+              Semáforo presupuestal en vivo, egresos por rubro y órdenes de compra.
             </p>
           </div>
         </div>
 
-        <!-- Columna 4: Estimaciones & Cobros -->
+        <!-- Columna 3: Bitácora & Reportes -->
+        <div class="lumion-slice-col flex-1 relative group cursor-pointer overflow-hidden border-r border-white/10">
+          <img src="assets/images/showcase/const-bitacora.png" alt="Bitácora Legal" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+          <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent"></div>
+          <div class="absolute bottom-6 left-6 right-6 text-left">
+            <span class="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-wider block">Fase 03</span>
+            <h4 class="text-base sm:text-lg font-bold text-white font-heading">Bitácora &amp; Reportes</h4>
+            <p class="text-xs text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 mt-1 line-clamp-2">
+              Asientos oficiales foliados, registro fotográfico y clima en tiempo real.
+            </p>
+          </div>
+        </div>
+
+        <!-- Columna 4: Estimaciones & Cobro -->
         <div class="lumion-slice-col flex-1 relative group cursor-pointer overflow-hidden">
-          <img src="assets/images/showcase/hero-app-estimaciones.png" alt="Estimaciones" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+          <img src="assets/images/showcase/hero-app-estimaciones.png" alt="Estimaciones & Cobro" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
           <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent"></div>
           <div class="absolute bottom-6 left-6 right-6 text-left">
             <span class="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-wider block">Fase 04</span>
             <h4 class="text-base sm:text-lg font-bold text-white font-heading">Estimaciones &amp; Cobro</h4>
             <p class="text-xs text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 mt-1 line-clamp-2">
-              Generadores de cobro, retenciones de fondo y estados de cuenta al día.
+              Generadores de cobro, retenciones de fondo y amortización de anticipos.
             </p>
           </div>
         </div>
+
+      </div>
 
       </div>
 
@@ -1233,7 +1299,7 @@
   </div>
 
   <!-- Scripts -->
-  <script type="module" src="assets/js/main.js?v=20261114_video_hero_2"></script>
+  <script type="module" src="assets/js/main.js?v=20261114_slice_tabs_1"></script>
 
 </body>
 </html>
