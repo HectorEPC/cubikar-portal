@@ -93,15 +93,15 @@
   <!-- ========================================================================= -->
   <!-- 2. HERO SECTION (EXACTO LUMION HERO SLANT + ÁLBUM RULETA DE IMÁGENES)     -->
   <!-- ========================================================================= -->
-  <section id="hero-section" class="relative w-full min-h-[580px] lg:min-h-[720px] bg-[#07080c] overflow-hidden flex items-stretch">
+  <section id="hero-section" class="relative w-full min-h-[580px] lg:min-h-[720px] bg-[#07080c] overflow-hidden flex flex-col lg:flex-row items-stretch">
     
-    <!-- LADO DERECHO: ÁLBUM RULETA DE IMÁGENES CINEMÁTICAS (Sin saturación de letras) -->
-    <div id="cubikar-showcase-mount" class="absolute inset-0 lg:left-[34%] w-full lg:w-[66%] h-full z-0">
-      <!-- Inyectado dinámicamente por showcaseRuleta.js con imágenes rotativas limpias -->
+    <!-- LADO DERECHO: SHOWCASE DUAL (VIDEO PUBLICITARIO OFICIAL & RULETA DE CAPTURAS) -->
+    <div id="cubikar-showcase-mount" class="order-2 lg:order-1 relative w-full min-h-[420px] sm:min-h-[480px] lg:min-h-0 lg:absolute lg:inset-0 lg:left-[34%] lg:w-[66%] lg:h-full z-10 pointer-events-auto">
+      <!-- Inyectado dinámicamente por showcaseRuleta.js con Video Publicitario Oficial y Ruleta de Capturas -->
     </div>
 
     <!-- LADO IZQUIERDO: BLOQUE OSCURO EN DIAGONAL (SLANTED CUT ESTILO LUMION) -->
-    <div class="relative z-10 w-full lg:w-[48%] bg-[#07080c]/95 lg:bg-[#07080c] lumion-hero-slant flex flex-col justify-center px-6 sm:px-12 lg:px-16 py-16 lg:py-24 backdrop-blur-md lg:backdrop-blur-none border-b lg:border-b-0 lg:border-r border-white/10">
+    <div class="order-1 lg:order-2 relative z-20 w-full lg:w-[48%] bg-[#07080c]/95 lg:bg-[#07080c] lumion-hero-slant flex flex-col justify-center px-6 sm:px-12 lg:px-16 py-16 lg:py-24 backdrop-blur-md lg:backdrop-blur-none border-b lg:border-b-0 lg:border-r border-white/10">
       
       <div class="max-w-xl">
         <!-- Pill Top -->
@@ -1233,7 +1233,7 @@
   </div>
 
   <!-- Scripts -->
-  <script type="module" src="assets/js/main.js?v=20261114_18"></script>
+  <script type="module" src="assets/js/main.js?v=20261114_video_hero_2"></script>
 
 </body>
 </html>
