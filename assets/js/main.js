@@ -4,6 +4,7 @@
 import { CONST_TIERS, ARQ_TIERS, COMBO_TIERS, redirectToStripeCheckout } from './checkout.js';
 import { downloadFullEcosystemBackup } from './exportBackup.js';
 import { initAppSwitcher } from './appSwitcher.js?v=20261114_11';
+import { initShowcaseRuleta } from './showcaseRuleta.js';
 import { isUserAdmin, openCubikarAdminModal } from './cubikarAdmin.js?v=20261114_15';
 import { 
   initAuth, 
@@ -49,6 +50,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 1. Inicializar App Switcher (Selector de Apps de 9 puntos)
   initAppSwitcher('cubikar-app-switcher-mount', 'portal');
 
+  // 1.1 Inicializar Álbum Ruleta Interactivo (Showcase Lumion x D5 Render)
+  initShowcaseRuleta();
+
   // 2. Inicializar observador de autenticación y estado del usuario
   initAuth(state => {
     updateAuthUI(state);
@@ -85,7 +89,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   window.handleLogout = handleLogout;
   window.handleStripePortal = handleStripePortal;
   window.scrollToEcosistema = () => {
-    const el = document.getElementById(currentPricingProduct === 'arq' ? 'arquitectura' : 'construccion');
+    const el = document.getElementById('ecosistema');
     if (el) el.scrollIntoView({ behavior: 'smooth' });
   };
 
