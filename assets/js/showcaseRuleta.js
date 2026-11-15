@@ -49,9 +49,6 @@ export const HERO_SLIDES = [
   }
 ];
 
-export const YOUTUBE_VIDEO_ID = 'bj2uwR_fvcg';
-export const YOUTUBE_EMBED_URL = `https://www.youtube-nocookie.com/embed/${YOUTUBE_VIDEO_ID}?enablejsapi=1&autoplay=1&mute=1&loop=1&playlist=${YOUTUBE_VIDEO_ID}&controls=1&modestbranding=1&rel=0&playsinline=1`;
-
 let currentMode = 'video'; // 'video' | 'gallery'
 let currentIndex = 0;
 let autoPlayInterval = null;
@@ -196,12 +193,15 @@ function renderShowcaseStructure(container) {
           <!-- Bottom Right Controls -->
           <div class="flex items-center gap-2 sm:gap-3">
             
-            <!-- Video External Link -->
-            <div id="bottom-video-actions">
-              <a href="https://www.youtube.com/watch?v=${YOUTUBE_VIDEO_ID}" target="_blank" rel="noopener noreferrer" class="hover:text-cyan-400 transition flex items-center gap-1.5 text-[11px] font-medium">
-                <span>Ver en YouTube</span>
-                <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
-              </a>
+            <!-- Video Status / Fullscreen -->
+            <div id="bottom-video-actions" class="flex items-center gap-3">
+              <span class="text-[10px] font-mono text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
+                1080p Full HD &bull; MP4
+              </span>
+              <button onclick="window.toggleVideoFullscreen()" class="hover:text-cyan-400 transition flex items-center gap-1.5 text-[11px] font-medium cursor-pointer" title="Pantalla Completa">
+                <i class="fa-solid fa-expand text-[10px]"></i>
+                <span class="hidden sm:inline">Pantalla Completa</span>
+              </button>
             </div>
 
             <!-- Gallery Navigation Controls -->
@@ -247,8 +247,6 @@ export function setMode(mode) {
   const bottomGalleryInfo = document.getElementById('bottom-gallery-info');
   const bottomVideoActions = document.getElementById('bottom-video-actions');
   const bottomGalleryActions = document.getElementById('bottom-gallery-actions');
-
-  const iframe = document.getElementById('hero-youtube-iframe');
 
   if (mode === 'video') {
     if (tabVideo) {
@@ -328,19 +326,26 @@ export function toggleVideoSound() {
     }
   }
 }
-      btn.className = 'px-2.5 sm:px-3 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 text-[11px] font-bold flex items-center gap-1.5 transition cursor-pointer shadow-[0_0_15px_rgba(0,242,254,0.3)]';
-    }
-  }
-}
 
 function bindShowcaseEvents() {
   const tabVideo = document.getElementById('showcase-tab-video');
   const tabGallery = document.getElementById('showcase-tab-gallery');
   const soundBtn = document.getElementById('video-sound-btn');
+  const vid = document.getElementById('hero-cubikar-video');
 
   if (tabVideo) tabVideo.addEventListener('click', () => setMode('video'));
   if (tabGallery) tabGallery.addEventListener('click', () => setMode('gallery'));
   if (soundBtn) soundBtn.addEventListener('click', toggleVideoSound);
+
+  if (vid) {
+    vid.addEventListener('click', () => {
+      if (vid.paused) {
+        vid.play().catch(() => {});
+      } else {
+        vid.pause();
+      }
+    });
+  }
 
   const btnPrev = document.getElementById('carousel-btn-prev');
   const btnNext = document.getElementById('carousel-btn-next');
@@ -488,3 +493,16 @@ window.switchAppToArq = () => {
 
 window.toggleHeroVideoSound = toggleVideoSound;
 window.setHeroShowcaseMode = setMode;
+
+window.toggleVideoFullscreen = function() {
+  const vid = document.getElementById('hero-cubikar-video');
+  if (!vid) return;
+  if (vid.requestFullscreen) {
+    vid.requestFullscreen();
+  } else if (vid.webkitRequestFullscreen) {
+    vid.webkitRequestFullscreen();
+  } else if (vid.msRequestFullscreen) {
+    vid.msRequestFullscreen();
+  }
+};
+

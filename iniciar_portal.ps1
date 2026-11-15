@@ -50,6 +50,8 @@ $mimeMap = @{
     ".jpg"  = "image/jpeg"
     ".jpeg" = "image/jpeg"
     ".gif"  = "image/gif"
+    ".mp4"  = "video/mp4"
+    ".webm" = "video/webm"
     ".ico"  = "image/x-icon"
     ".woff" = "font/woff"
     ".woff2"= "font/woff2"
@@ -65,8 +67,8 @@ $parentDir = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($baseDir, "
 try {
     while ($true) {
         $client = $tcp.AcceptTcpClient()
-        $client.ReceiveTimeout = 2000
-        $client.SendTimeout = 2000
+        $client.ReceiveTimeout = 10000
+        $client.SendTimeout = 10000
 
         try {
             $stream = $client.GetStream()
@@ -98,7 +100,7 @@ try {
                         $ext = [System.IO.Path]::GetExtension($filePath).ToLower()
                         $mime = if ($mimeMap.ContainsKey($ext)) { $mimeMap[$ext] } else { "application/octet-stream" }
                         
-                        $header = "HTTP/1.1 200 OK`r`nContent-Type: $mime`r`nContent-Length: $($bytes.Length)`r`nAccess-Control-Allow-Origin: *`r`nCache-Control: no-cache, no-store, must-revalidate`r`nPragma: no-cache`r`nExpires: 0`r`nConnection: close`r`n`r`n"
+                        $header = "HTTP/1.1 200 OK`r`nContent-Type: $mime`r`nContent-Length: $($bytes.Length)`r`nAccept-Ranges: bytes`r`nAccess-Control-Allow-Origin: *`r`nCache-Control: no-cache, no-store, must-revalidate`r`nPragma: no-cache`r`nExpires: 0`r`nConnection: close`r`n`r`n"
                         $headerBytes = [System.Text.Encoding]::ASCII.GetBytes($header)
                         $stream.Write($headerBytes, 0, $headerBytes.Length)
                         $stream.Write($bytes, 0, $bytes.Length)
