@@ -3,7 +3,7 @@
 
 import { CONST_TIERS, ARQ_TIERS, COMBO_TIERS, redirectToStripeCheckout, CUBIKAR_SUB_TEST_MODE } from './checkout.js?v=20261115_auth_ok';
 import { downloadFullEcosystemBackup } from './exportBackup.js?v=20261115_auth_ok';
-import { initAppSwitcher } from './appSwitcher.js?v=20261115_auth_ok';
+import { initAppSwitcher } from './appSwitcher.js?v=20261115_v10';
 import { initShowcaseRuleta } from './showcaseRuleta.js?v=20261115_auth_ok';
 import { 
   isUserAdmin, 
@@ -34,7 +34,7 @@ import {
   logout, 
   getCurrentState,
   buildSsoUrl
-} from './auth.js?v=20261115_auth_v2';
+} from './auth.js?v=20261115_v10';
 
 let currentBillingCycle = 'monthly'; // 'monthly' | 'annual'
 let currentPricingProduct = 'const'; // 'const' | 'arq' | 'combo'
@@ -490,7 +490,7 @@ export async function launchApp(appId) {
   const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
   const baseUrl = isLocalhost
     ? (appId === 'arq' ? '/ADM_ARQ/index.html' : '/ADM_CONST/index.html')
-    : (appId === 'arq' ? 'https://arq.cubikar.app' : 'https://const.cubikar.app');
+    : (appId === 'arq' ? 'https://arq.cubikar.app/' : 'https://const.cubikar.app/');
   const ssoUrl = await buildSsoUrl(baseUrl, true);
   window.location.href = ssoUrl;
 }

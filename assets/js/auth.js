@@ -13,7 +13,7 @@ import {
   scrubSsoHashParams,
   getLastSignOutTimestamp,
   buildSsoTargetUrl
-} from './ssoHelper.js?v=20261115_auth_ok';
+} from './ssoHelper.js?v=20261115_v10';
 
 export const GOOGLE_CLIENT_ID = '1097638023851-36b44hlrj7fgslfcmqlvf77dk89h7eus.apps.googleusercontent.com';
 export const STORAGE_KEY_CLOSED_SESSIONS = 'control_obra_closed_sessions_v1';
@@ -742,9 +742,9 @@ export async function buildSsoUrl(targetUrl, remember = true) {
       const { data } = await sb.auth.getSession();
       session = data?.session || null;
     }
-    const tokens = session?.access_token && session?.refresh_token
-      ? session
-      : (readLocalSupabaseTokens() || readSharedSsoCookie());
+    const tokens = (session?.access_token && session?.refresh_token)
+      ? { accessToken: session.access_token, refreshToken: session.refresh_token, email: session.user?.email || currentUser?.email || '' }
+      : (readLocalSupabaseTokens() || readSharedSsoCookie() || (currentUser?.email ? { email: currentUser.email } : null));
     if (tokens) {
       if (session) writeSharedSsoCookie(session);
       return buildSsoTargetUrl(cleanTarget, tokens, remember);
