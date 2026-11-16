@@ -1,7 +1,7 @@
-﻿// assets/js/exportBackup.js
-// Motor de ExportaciÃ³n y Descarga de Respaldo Completo del Ecosistema Cubikar (datos reales nube + local)
+// assets/js/exportBackup.js
+// Motor de Exportación y Descarga de Respaldo Completo del Ecosistema Cubikar (datos reales nube + local)
 
-import { getSupabase } from './supabaseClient.js?v=20261116_cf3';
+import { getSupabase } from './supabaseClient.js?v=20261116_cf4';
 
 function csvEscape(val) {
   const s = String(val ?? '').replace(/\r?\n/g, ' ');
@@ -38,7 +38,7 @@ function flattenTreeConceptsToCsv(nodes, parentPath = '', out = []) {
 
 export async function downloadFullEcosystemBackup(userName = 'Usuario', userEmail = '', companyName = 'Mi Estudio') {
   if (typeof JSZip === 'undefined') {
-    alert('Cargando librerÃ­a de compresiÃ³n. Por favor intenta en 3 segundos.');
+    alert('Cargando librería de compresión. Por favor intenta en 3 segundos.');
     return;
   }
 
@@ -48,7 +48,7 @@ export async function downloadFullEcosystemBackup(userName = 'Usuario', userEmai
   const dateStr = new Date().toISOString().split('T')[0];
   const cleanEmail = (userEmail || '').toLowerCase().trim();
 
-  // 1. Obtener proyectos reales desde Supabase (si hay sesiÃ³n autenticada)
+  // 1. Obtener proyectos reales desde Supabase (si hay sesión autenticada)
   let cloudProjects = [];
   let cloudConceptsByProj = new Map();
   let cloudInsumosByProj = new Map();
@@ -238,8 +238,8 @@ export async function downloadFullEcosystemBackup(userName = 'Usuario', userEmai
     `Proyectos reales exportados: ${totalExported} (Nube: ${cloudProjects.length}, Locales adicionales: ${Math.max(0, totalExported - cloudProjects.length)})\n` +
     `========================================================================\n\n` +
     (totalExported > 0
-      ? `Cada carpeta dentro de Proyectos_Reales/ contiene los metadatos JSON,\ncatÃ¡logo CSV/JSON, insumos APU, estimaciones, compras, cronograma y bitÃ¡cora del proyecto.\n`
-      : `No se encontraron proyectos reales registrados para esta cuenta en la sesiÃ³n actual.\nInicia sesiÃ³n o crea/abre proyectos antes de generar el respaldo.\n`)
+      ? `Cada carpeta dentro de Proyectos_Reales/ contiene los metadatos JSON,\ncatálogo CSV/JSON, insumos APU, estimaciones, compras, cronograma y bitácora del proyecto.\n`
+      : `No se encontraron proyectos reales registrados para esta cuenta en la sesión actual.\nInicia sesión o crea/abre proyectos antes de generar el respaldo.\n`)
   );
 
   const content = await zip.generateAsync({ type: 'blob' });

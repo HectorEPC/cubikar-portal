@@ -1,10 +1,10 @@
-﻿// assets/js/main.js
+// assets/js/main.js
 // Controlador interactivo sincronizado al 100% con ADM_CONST y ADM_ARQ
 
-import { CONST_TIERS, ARQ_TIERS, COMBO_TIERS, redirectToStripeCheckout, openCustomerPortal, CUBIKAR_SUB_TEST_MODE } from './checkout.js?v=20261116_cf3';
-import { downloadFullEcosystemBackup } from './exportBackup.js?v=20261116_cf3';
-import { initAppSwitcher } from './appSwitcher.js?v=20261116_cf3';
-import { initShowcaseRuleta } from './showcaseRuleta.js?v=20261116_cf3';
+import { CONST_TIERS, ARQ_TIERS, COMBO_TIERS, redirectToStripeCheckout, openCustomerPortal, CUBIKAR_SUB_TEST_MODE } from './checkout.js?v=20261116_cf4';
+import { downloadFullEcosystemBackup } from './exportBackup.js?v=20261116_cf4';
+import { initAppSwitcher } from './appSwitcher.js?v=20261116_cf4';
+import { initShowcaseRuleta } from './showcaseRuleta.js?v=20261116_cf4';
 import { 
   isUserAdmin, 
   openCubikarAdminModal,
@@ -25,7 +25,7 @@ import {
   addCoAdmin,
   removeCoAdmin,
   hydrateCoAdminsFromCloud
-} from './cubikarAdmin.js?v=20261116_cf3';
+} from './cubikarAdmin.js?v=20261116_cf4';
 import { 
   initAuth, 
   hydrateIncomingSsoSession,
@@ -37,7 +37,7 @@ import {
   logout, 
   getCurrentState,
   buildSsoUrl
-} from './auth.js?v=20261116_cf3';
+} from './auth.js?v=20261116_cf4';
 
 function showPortalNotification(message, type = 'info') {
   try {
@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     subBanner.style.display = CUBIKAR_SUB_TEST_MODE ? 'flex' : 'none';
   }
 
-  // Manejar retorno de logout desde aplicaciones satÃ©lite (Cubikar ConstrucciÃ³n o Cubikar Arquitectura)
+  // Manejar retorno de logout desde aplicaciones satélite (Cubikar Construcción o Cubikar Arquitectura)
   const urlParams = new URLSearchParams(window.location.search);
   const isLogoutReturn = urlParams.get('logout') === '1';
   if (isLogoutReturn) {
@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const errorDesc = urlParams.get('error_description') || urlParams.get('error') || hashParams.get('error_description') || hashParams.get('error');
   if (errorDesc) {
     console.error('[Supabase OAuth Error]:', errorDesc);
-    alert('Aviso de inicio de sesiÃ³n: ' + errorDesc);
+    alert('Aviso de inicio de sesión: ' + errorDesc);
     window.history.replaceState({}, document.title, window.location.pathname);
   }
 
@@ -99,10 +99,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 1. Inicializar App Switcher (Selector de Apps de 9 puntos)
   initAppSwitcher('cubikar-app-switcher-mount', 'portal');
 
-  // 1.1 Inicializar Ãlbum Ruleta Interactivo (Showcase Lumion x D5 Render)
+  // 1.1 Inicializar Álbum Ruleta Interactivo (Showcase Lumion x D5 Render)
   initShowcaseRuleta();
 
-  // 2. Hidratar sesiÃ³n SSO entrante y esperar inicializaciÃ³n de autenticaciÃ³n antes de evaluar tutorial o retornos de pago
+  // 2. Hidratar sesión SSO entrante y esperar inicialización de autenticación antes de evaluar tutorial o retornos de pago
   let lastHydratedCoAdminEmail = '';
   await hydrateIncomingSsoSession();
   await initAuth(state => {
@@ -143,9 +143,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateAuthUI(getCurrentState());
         renderPricingCardsAndComparison();
       } catch (_) {}
-      showPortalNotification('Â¡Pago procesado con Ã©xito! Tu suscripciÃ³n de Cubikar ha sido actualizada y activada.', 'success');
+      showPortalNotification('¡Pago procesado con éxito! Tu suscripción de Cubikar ha sido actualizada y activada.', 'success');
     } else {
-      showPortalNotification('El proceso de pago en Stripe fue cancelado. No se realizÃ³ ningÃºn cargo.', 'warning');
+      showPortalNotification('El proceso de pago en Stripe fue cancelado. No se realizó ningún cargo.', 'warning');
     }
   }
 
@@ -195,7 +195,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // =========================================================================
-// CAMBIO DE PRODUCTO (CONSTRUCCIÃ“N / ARQUITECTURA / COMBO)
+// CAMBIO DE PRODUCTO (CONSTRUCCIÓN / ARQUITECTURA / COMBO)
 // =========================================================================
 export function selectPricingProduct(product) {
   currentPricingProduct = product;
@@ -238,7 +238,7 @@ export function setBillingCycle(cycle) {
 }
 
 // =========================================================================
-// RENDER DINÃMICO DE TARJETAS DE PRECIOS
+// RENDER DINÁMICO DE TARJETAS DE PRECIOS
 // =========================================================================
 function renderPricingCardsAndComparison() {
   const container = document.getElementById('pricing-cards-container');
@@ -247,7 +247,7 @@ function renderPricingCardsAndComparison() {
   const isAnnual = currentBillingCycle === 'annual';
   let tiersData = CONST_TIERS;
   let accentColor = 'amber';
-  let productLabel = 'Cubikar ConstrucciÃ³n';
+  let productLabel = 'Cubikar Construcción';
 
   if (currentPricingProduct === 'arq') {
     tiersData = ARQ_TIERS;
@@ -297,13 +297,13 @@ function renderPricingCardsAndComparison() {
         ? 'bg-slate-800 hover:bg-slate-700/80 text-slate-400 border border-slate-700 cursor-pointer'
         : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 shadow-md transform hover:-translate-y-0.5';
       btnText = CUBIKAR_SUB_TEST_MODE
-        ? `<i class="fa-solid fa-lock text-xs text-amber-400/80"></i><span>PrÃ³ximamente tras fase Beta</span>`
+        ? `<i class="fa-solid fa-lock text-xs text-amber-400/80"></i><span>Próximamente tras fase Beta</span>`
         : `<i class="fa-solid fa-crown text-[11px]"></i><span>Elegir Plan Pro</span>`;
       checkIconCls = 'text-amber-400';
     }
 
     const plusBadgeText = CUBIKAR_SUB_TEST_MODE ? 'GRATIS EN FASE DE PRUEBA' : plan.badge;
-    const cardBadgeText = (CUBIKAR_SUB_TEST_MODE && isPro) ? 'EN EVALUACIÃ“N' : plan.badge;
+    const cardBadgeText = (CUBIKAR_SUB_TEST_MODE && isPro) ? 'EN EVALUACIÓN' : plan.badge;
 
     return `
       <div class="rounded-3xl glass-card p-6 sm:p-7 flex flex-col justify-between ${cardBorder} relative">
@@ -358,17 +358,17 @@ function renderPricingCardsAndComparison() {
                 <span class="text-xs font-bold text-slate-300">MXN / mes de prueba</span>
               </div>
               <p class="text-[10px] mt-1 font-medium text-slate-400">
-                Acceso completo sin tarjeta bancaria ni cobros durante la evaluaciÃ³n
+                Acceso completo sin tarjeta bancaria ni cobros durante la evaluación
               </p>
             ` : ((CUBIKAR_SUB_TEST_MODE && isPro) ? `
               <div class="flex items-center gap-2 mb-1 flex-wrap">
                 <span class="text-[10px] font-black px-2 py-0.5 rounded-sm bg-slate-800 text-slate-400 border border-slate-700">
-                  En EvaluaciÃ³n
+                  En Evaluación
                 </span>
               </div>
               <div class="flex items-baseline gap-1">
                 <span class="text-3xl sm:text-4xl font-extrabold font-mono tracking-tight text-slate-500">$0</span>
-                <span class="text-xs font-bold text-slate-500">MXN (No disponible aÃºn)</span>
+                <span class="text-xs font-bold text-slate-500">MXN (No disponible aún)</span>
               </div>
               <p class="text-[10px] mt-1 font-medium text-slate-500">
                 Habilitado una vez concluida la fase de prueba
@@ -406,7 +406,7 @@ function renderPricingCardsAndComparison() {
             `)}
           </div>
 
-          <!-- Lista de CaracterÃ­sticas -->
+          <!-- Lista de Características -->
           <div class="space-y-2 mb-6">
             <span class="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Incluye:</span>
             <ul class="space-y-2 text-xs text-slate-200">
@@ -420,7 +420,7 @@ function renderPricingCardsAndComparison() {
           </div>
         </div>
 
-        <!-- BotÃ³n CTA -->
+        <!-- Botón CTA -->
         <div class="pt-4 border-t border-slate-800">
           <button onclick="handleTierSelection('${plan.id}')" class="w-full py-3.5 px-4 rounded-xl text-xs font-bold ${btnCls} transition flex items-center justify-center gap-1.5 cursor-pointer">
             ${btnText}
@@ -435,7 +435,7 @@ function renderPricingCardsAndComparison() {
 }
 
 // =========================================================================
-// RENDER DINÃMICO DEL CUADRO COMPARATIVO
+// RENDER DINÁMICO DEL CUADRO COMPARATIVO
 // =========================================================================
 function renderDynamicComparisonTable(productLabel, accentColor) {
   const container = document.getElementById('comparison-table-wrapper');
@@ -448,15 +448,15 @@ function renderDynamicComparisonTable(productLabel, accentColor) {
     // Filas oficiales de ADM_CONST
     rows = [
       ['Proyectos Activos', '2 proyectos', '15 proyectos', '50 proyectos'],
-      ['Conceptos por Proyecto', '100 lÃ­neas', '1,500 lÃ­neas', '3,500 lÃ­neas (licitaciones)'],
+      ['Conceptos por Proyecto', '100 líneas', '1,500 líneas', '3,500 líneas (licitaciones)'],
       ['Usuarios Colaboradores', '1 a 3 usuarios', '10 usuarios incluidos', '30 usuarios con roles granulares'],
-      ['GeneraciÃ³n APU con IA (Motor + Flash)', '10 / mes', '1,500 / mes', '3,500 / mes'],
+      ['Generación APU con IA (Motor + Flash)', '10 / mes', '1,500 / mes', '3,500 / mes'],
       ['Precios Web en Vivo (Google Search)', '0 (o API propia)', '70 consultas / mes', '200 consultas / mes'],
-      ['ImpresiÃ³n en Todas las PestaÃ±as', 'Con logo y nombre de la App', 'Marca propia / Sin marca de App', 'Marca blanca corporativa'],
-      ['Ruta CrÃ­tica, Curva S y Financiero', 'BÃ¡sico', 'Completo con dÃ­as inhÃ¡biles', 'Avanzado con suspensiones'],
-      ['BitÃ¡cora Legal y Compras ERP', 'BÃ¡sico', 'Completo (firmas y PDF)', 'Avanzado con libro foliado legal'],
-      ['Almacenamiento en Nube', '200 MB', '2 GB (con compresiÃ³n)', '5 GB de alta velocidad'],
-      ['CatÃ¡logos Maestros Importados', '6 MB', '50 MB personalizados', '200 MB (Opus, Neodata, Excel)']
+      ['Impresión en Todas las Pestañas', 'Con logo y nombre de la App', 'Marca propia / Sin marca de App', 'Marca blanca corporativa'],
+      ['Ruta Crítica, Curva S y Financiero', 'Básico', 'Completo con días inhábiles', 'Avanzado con suspensiones'],
+      ['Bitácora Legal y Compras ERP', 'Básico', 'Completo (firmas y PDF)', 'Avanzado con libro foliado legal'],
+      ['Almacenamiento en Nube', '200 MB', '2 GB (con compresión)', '5 GB de alta velocidad'],
+      ['Catálogos Maestros Importados', '6 MB', '50 MB personalizados', '200 MB (Opus, Neodata, Excel)']
     ];
   } else if (currentPricingProduct === 'arq') {
     // Filas oficiales de ADM_ARQ
@@ -465,26 +465,26 @@ function renderDynamicComparisonTable(productLabel, accentColor) {
       ['Conceptos Entregables por Obra', '15 entregables', '160 entregables', '200 entregables'],
       ['Colaboradores de Despacho', '2 colaboradores', '5 colaboradores (roles)', '20 colaboradores multidisciplinarios'],
       ['Almacenamiento en Servidor', '50 MB (con compresor)', '1,000 MB (1 GB)', '2,500 MB (2.5 GB)'],
-      ['Seguimiento de Revisiones de Planos', 'BÃ¡sico', 'Pendiente, En RevisiÃ³n, Aprobado', 'Con firmas y peritajes de DRO'],
-      ['Especialistas, IngenierÃ­as y DRO', 'No incluido', 'Control de Contratos y Pagos', 'GestiÃ³n Integral Multi-Etapa'],
+      ['Seguimiento de Revisiones de Planos', 'Básico', 'Pendiente, En Revisión, Aprobado', 'Con firmas y peritajes de DRO'],
+      ['Especialistas, Ingenierías y DRO', 'No incluido', 'Control de Contratos y Pagos', 'Gestión Integral Multi-Etapa'],
       ['Flujo de Caja (Cash Flow)', 'No incluido', 'Resumen Ejecutivo de Flujo', 'Flujo Completo (Cobrado vs Pagado)'],
-      ['Calendario Gantt & Ruta CrÃ­tica (CPM)', 'Diagrama bÃ¡sico', 'Con Festivos oficiales de MÃ©xico y Curva S', 'Ejecutivo con suspensiones'],
-      ['Cobranza de Honorarios', 'BÃ¡sico', 'AmortizaciÃ³n 100% e IVA', 'Multi-Etapa con retenciones fiscales'],
-      ['PersonalizaciÃ³n e ImpresiÃ³n', 'CarÃ¡tula bÃ¡sica', 'Logotipo y Membrete oficial del despacho', 'PersonalizaciÃ³n corporativa total']
+      ['Calendario Gantt & Ruta Crítica (CPM)', 'Diagrama básico', 'Con Festivos oficiales de México y Curva S', 'Ejecutivo con suspensiones'],
+      ['Cobranza de Honorarios', 'Básico', 'Amortización 100% e IVA', 'Multi-Etapa con retenciones fiscales'],
+      ['Personalización e Impresión', 'Carátula básica', 'Logotipo y Membrete oficial del despacho', 'Personalización corporativa total']
     ];
   } else {
     // Filas de la Suite Combo
     rows = [
       ['Proyectos Totales Activos', '2 Arq + 2 Const (4 totales)', '15 Arq + 15 Const (30 totales)', '30 Arq + 50 Const (80 totales)'],
-      ['LÃ­neas / Entregables por Proyecto', '15 Arq / 100 Const', '160 Arq / 1,500 Const', '200 Arq / 3,500 Const'],
+      ['Líneas / Entregables por Proyecto', '15 Arq / 100 Const', '160 Arq / 1,500 Const', '200 Arq / 3,500 Const'],
       ['Usuarios Compartidos en Suite', 'Hasta 3 usuarios', 'Hasta 10 usuarios compartidos', 'Hasta 30 usuarios corporativos'],
       ['Almacenamiento Total en Nube', '250 MB combinados', '3 GB en servidor', '7.5 GB de alta velocidad'],
-      ['SSO (Un solo login)', 'Acceso a arq y const', 'Acceso total sin reconexiÃ³n', 'Acceso total con roles unificados'],
-      ['Matrices APU + Honorarios Cost-Plus', 'Esenciales', 'Completos con catÃ¡logos oficiales', 'Completos + CatÃ¡logos maestros'],
-      ['BitÃ¡cora Legal + Contratos de IngenierÃ­as', 'BÃ¡sico', 'Completo (firmas digitales)', 'Libro legal + peritajes DRO'],
-      ['Doble Ruta CrÃ­tica y Curva S', 'BÃ¡sico', 'PlaneaciÃ³n ejecutiva y obra', 'Ejecutivo avanzado'],
-      ['Flujo de Caja y Dashboard ERP', 'BÃ¡sico', 'Cobranza y compras en obra', 'Flujo integral de constructora y despacho'],
-      ['Respaldo JerÃ¡rquico en ZIP', 'Descarga bÃ¡sica', 'Descarga completa en 1 clic', 'Descarga completa con histÃ³rico']
+      ['SSO (Un solo login)', 'Acceso a arq y const', 'Acceso total sin reconexión', 'Acceso total con roles unificados'],
+      ['Matrices APU + Honorarios Cost-Plus', 'Esenciales', 'Completos con catálogos oficiales', 'Completos + Catálogos maestros'],
+      ['Bitácora Legal + Contratos de Ingenierías', 'Básico', 'Completo (firmas digitales)', 'Libro legal + peritajes DRO'],
+      ['Doble Ruta Crítica y Curva S', 'Básico', 'Planeación ejecutiva y obra', 'Ejecutivo avanzado'],
+      ['Flujo de Caja y Dashboard ERP', 'Básico', 'Cobranza y compras en obra', 'Flujo integral de constructora y despacho'],
+      ['Respaldo Jerárquico en ZIP', 'Descarga básica', 'Descarga completa en 1 clic', 'Descarga completa con histórico']
     ];
   }
 
@@ -500,10 +500,10 @@ function renderDynamicComparisonTable(productLabel, accentColor) {
       </div>
       <span class="text-xs font-semibold text-slate-400">
         ${currentPricingProduct === 'arq' ? 
-          (isAnnual ? 'Gratuita ($0) â€¢ Plus ($159/mes) â€¢ Pro ($399/mes)' : 'Gratuita ($0) â€¢ Plus ($199/mes) â€¢ Pro ($499/mes)') :
+          (isAnnual ? 'Gratuita ($0) • Plus ($159/mes) • Pro ($399/mes)' : 'Gratuita ($0) • Plus ($199/mes) • Pro ($499/mes)') :
           (currentPricingProduct === 'const' ?
-            (isAnnual ? 'Gratuita ($0) â€¢ Plus ($280/mes) â€¢ Pro ($760/mes)' : 'Gratuita ($0) â€¢ Plus ($350/mes) â€¢ Pro ($950/mes)') :
-            (isAnnual ? 'Gratuita ($0) â€¢ Plus Combo ($359/mes) â€¢ Pro Combo ($950/mes)' : 'Gratuita ($0) â€¢ Plus Combo ($449/mes) â€¢ Pro Combo ($1,190/mes)'))
+            (isAnnual ? 'Gratuita ($0) • Plus ($280/mes) • Pro ($760/mes)' : 'Gratuita ($0) • Plus ($350/mes) • Pro ($950/mes)') :
+            (isAnnual ? 'Gratuita ($0) • Plus Combo ($359/mes) • Pro Combo ($950/mes)' : 'Gratuita ($0) • Plus Combo ($449/mes) • Pro Combo ($1,190/mes)'))
         }
       </span>
     </div>
@@ -512,7 +512,7 @@ function renderDynamicComparisonTable(productLabel, accentColor) {
       <table class="w-full text-left border-collapse text-xs">
         <thead>
           <tr class="border-b border-slate-800 bg-slate-950/60 text-slate-300">
-            <th class="py-3 px-5 font-bold">MÃ©trica / FunciÃ³n</th>
+            <th class="py-3 px-5 font-bold">Métrica / Función</th>
             <th class="py-3 px-5 font-bold text-center text-slate-400">Gratuita ($0)</th>
             <th class="py-3 px-5 font-bold text-center text-blue-400">Plus</th>
             <th class="py-3 px-5 font-bold text-center text-amber-400">Pro</th>
@@ -571,7 +571,7 @@ export async function handleDownloadMyBackup() {
 }
 
 // =========================================================================
-// CONTROL DE MODALES DE AUTENTICACIÃ“N Y MI CUENTA
+// CONTROL DE MODALES DE AUTENTICACIÓN Y MI CUENTA
 // =========================================================================
 export function openAuthModal(mode = 'login') {
   currentAuthMode = mode;
@@ -604,17 +604,17 @@ export function openAuthModal(mode = 'login') {
     if (companyContainer) companyContainer.classList.add('hidden');
     if (nameInput) nameInput.required = false;
     if (companyInput) companyInput.required = false;
-    if (submitBtn) submitBtn.textContent = 'Iniciar SesiÃ³n';
-    if (toggleBtn) toggleBtn.innerHTML = 'Â¿No tienes cuenta? <span class="font-bold text-blue-400">RegÃ­strate aquÃ­</span>';
+    if (submitBtn) submitBtn.textContent = 'Iniciar Sesión';
+    if (toggleBtn) toggleBtn.innerHTML = '¿No tienes cuenta? <span class="font-bold text-blue-400">Regístrate aquí</span>';
   } else {
     if (modalTitle) modalTitle.textContent = 'Crear Cuenta en Cubikar';
-    if (modalSubtitle) modalSubtitle.textContent = CUBIKAR_SUB_TEST_MODE ? 'Acceso de cortesÃ­a a Plan Plus durante evaluaciÃ³n' : 'Comienza a gestionar tus proyectos y obras';
+    if (modalSubtitle) modalSubtitle.textContent = CUBIKAR_SUB_TEST_MODE ? 'Acceso de cortesía a Plan Plus durante evaluación' : 'Comienza a gestionar tus proyectos y obras';
     if (nameContainer) nameContainer.classList.remove('hidden');
     if (companyContainer) companyContainer.classList.remove('hidden');
     if (nameInput) nameInput.required = true;
     if (companyInput) companyInput.required = false;
     if (submitBtn) submitBtn.textContent = CUBIKAR_SUB_TEST_MODE ? 'Crear Cuenta (Plan Plus Beta Gratis)' : 'Crear Cuenta Gratis';
-    if (toggleBtn) toggleBtn.innerHTML = 'Â¿Ya tienes cuenta? <span class="font-bold text-blue-400">Inicia sesiÃ³n aquÃ­</span>';
+    if (toggleBtn) toggleBtn.innerHTML = '¿Ya tienes cuenta? <span class="font-bold text-blue-400">Inicia sesión aquí</span>';
   }
 
   modal?.classList.remove('hidden');
@@ -634,7 +634,7 @@ function resetModalAuthControls() {
     submitBtn.disabled = false;
     submitBtn.classList.remove('opacity-60', 'cursor-not-allowed');
     submitBtn.textContent = currentAuthMode === 'login'
-      ? 'Iniciar SesiÃ³n'
+      ? 'Iniciar Sesión'
       : (CUBIKAR_SUB_TEST_MODE ? 'Crear Cuenta (Plan Plus Beta Gratis)' : 'Crear Cuenta Gratis');
   }
 }
@@ -694,7 +694,7 @@ async function setupModalGoogleButton(forceRefresh = false) {
       googleAuthWatchdog = setTimeout(() => {
         if (!googleAuthInProgress) return;
         resetModalAuthControls();
-        showAuthError('La verificaciÃ³n con Google tardÃ³ demasiado. Intenta nuevamente o ingresa con tu correo.');
+        showAuthError('La verificación con Google tardó demasiado. Intenta nuevamente o ingresa con tu correo.');
         setupModalGoogleButton(true).catch(() => {});
       }, 15000);
     },
@@ -704,7 +704,7 @@ async function setupModalGoogleButton(forceRefresh = false) {
     onError: (err) => {
       console.error('[Google Sign-In Error]:', err);
       resetModalAuthControls();
-      showAuthError('No se pudo iniciar sesiÃ³n con Google: ' + (err?.message || 'Error de autenticaciÃ³n'));
+      showAuthError('No se pudo iniciar sesión con Google: ' + (err?.message || 'Error de autenticación'));
       setupModalGoogleButton(true).catch(() => {});
     }
   });
@@ -722,7 +722,7 @@ export async function handleGoogleSignIn() {
     await loginWithGoogle();
   } catch (err) {
     console.error('[Google Sign-In Error]:', err);
-    showAuthError(err?.message || 'No se pudo iniciar sesiÃ³n con Google.');
+    showAuthError(err?.message || 'No se pudo iniciar sesión con Google.');
     resetModalAuthControls();
   }
 }
@@ -744,14 +744,14 @@ export async function handleAuthSubmit(e) {
   const company = companyInput?.value?.trim() || '';
 
   if (!email || !password) {
-    showAuthError('Por favor ingresa tu correo y contraseÃ±a.');
+    showAuthError('Por favor ingresa tu correo y contraseña.');
     return;
   }
 
-  const originalBtnText = submitBtn ? submitBtn.innerHTML : (currentAuthMode === 'login' ? 'Iniciar SesiÃ³n' : 'Crear Cuenta');
+  const originalBtnText = submitBtn ? submitBtn.innerHTML : (currentAuthMode === 'login' ? 'Iniciar Sesión' : 'Crear Cuenta');
   if (submitBtn) {
     submitBtn.disabled = true;
-    submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> ${currentAuthMode === 'login' ? 'Iniciando sesiÃ³n...' : 'Creando cuenta...'}`;
+    submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> ${currentAuthMode === 'login' ? 'Iniciando sesión...' : 'Creando cuenta...'}`;
   }
 
   try {
@@ -771,20 +771,20 @@ export async function handleAuthSubmit(e) {
       if (data?.session) {
         completeAuthAndOpenChooser();
       } else {
-        showAuthSuccess('Â¡Cuenta registrada! Si tu proyecto requiere confirmaciÃ³n, por favor verifica tu correo electrÃ³nico para activar el acceso.');
+        showAuthSuccess('¡Cuenta registrada! Si tu proyecto requiere confirmación, por favor verifica tu correo electrónico para activar el acceso.');
       }
     }
   } catch (err) {
     console.error('[Portal Auth Error]:', err);
-    let msg = err.message || 'OcurriÃ³ un error al procesar tu solicitud.';
+    let msg = err.message || 'Ocurrió un error al procesar tu solicitud.';
     if (msg.includes('Invalid login credentials')) {
-      msg = 'El correo o la contraseÃ±a son incorrectos. Por favor verifÃ­calos o regÃ­strate si aÃºn no tienes cuenta.';
+      msg = 'El correo o la contraseña son incorrectos. Por favor verifícalos o regístrate si aún no tienes cuenta.';
     } else if (msg.includes('Email not confirmed')) {
-      msg = 'Tu correo aÃºn no ha sido confirmado. Revisa tu bandeja de entrada o spam para activar tu cuenta.';
+      msg = 'Tu correo aún no ha sido confirmado. Revisa tu bandeja de entrada o spam para activar tu cuenta.';
     } else if (msg.includes('User already registered')) {
-      msg = 'Ya existe una cuenta con este correo. Haz clic en "Inicia sesiÃ³n aquÃ­".';
+      msg = 'Ya existe una cuenta con este correo. Haz clic en "Inicia sesión aquí".';
     } else if (msg.includes('Password should be at least')) {
-      msg = 'La contraseÃ±a debe contener al menos 6 caracteres.';
+      msg = 'La contraseña debe contener al menos 6 caracteres.';
     } else if (msg.includes('rate limit')) {
       msg = 'Demasiados intentos. Por favor espera un momento antes de volver a intentar.';
     }
@@ -822,7 +822,7 @@ function hideAuthMessages() {
 }
 
 // =========================================================================
-// ACTUALIZACIÃ“N DE INTERFAZ SEGÃšN ESTADO DE AUTENTICACIÃ“N
+// ACTUALIZACIÓN DE INTERFAZ SEGÚN ESTADO DE AUTENTICACIÓN
 // =========================================================================
 export function updateAuthUI(state) {
   const navGuest = document.getElementById('nav-guest-actions');
@@ -873,7 +873,7 @@ export function updateAuthUI(state) {
     if (dashEmail) dashEmail.textContent = state.user.email || '';
     if (dashCompany) dashCompany.textContent = company;
 
-    // Control de visibilidad del Ãrea de AdministraciÃ³n para SuperAdmin
+    // Control de visibilidad del Área de Administración para SuperAdmin
     const isAdmin = isUserAdmin(state.user.email);
     const dashAdminSec = document.getElementById('dash-admin-section');
     if (dashAdminSec) {
@@ -960,7 +960,7 @@ export async function handleLogout() {
   try {
     await logout();
   } catch (err) {
-    console.warn('Error al cerrar sesiÃ³n:', err);
+    console.warn('Error al cerrar sesión:', err);
   }
   closeUserDashboard();
   updateAuthUI(null);
@@ -1030,7 +1030,7 @@ export function switchCollabMode(mode, manual = true) {
         <div class="flex items-center gap-2 bg-slate-950/80 border border-amber-500/40 px-3 py-1 rounded-xl text-xs w-full justify-between sm:justify-start">
           <div class="flex items-center gap-1.5">
             <i class="fa-solid fa-crown text-amber-400 text-xs"></i>
-            <span class="text-slate-300 text-xs">ðŸ·ï¸ MembresÃ­a activa: <strong class="text-white">Plan Pro</strong></span>
+            <span class="text-slate-300 text-xs">🏷️ Membresía activa: <strong class="text-white">Plan Pro</strong></span>
           </div>
           <span class="text-amber-300 font-mono text-[10px] bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/30 font-bold ml-auto sm:ml-2">(2/5 obras)</span>
         </div>
@@ -1047,9 +1047,9 @@ export function switchCollabMode(mode, manual = true) {
         <div class="flex items-center gap-2 bg-emerald-950/70 border border-emerald-500/50 px-3 py-1 rounded-xl text-xs w-full justify-between sm:justify-start">
           <div class="flex items-center gap-1.5">
             <i class="fa-solid fa-circle-check text-emerald-400 text-xs"></i>
-            <span class="text-emerald-200 text-xs">ðŸ·ï¸ MembresÃ­a: <strong class="text-white">Plan Empresarial</strong> (1/15 obras)</span>
+            <span class="text-emerald-200 text-xs">🏷️ Membresía: <strong class="text-white">Plan Empresarial</strong> (1/15 obras)</span>
           </div>
-          <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded-md font-bold text-[10px] ml-auto sm:ml-2">â­ Editor (Puedes crear obras)</span>
+          <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded-md font-bold text-[10px] ml-auto sm:ml-2">⭐ Editor (Puedes crear obras)</span>
         </div>
       `;
     }

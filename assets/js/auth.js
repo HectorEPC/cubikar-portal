@@ -1,9 +1,9 @@
-﻿// assets/js/auth.js
-// Manejador de AutenticaciÃ³n, Registro y Estado de SesiÃ³n en el Portal Central Cubikar
+// assets/js/auth.js
+// Manejador de Autenticación, Registro y Estado de Sesión en el Portal Central Cubikar
 // Totalmente sincronizado con Supabase Auth y los esquemas de ADM_CONST y ADM_ARQ
 
-import { getSupabase } from './supabaseClient.js?v=20261116_cf3';
-import { CUBIKAR_SUB_TEST_MODE } from './checkout.js?v=20261116_cf3';
+import { getSupabase } from './supabaseClient.js?v=20261116_cf4';
+import { CUBIKAR_SUB_TEST_MODE } from './checkout.js?v=20261116_cf4';
 import {
   writeSharedSsoCookie,
   clearSharedSsoCookie,
@@ -13,7 +13,7 @@ import {
   scrubSsoHashParams,
   getLastSignOutTimestamp,
   buildSsoTargetUrl
-} from './ssoHelper.js?v=20261116_cf3';
+} from './ssoHelper.js?v=20261116_cf4';
 
 export const GOOGLE_CLIENT_ID = '1097638023851-36b44hlrj7fgslfcmqlvf77dk89h7eus.apps.googleusercontent.com';
 export const STORAGE_KEY_CLOSED_SESSIONS = 'control_obra_closed_sessions_v1';
@@ -234,7 +234,7 @@ async function tryHydrateSsoSession(sb) {
     }
     return data.session;
   } catch (err) {
-    console.warn('[Portal Auth] No se pudo hidratar sesiÃ³n SSO entrante:', err?.message || err);
+    console.warn('[Portal Auth] No se pudo hidratar sesión SSO entrante:', err?.message || err);
     return null;
   } finally {
     scrubSsoHashParams();
@@ -249,17 +249,17 @@ export async function hydrateIncomingSsoSession(sbInstance = null) {
 }
 
 /**
- * Inicializar observador de autenticaciÃ³n
+ * Inicializar observador de autenticación
  */
 export async function initAuth(onStateChange) {
   const sb = getSupabase();
   if (!sb) {
-    console.warn('[Portal Auth] Supabase aÃºn no inicializado');
+    console.warn('[Portal Auth] Supabase aún no inicializado');
     return;
   }
 
-  // Listener sÃ­ncrono: nunca ejecutar queries Supabase dentro de onAuthStateChange
-  // para evitar contenciÃ³n/bloqueo del lock interno (navigator.locks) de GoTrue.
+  // Listener síncrono: nunca ejecutar queries Supabase dentro de onAuthStateChange
+  // para evitar contención/bloqueo del lock interno (navigator.locks) de GoTrue.
   sb.auth.onAuthStateChange((event, session) => {
     if (session?.user) {
       const email = (session.user.email || '').toLowerCase().trim();
@@ -275,7 +275,7 @@ export async function initAuth(onStateChange) {
       if (isExplicitInteractive) {
         markSessionOpen(email);
       } else if (isClosed) {
-        console.info(`[Portal Auth] Bloqueando auto-sesiÃ³n pasiva (${event}) por sesiÃ³n cerrada previamente (${email}).`);
+        console.info(`[Portal Auth] Bloqueando auto-sesión pasiva (${event}) por sesión cerrada previamente (${email}).`);
         currentUser = null;
         currentProfile = null;
         currentCompany = null;
@@ -326,7 +326,7 @@ export async function initAuth(onStateChange) {
   });
 
   try {
-    // 1. Inspeccionar si viene SSO explÃ­cito en hash o cookie o si cambiÃ³ el email respecto al usuario local previo
+    // 1. Inspeccionar si viene SSO explícito en hash o cookie o si cambió el email respecto al usuario local previo
     const incomingHashTokens = extractIncomingSsoFromHash();
     const cookieTokens = readSharedSsoCookie();
     const lastSignOutTs = getLastSignOutTimestamp();
@@ -344,7 +344,7 @@ export async function initAuth(onStateChange) {
       const email = (session.user.email || '').toLowerCase().trim();
       const incomingSameEmail = Boolean(incomingHashTokens?.email && incomingHashTokens.email === email);
       if (closedList.includes(email) && !incomingSameEmail) {
-        console.info(`[Portal Auth] SesiÃ³n persistida pertenece a usuario con sesiÃ³n cerrada (${email}). Purgando.`);
+        console.info(`[Portal Auth] Sesión persistida pertenece a usuario con sesión cerrada (${email}). Purgando.`);
         clearLocalSupabaseTokens();
         clearLocalUserStorage();
         clearSharedSsoCookie({ markSignOut: true });
@@ -401,7 +401,7 @@ export async function initAuth(onStateChange) {
       if (onStateChange) onStateChange(null);
     }
   } catch (err) {
-    console.warn('[Portal Auth] Error al inicializar sesiÃ³n:', err);
+    console.warn('[Portal Auth] Error al inicializar sesión:', err);
     if (onStateChange) onStateChange(null);
   }
 }
@@ -409,7 +409,7 @@ export async function initAuth(onStateChange) {
 export const initPortalAuth = initAuth;
 
 /**
- * Cargar perfil de usuario y datos de empresa desde Supabase (con deduplicaciÃ³n)
+ * Cargar perfil de usuario y datos de empresa desde Supabase (con deduplicación)
  */
 export async function loadUserProfileAndCompany(userId, forceRefresh = false) {
   const sb = getSupabase();
@@ -471,11 +471,11 @@ export async function loadUserProfileAndCompany(userId, forceRefresh = false) {
 }
 
 /**
- * Iniciar sesiÃ³n con email y contraseÃ±a
+ * Iniciar sesión con email y contraseña
  */
 export async function loginWithEmail(email, password) {
   const sb = getSupabase();
-  if (!sb) throw new Error('Servidor de autenticaciÃ³n no disponible. Por favor recarga la pÃ¡gina.');
+  if (!sb) throw new Error('Servidor de autenticación no disponible. Por favor recarga la página.');
 
   const cleanEmail = (email || '').trim().toLowerCase();
   explicitAuthDepth += 1;
@@ -561,11 +561,11 @@ export async function loginWithEmail(email, password) {
 }
 
 /**
- * Registrar nuevo usuario con email y contraseÃ±a
+ * Registrar nuevo usuario con email y contraseña
  */
 export async function registerWithEmail(email, password, fullName, companyName) {
   const sb = getSupabase();
-  if (!sb) throw new Error('Servidor de autenticaciÃ³n no disponible. Por favor recarga la pÃ¡gina.');
+  if (!sb) throw new Error('Servidor de autenticación no disponible. Por favor recarga la página.');
 
   const cleanEmail = (email || '').trim().toLowerCase();
   const cleanName = (fullName || '').trim() || cleanEmail.split('@')[0];
@@ -611,11 +611,11 @@ export async function registerWithEmail(email, password, fullName, companyName) 
 }
 
 /**
- * Iniciar sesiÃ³n con Google (OAuth)
+ * Iniciar sesión con Google (OAuth)
  */
 export async function loginWithGoogle() {
   const sb = getSupabase();
-  if (!sb) throw new Error('Servidor de autenticaciÃ³n no disponible. Por favor recarga la pÃ¡gina.');
+  if (!sb) throw new Error('Servidor de autenticación no disponible. Por favor recarga la página.');
 
   let cleanRedirect = window.location.origin;
   if (window.location.protocol === 'file:') {
@@ -647,7 +647,7 @@ export async function loginWithGoogle() {
  */
 function ensureGoogleGsiScript(timeoutMs = 7000) {
   if (typeof window === 'undefined' || typeof document === 'undefined') {
-    return Promise.reject(new Error('Google Sign-In solo estÃ¡ disponible en el navegador.'));
+    return Promise.reject(new Error('Google Sign-In solo está disponible en el navegador.'));
   }
   if (window.google?.accounts?.id) {
     return Promise.resolve(window.google.accounts.id);
@@ -670,13 +670,13 @@ function ensureGoogleGsiScript(timeoutMs = 7000) {
         resolve(window.google.accounts.id);
       } else if (Date.now() - startedAt >= timeoutMs) {
         clearInterval(poll);
-        reject(new Error('No se pudo cargar Google Sign-In. Si usas bloqueador de anuncios o privacidad estricta, permÃ­telo o usa tu correo.'));
+        reject(new Error('No se pudo cargar Google Sign-In. Si usas bloqueador de anuncios o privacidad estricta, permítelo o usa tu correo.'));
       }
     }, 60);
 
     script.addEventListener('error', () => {
       clearInterval(poll);
-      reject(new Error('El navegador o un bloqueador impidiÃ³ cargar Google Sign-In.'));
+      reject(new Error('El navegador o un bloqueador impidió cargar Google Sign-In.'));
     }, { once: true });
   });
 }
@@ -698,12 +698,12 @@ async function createGoogleNoncePair() {
 }
 
 /**
- * Inicia sesiÃ³n en Supabase con el ID Token de Google (sin pasar por /auth/v1/callback).
+ * Inicia sesión en Supabase con el ID Token de Google (sin pasar por /auth/v1/callback).
  */
 export async function loginWithGoogleIdToken(idToken, rawNonce) {
   const sb = getSupabase();
-  if (!sb) throw new Error('Servidor de autenticaciÃ³n no disponible. Por favor recarga la pÃ¡gina.');
-  if (!idToken) throw new Error('Google no devolviÃ³ un token de identidad vÃ¡lido.');
+  if (!sb) throw new Error('Servidor de autenticación no disponible. Por favor recarga la página.');
+  if (!idToken) throw new Error('Google no devolvió un token de identidad válido.');
 
   const payload = {
     provider: 'google',
@@ -733,7 +733,7 @@ export async function loginWithGoogleIdToken(idToken, rawNonce) {
 }
 
 /**
- * Monta el botÃ³n oficial de Google GIS y procesa la credencial vÃ­a signInWithIdToken.
+ * Monta el botón oficial de Google GIS y procesa la credencial vía signInWithIdToken.
  */
 export async function mountGoogleSignInButton({
   slotId = 'google-signin-gsi-slot',
@@ -761,7 +761,7 @@ export async function mountGoogleSignInButton({
     callback: async (response) => {
       if (googleSignInBusy) return;
       if (!response?.credential) {
-        if (onError) onError(new Error('No se recibiÃ³ una credencial vÃ¡lida de Google. IntÃ©ntalo de nuevo.'));
+        if (onError) onError(new Error('No se recibió una credencial válida de Google. Inténtalo de nuevo.'));
         return;
       }
       googleSignInBusy = true;
@@ -803,7 +803,7 @@ export async function mountGoogleSignInButton({
 }
 
 /**
- * Cerrar sesiÃ³n
+ * Cerrar sesión
  */
 export async function logout(options = {}) {
   const scope = options?.scope === 'global' ? 'global' : 'local';
@@ -835,7 +835,7 @@ export async function logout(options = {}) {
   const sb = getSupabase();
   if (sb) {
     if (scope === 'global') {
-      // Ejecutar scope global ANTES de limpiar tokens o llamar scope local para enviar el JWT vÃ¡lido
+      // Ejecutar scope global ANTES de limpiar tokens o llamar scope local para enviar el JWT válido
       try {
         await sb.auth.signOut({ scope: 'global' }).catch(() => {});
       } catch (_) {}
