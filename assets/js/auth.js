@@ -2,8 +2,8 @@
 // Manejador de Autenticación, Registro y Estado de Sesión en el Portal Central Cubikar
 // Totalmente sincronizado con Supabase Auth y los esquemas de ADM_CONST y ADM_ARQ
 
-import { getSupabase, SUPABASE_CONFIG } from './supabaseClient.js?v=20261116_cf6';
-import { CUBIKAR_SUB_TEST_MODE } from './checkout.js?v=20261116_cf6';
+import { getSupabase, SUPABASE_CONFIG } from './supabaseClient.js?v=20261116_cf7';
+import { CUBIKAR_SUB_TEST_MODE } from './checkout.js?v=20261116_cf7';
 import {
   writeSharedSsoCookie,
   clearSharedSsoCookie,
@@ -13,7 +13,7 @@ import {
   scrubSsoHashParams,
   getLastSignOutTimestamp,
   buildSsoTargetUrl
-} from './ssoHelper.js?v=20261116_cf6';
+} from './ssoHelper.js?v=20261116_cf7';
 
 export const GOOGLE_CLIENT_ID = '1097638023851-36b44hlrj7fgslfcmqlvf77dk89h7eus.apps.googleusercontent.com';
 export const STORAGE_KEY_CLOSED_SESSIONS = 'control_obra_closed_sessions_v1';
@@ -191,6 +191,9 @@ async function repairBloatedJwtRemote(accessToken) {
   addEndpoint('/api/admin-users');
   if (origin !== 'https://const.cubikar.app') {
     addEndpoint('https://const.cubikar.app/api/admin-users');
+  }
+  if (origin !== 'https://cubikar.app') {
+    addEndpoint('https://cubikar.app/api/admin-users');
   }
 
   for (const endpoint of endpoints) {
