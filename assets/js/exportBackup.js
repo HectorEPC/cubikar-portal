@@ -1,7 +1,7 @@
 // assets/js/exportBackup.js
 // Motor de Exportación y Descarga de Respaldo Completo del Ecosistema Cubikar (datos reales nube + local)
 
-import { getSupabase } from './supabaseClient.js?v=20261116_cf8';
+import { getSupabase } from './supabaseClient.js?v=20261116_cf10';
 
 function csvEscape(val) {
   const s = String(val ?? '').replace(/\r?\n/g, ' ');

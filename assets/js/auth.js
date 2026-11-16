@@ -2,8 +2,8 @@
 // Manejador de Autenticación, Registro y Estado de Sesión en el Portal Central Cubikar
 // Totalmente sincronizado con Supabase Auth y los esquemas de ADM_CONST y ADM_ARQ
 
-import { getSupabase, SUPABASE_CONFIG } from './supabaseClient.js?v=20261116_cf8';
-import { CUBIKAR_SUB_TEST_MODE } from './checkout.js?v=20261116_cf8';
+import { getSupabase, SUPABASE_CONFIG } from './supabaseClient.js?v=20261116_cf10';
+import { CUBIKAR_SUB_TEST_MODE } from './checkout.js?v=20261116_cf10';
 import {
   writeSharedSsoCookie,
   clearSharedSsoCookie,
@@ -13,7 +13,7 @@ import {
   scrubSsoHashParams,
   getLastSignOutTimestamp,
   buildSsoTargetUrl
-} from './ssoHelper.js?v=20261116_cf8';
+} from './ssoHelper.js?v=20261116_cf10';
 
 export const GOOGLE_CLIENT_ID = '1097638023851-36b44hlrj7fgslfcmqlvf77dk89h7eus.apps.googleusercontent.com';
 export const STORAGE_KEY_CLOSED_SESSIONS = 'control_obra_closed_sessions_v1';
@@ -137,9 +137,59 @@ function scheduleBackgroundProfileSync(userId, onStateChange = null) {
 }
 
 let ssoHydrationInProgress = false;
-const MAX_SAFE_JWT_CHARS = 4500;
+const MAX_SAFE_JWT_CHARS = 7500;
+const COMPACT_COOLDOWN_MS = 180000;
 let compactSessionInFlightPromise = null;
+let lastCompactRefreshAt = 0;
 const repairedJwtFingerprints = new Set();
+const compactAttemptByUser = new Map();
+
+function extractJwtSub(token) {
+  if (!token || typeof token !== 'string') return '';
+  try {
+    const parts = token.split('.');
+    if (parts.length < 2) return '';
+    const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const pad = b64.length % 4 ? b64 + '='.repeat(4 - (b64.length % 4)) : b64;
+    const payload = JSON.parse(atob(pad));
+    return String(payload?.sub || '');
+  } catch (_) {
+    return '';
+  }
+}
+
+function isUserOnCompactCooldown(uid, currentTokenLen = 0) {
+  if (!uid) return false;
+  const now = Date.now();
+  const mem = compactAttemptByUser.get(uid);
+  if (mem && (now - mem.ts) < COMPACT_COOLDOWN_MS && (!currentTokenLen || currentTokenLen <= mem.len + 400)) {
+    return true;
+  }
+  try {
+    if (typeof sessionStorage !== 'undefined') {
+      const raw = sessionStorage.getItem('cubikar_jwt_slim_uid_' + uid);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && (now - Number(parsed.ts || 0)) < COMPACT_COOLDOWN_MS && (!currentTokenLen || currentTokenLen <= Number(parsed.len || 0) + 400)) {
+          compactAttemptByUser.set(uid, { ts: Number(parsed.ts || 0), len: Number(parsed.len || 0) });
+          return true;
+        }
+      }
+    }
+  } catch (_) {}
+  return false;
+}
+
+function markUserCompactCooldown(uid, tokenLen = 0) {
+  if (!uid) return;
+  const entry = { ts: Date.now(), len: Number(tokenLen || 0) };
+  compactAttemptByUser.set(uid, entry);
+  try {
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.setItem('cubikar_jwt_slim_uid_' + uid, JSON.stringify(entry));
+    }
+  } catch (_) {}
+}
 
 function extractJwtExpSeconds(token) {
   if (!token || typeof token !== 'string') return 0;
@@ -172,7 +222,7 @@ function hasBloatedUserMetadata(user) {
   if (Array.isArray(meta.cubikar_dismissed_notifications) && meta.cubikar_dismissed_notifications.length > 25) return true;
   if (Array.isArray(meta.cubikar_read_mentions) && meta.cubikar_read_mentions.length > 25) return true;
   try {
-    if (JSON.stringify(meta).length > 3600) return true;
+    if (JSON.stringify(meta).length > 5200) return true;
   } catch (_) {}
   return false;
 }
@@ -277,13 +327,18 @@ export async function ensureCompactAuthSession(sbClient = null, sessionOverride 
       return session;
     }
 
+    const uid = session?.user?.id || extractJwtSub(session.access_token);
+    if (isUserOnCompactCooldown(uid, session.access_token.length)) {
+      return session;
+    }
+
     const fp = `${session.access_token.length}_${session.access_token.slice(-16)}`;
     if (repairedJwtFingerprints.has(fp)) {
       return session;
     }
     try {
       const prevTs = Number(typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('cubikar_jwt_slim_ts_' + fp) || 0 : 0);
-      if (prevTs > 0 && (Date.now() - prevTs) < 10000) {
+      if (prevTs > 0 && (Date.now() - prevTs) < 15000) {
         return session;
       }
       if (typeof sessionStorage !== 'undefined') {
@@ -294,22 +349,38 @@ export async function ensureCompactAuthSession(sbClient = null, sessionOverride 
 
     const exp = extractJwtExpSeconds(session.access_token);
     if (exp > 0 && exp < Math.floor(Date.now() / 1000) + 30 && session.refresh_token) {
+      lastCompactRefreshAt = Date.now();
       const renewed = await refreshCleanSession(sb, session.refresh_token);
       if (renewed?.access_token) {
         session = renewed;
         if (!isJwtSessionBloated(session)) {
+          markUserCompactCooldown(uid, session.access_token.length);
           return session;
         }
       }
     }
 
+    markUserCompactCooldown(uid, session.access_token.length);
     const repaired = await repairBloatedJwtRemote(session.access_token);
     if (!repaired) {
       return session;
     }
 
-    const cleanSession = await refreshCleanSession(sb, session.refresh_token);
+    let latestRefreshToken = session.refresh_token;
+    if (sb) {
+      try {
+        const { data: latestData } = await sb.auth.getSession();
+        if (latestData?.session?.refresh_token) {
+          latestRefreshToken = latestData.session.refresh_token;
+        }
+      } catch (_) {}
+    }
+
+    lastCompactRefreshAt = Date.now();
+    const cleanSession = await refreshCleanSession(sb, latestRefreshToken);
     if (cleanSession?.access_token) {
+      lastCompactRefreshAt = Date.now();
+      markUserCompactCooldown(uid, cleanSession.access_token.length);
       console.info(`[Portal Auth] Sesión JWT compactada automáticamente (${session.access_token.length} -> ${cleanSession.access_token.length} bytes).`);
       return cleanSession;
     }
@@ -489,7 +560,9 @@ export async function initAuth(onStateChange) {
         resetProfileCache();
       }
 
-      if (isJwtSessionBloated(session)) {
+      const isCompactLoopEvent = event === 'TOKEN_REFRESHED' && lastCompactRefreshAt > 0 && (Date.now() - lastCompactRefreshAt) < 15000;
+      const evtUid = session.user?.id || extractJwtSub(session.access_token);
+      if (!isCompactLoopEvent && isJwtSessionBloated(session) && !isUserOnCompactCooldown(evtUid, session.access_token?.length || 0)) {
         setTimeout(async () => {
           const cleanSession = (await ensureCompactAuthSession(sb, session)) || session;
           if (!cleanSession?.user) return;
@@ -587,7 +660,8 @@ export async function initAuth(onStateChange) {
     }
 
     if (session?.user && !error) {
-      if (isJwtSessionBloated(session)) {
+      const initUid = session.user?.id || extractJwtSub(session.access_token);
+      if (isJwtSessionBloated(session) && !isUserOnCompactCooldown(initUid, session.access_token?.length || 0)) {
         session = (await ensureCompactAuthSession(sb, session)) || session;
       }
       const userEmail = (session.user.email || '').toLowerCase().trim();
