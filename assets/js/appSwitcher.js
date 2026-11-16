@@ -1,7 +1,7 @@
-// assets/js/appSwitcher.js
+﻿// assets/js/appSwitcher.js
 // Selector Unificado de Aplicaciones del Ecosistema Cubikar (Estilo Google Workspace Waffle 9-puntos)
 
-import { appendSsoToUrlFromStorage } from './ssoHelper.js';
+import { appendSsoToUrlFromStorage } from './ssoHelper.js?v=20261116_cf3';
 
 export function initAppSwitcher(containerId = 'cubikar-app-switcher-mount', currentApp = 'portal') {
   const mount = document.getElementById(containerId);
@@ -9,7 +9,7 @@ export function initAppSwitcher(containerId = 'cubikar-app-switcher-mount', curr
 
   const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
-  // URLs de destino según entorno
+  // URLs de destino segÃºn entorno
   const urls = {
     portal: isLocalhost ? (currentApp === 'portal' ? '#' : '../Cubikar/index.html') : 'https://cubikar.app/',
     const: isLocalhost ? (currentApp === 'const' ? '#' : '../ADM_CONST/index.html') : 'https://const.cubikar.app/',
@@ -20,7 +20,7 @@ export function initAppSwitcher(containerId = 'cubikar-app-switcher-mount', curr
     <div class="relative inline-block text-left" id="cubikar-app-switcher-wrapper">
       <button type="button" id="cubikar-app-switcher-btn" 
               class="w-10 h-10 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 hover:border-slate-700 transition flex items-center justify-center cursor-pointer shadow-xs"
-              title="Ecosistema Cubikar (Cambiar de Aplicación)">
+              title="Ecosistema Cubikar (Cambiar de AplicaciÃ³n)">
         <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
           <circle cx="5" cy="5" r="2.2" />
           <circle cx="12" cy="5" r="2.2" />
@@ -48,7 +48,7 @@ export function initAppSwitcher(containerId = 'cubikar-app-switcher-mount', curr
         </div>
 
         <div class="space-y-1.5">
-          <!-- 1. CUBIKAR CONSTRUCCIÓN -->
+          <!-- 1. CUBIKAR CONSTRUCCIÃ“N -->
           <a href="${urls.const}" 
              data-cubikar-sso-link="const"
              data-base-href="${urls.const}"
@@ -58,10 +58,10 @@ export function initAppSwitcher(containerId = 'cubikar-app-switcher-mount', curr
             </div>
             <div class="flex-1 min-w-0">
               <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-white">Cubikar Construcción</span>
+                <span class="text-xs font-bold text-white">Cubikar ConstrucciÃ³n</span>
                 ${currentApp === 'const' ? '<span class="text-[9px] font-black text-amber-400 bg-amber-500/20 px-1.5 py-0.5 rounded">EN USO</span>' : ''}
               </div>
-              <p class="text-[10.5px] text-slate-400 truncate">Obras, Matrices APU y Bitácora Legal</p>
+              <p class="text-[10.5px] text-slate-400 truncate">Obras, Matrices APU y BitÃ¡cora Legal</p>
             </div>
           </a>
 
@@ -92,7 +92,7 @@ export function initAppSwitcher(containerId = 'cubikar-app-switcher-mount', curr
             </div>
             <div class="flex-1 min-w-0">
               <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-white">Portal &amp; Facturación</span>
+                <span class="text-xs font-bold text-white">Portal &amp; FacturaciÃ³n</span>
                 ${currentApp === 'portal' ? '<span class="text-[9px] font-black text-slate-300 bg-slate-700 px-1.5 py-0.5 rounded">ACTUAL</span>' : ''}
               </div>
               <p class="text-[10.5px] text-slate-400 truncate">Planes, Suscripciones y Mi Cuenta</p>
@@ -100,7 +100,7 @@ export function initAppSwitcher(containerId = 'cubikar-app-switcher-mount', curr
           </a>
         </div>
 
-        <!-- Botón Rápido de Respaldo -->
+        <!-- BotÃ³n RÃ¡pido de Respaldo -->
         <div class="mt-2 pt-2 border-t border-slate-800">
           <button type="button" onclick="window.triggerDemoBackupDownload && window.triggerDemoBackupDownload()" 
                   class="w-full py-2 px-3 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[11px] font-bold flex items-center justify-center gap-2 transition cursor-pointer">

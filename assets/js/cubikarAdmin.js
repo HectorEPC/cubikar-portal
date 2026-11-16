@@ -1,9 +1,9 @@
-// assets/js/cubikarAdmin.js
-// Módulo de Administración Maestra de Cubikar para el Portal Central (cubikar.app)
-// Supervisión integral de clientes, membresías, consumos técnicos de IA y margen SaaS de ambas aplicaciones
+﻿// assets/js/cubikarAdmin.js
+// MÃ³dulo de AdministraciÃ³n Maestra de Cubikar para el Portal Central (cubikar.app)
+// SupervisiÃ³n integral de clientes, membresÃ­as, consumos tÃ©cnicos de IA y margen SaaS de ambas aplicaciones
 
-import { getSupabase } from './supabaseClient.js';
-import { CONST_TIERS, ARQ_TIERS, COMBO_TIERS } from './checkout.js';
+import { getSupabase } from './supabaseClient.js?v=20261116_cf3';
+import { CONST_TIERS, ARQ_TIERS, COMBO_TIERS } from './checkout.js?v=20261116_cf3';
 const getSupabaseClient = getSupabase;
 
 // Administrador Maestro Oficial
@@ -55,7 +55,7 @@ async function getAdminSessionContext() {
 }
 
 // =========================================================================
-// 1. GESTIÓN DE ROLES ADMINISTRATIVOS
+// 1. GESTIÃ“N DE ROLES ADMINISTRATIVOS
 // =========================================================================
 
 export function getMarketRates() {
@@ -69,7 +69,7 @@ export function getMarketRates() {
 export function saveMarketRates(rates) {
   try {
     localStorage.setItem(STORAGE_KEY_MARKET_RATES, JSON.stringify(rates));
-    alert('Tarifas de mercado actualizadas con éxito.');
+    alert('Tarifas de mercado actualizadas con Ã©xito.');
   } catch (_) {}
 }
 
@@ -219,7 +219,7 @@ export function isUserAdmin(email) {
 
 export function addCoAdmin(email, name = '') {
   if (!email || !email.trim()) {
-    alert('Ingresa un correo electrónico válido.');
+    alert('Ingresa un correo electrÃ³nico vÃ¡lido.');
     return false;
   }
   const cleanEmail = email.toLowerCase().trim();
@@ -247,7 +247,7 @@ export function addCoAdmin(email, name = '') {
 
   saveCoAdminsList(list);
   syncCoAdminToBackend(cleanEmail, cleanName, true);
-  alert(`Administrador "${cleanEmail}" agregado con éxito.`);
+  alert(`Administrador "${cleanEmail}" agregado con Ã©xito.`);
   renderCoAdminsListUI();
   return true;
 }
@@ -268,13 +268,13 @@ export function removeCoAdmin(email, opts = {}) {
   saveCoAdminsList(list);
   syncCoAdminToBackend(cleanEmail, '', false);
   if (!opts?.silent) {
-    alert(`Acceso de administración revocado a "${cleanEmail}".`);
+    alert(`Acceso de administraciÃ³n revocado a "${cleanEmail}".`);
   }
   renderCoAdminsListUI();
 }
 
 // =========================================================================
-// 2. CONSUMOS TÉCNICOS Y MÉTRICAS POR USUARIO
+// 2. CONSUMOS TÃ‰CNICOS Y MÃ‰TRICAS POR USUARIO
 // =========================================================================
 
 export function getUserConsumptionData(userEmail) {
@@ -475,11 +475,11 @@ function purgeEmailsFromLocalRegistries(targetEmails) {
 export async function deleteSelectedAdminUsers() {
   const targets = Array.from(selectedAdminUserEmails).filter(e => !isUserMasterAdmin(e));
   if (targets.length === 0) {
-    alert('Selecciona al menos un usuario para eliminar (el Administrador Maestro está protegido).');
+    alert('Selecciona al menos un usuario para eliminar (el Administrador Maestro estÃ¡ protegido).');
     return;
   }
 
-  if (!confirm(`¿Estás seguro de que deseas eliminar permanentemente a los ${targets.length} usuario(s) seleccionados?`)) {
+  if (!confirm(`Â¿EstÃ¡s seguro de que deseas eliminar permanentemente a los ${targets.length} usuario(s) seleccionados?`)) {
     return;
   }
 
@@ -518,15 +518,15 @@ export async function deleteSelectedAdminUsers() {
     }
   } catch (err) {
     lastErrorMsg = err?.message || String(err);
-    console.warn('[Cubikar Admin] Error al sincronizar eliminación con la nube:', err);
+    console.warn('[Cubikar Admin] Error al sincronizar eliminaciÃ³n con la nube:', err);
   }
 
   if (!deletedInCloud) {
-    alert(`No se pudo eliminar en el servidor: ${lastErrorMsg || 'Error de conexión o permisos.'}`);
+    alert(`No se pudo eliminar en el servidor: ${lastErrorMsg || 'Error de conexiÃ³n o permisos.'}`);
     return;
   }
 
-  // 2. Eliminar localmente tras confirmar éxito en servidor
+  // 2. Eliminar localmente tras confirmar Ã©xito en servidor
   const currentCoAdmins = getCoAdminsList();
   targets.forEach(email => {
     try {
@@ -594,7 +594,7 @@ export async function fetchAllEcosystemUsers() {
 
   // 1. Administrador Maestro Oficial
   usersMap.set(MASTER_ADMIN_EMAIL.toLowerCase(), {
-    name: 'Héctor Emmanuel Pérez Cornejo',
+    name: 'HÃ©ctor Emmanuel PÃ©rez Cornejo',
     email: MASTER_ADMIN_EMAIL,
     createdAt: '2026-01-31T00:00:00.000Z',
     lastLogin: new Date().toISOString(),
@@ -658,7 +658,7 @@ export async function fetchAllEcosystemUsers() {
             });
 
             if (data.users.length > 1) {
-              break; // Obtuvimos con éxito el listado completo
+              break; // Obtuvimos con Ã©xito el listado completo
             }
           }
         }
@@ -668,7 +668,7 @@ export async function fetchAllEcosystemUsers() {
     console.warn('[Cubikar Admin] Error consultando API de usuarios:', err);
   }
 
-  // 3. Complementar desde Supabase (tabla perfiles join empresas) si está disponible
+  // 3. Complementar desde Supabase (tabla perfiles join empresas) si estÃ¡ disponible
   try {
     const sb = getSupabaseClient();
     if (sb) {
@@ -838,7 +838,7 @@ export async function renderCubikarAdminTable() {
     }
   }
 
-  // Filtro por ciclo de facturación
+  // Filtro por ciclo de facturaciÃ³n
   if (adminFilterCycle !== 'all') {
     filtered = filtered.filter(d => d.billingCycle === adminFilterCycle || d.cycleConst === adminFilterCycle || d.cycleArq === adminFilterCycle);
   }
@@ -867,7 +867,7 @@ export async function renderCubikarAdminTable() {
     const safePlanConstHtml = escapeAdminHtml(row.planConst);
     const safePlanArqHtml = escapeAdminHtml(row.planArq);
 
-    // Insignia de Actividad (Semáforo)
+    // Insignia de Actividad (SemÃ¡foro)
     let badgeActividad = '';
     if (row.actividad === 'activo') {
       badgeActividad = `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10.5px] font-extrabold bg-[#22c55e] text-slate-950 uppercase tracking-wider shadow-xs"><i class="fa-solid fa-circle text-[6px]"></i> Activo</span>`;
@@ -877,17 +877,17 @@ export async function renderCubikarAdminTable() {
       badgeActividad = `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10.5px] font-extrabold bg-[#ef4444] text-white uppercase tracking-wider shadow-xs"><i class="fa-solid fa-ban text-[7px]"></i> Inactivo</span>`;
     }
 
-    // Insignia de Aplicación
+    // Insignia de AplicaciÃ³n
     let badgeApp = '';
     if (row.appUsage === 'ambas') {
       badgeApp = `<span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 whitespace-nowrap"><i class="fa-solid fa-cubes mr-1"></i>Ambas Apps</span>`;
     } else if (row.appUsage === 'const') {
-      badgeApp = `<span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/30 whitespace-nowrap"><i class="fa-solid fa-helmet-safety mr-1"></i>Construcción</span>`;
+      badgeApp = `<span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/30 whitespace-nowrap"><i class="fa-solid fa-helmet-safety mr-1"></i>ConstrucciÃ³n</span>`;
     } else {
       badgeApp = `<span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-blue-500/20 text-blue-300 border border-blue-500/30 whitespace-nowrap"><i class="fa-solid fa-compass-drafting mr-1"></i>Arquitectura</span>`;
     }
 
-    // Insignia de Membresías Unificadas
+    // Insignia de MembresÃ­as Unificadas
     let badgeSuscripciones = '';
     if (row.isSuiteCombo) {
       badgeSuscripciones = `<span class="px-2.5 py-0.5 rounded-full text-[10.5px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-400/40 uppercase whitespace-nowrap"><i class="fa-solid fa-crown text-[9px] mr-1"></i>Suite Completa Pro</span>`;
@@ -896,7 +896,7 @@ export async function renderCubikarAdminTable() {
       const bArq = row.planArq === 'pro' ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' : (row.planArq === 'plus' ? 'bg-blue-500/20 text-blue-300 border-blue-500/40' : 'bg-slate-800 text-slate-400 border-slate-700');
       badgeSuscripciones = `
         <div class="flex items-center justify-center gap-1.5 flex-wrap">
-          <span class="px-1.5 py-0.5 rounded text-[9.5px] font-bold border uppercase ${bConst}" title="Cubikar Construcción">Const: ${safePlanConstHtml}</span>
+          <span class="px-1.5 py-0.5 rounded text-[9.5px] font-bold border uppercase ${bConst}" title="Cubikar ConstrucciÃ³n">Const: ${safePlanConstHtml}</span>
           <span class="px-1.5 py-0.5 rounded text-[9.5px] font-bold border uppercase ${bArq}" title="Cubikar Arquitectura">Arq: ${safePlanArqHtml}</span>
         </div>
       `;
@@ -934,7 +934,7 @@ export async function renderCubikarAdminTable() {
         <td class="px-3 py-2.5 text-center font-mono text-slate-400 whitespace-nowrap">${row.fechaRegistro}</td>
         <!-- Actividad -->
         <td class="px-3 py-2.5 text-center whitespace-nowrap">${badgeActividad}</td>
-        <!-- Membresía Activa -->
+        <!-- MembresÃ­a Activa -->
         <td class="px-3 py-2.5 text-center whitespace-nowrap">${badgeSuscripciones}</td>
         <!-- Vigencia Fin -->
         <td class="px-3 py-2.5 text-center font-mono text-slate-400 whitespace-nowrap">${row.finMembresia}</td>
@@ -950,11 +950,11 @@ export async function renderCubikarAdminTable() {
         <td class="px-3 py-2.5 text-right font-mono text-teal-300 whitespace-nowrap" title="Transferencia Realtime">
           <i class="fa-solid fa-bolt text-[10px] text-teal-400 mr-1"></i>${row.bandwidthMB}
         </td>
-        <!-- Total Facturación -->
+        <!-- Total FacturaciÃ³n -->
         <td class="px-3.5 py-2.5 text-right font-mono font-bold text-emerald-400 whitespace-nowrap">
           $ ${row.gastoSuscripcion.toFixed(2)}
         </td>
-        <!-- Costo Técnico -->
+        <!-- Costo TÃ©cnico -->
         <td class="px-3.5 py-2.5 text-right font-mono font-semibold text-slate-200 whitespace-nowrap">
           $ ${row.costoRecursos.toFixed(2)}
         </td>
@@ -1113,7 +1113,7 @@ export function saveMarketRatesFromModal() {
 
 export function exportCubikarDatabaseToExcel() {
   if (typeof XLSX === 'undefined') {
-    alert('Librería de exportación cargando. Intente de nuevo en un momento.');
+    alert('LibrerÃ­a de exportaciÃ³n cargando. Intente de nuevo en un momento.');
     return;
   }
   const table = document.getElementById('admin-cubikar-table');
