@@ -2,8 +2,8 @@
 // Manejador de Autenticación, Registro y Estado de Sesión en el Portal Central Cubikar
 // Totalmente sincronizado con Supabase Auth y los esquemas de ADM_CONST y ADM_ARQ
 
-import { getSupabase, SUPABASE_CONFIG } from './supabaseClient.js?v=20261116_cf7';
-import { CUBIKAR_SUB_TEST_MODE } from './checkout.js?v=20261116_cf7';
+import { getSupabase, SUPABASE_CONFIG } from './supabaseClient.js?v=20261116_cf8';
+import { CUBIKAR_SUB_TEST_MODE } from './checkout.js?v=20261116_cf8';
 import {
   writeSharedSsoCookie,
   clearSharedSsoCookie,
@@ -13,7 +13,7 @@ import {
   scrubSsoHashParams,
   getLastSignOutTimestamp,
   buildSsoTargetUrl
-} from './ssoHelper.js?v=20261116_cf7';
+} from './ssoHelper.js?v=20261116_cf8';
 
 export const GOOGLE_CLIENT_ID = '1097638023851-36b44hlrj7fgslfcmqlvf77dk89h7eus.apps.googleusercontent.com';
 export const STORAGE_KEY_CLOSED_SESSIONS = 'control_obra_closed_sessions_v1';
@@ -400,7 +400,9 @@ async function tryHydrateSsoSession(sb) {
       markSessionOpen(tokens.email);
     }
 
-    if (tokens.accessToken && tokens.accessToken.length > MAX_SAFE_JWT_CHARS) {
+    const incomingExp = extractJwtExpSeconds(tokens.accessToken);
+    const incomingNotExpired = !incomingExp || incomingExp > (Math.floor(Date.now() / 1000) + 30);
+    if (tokens.accessToken && tokens.accessToken.length > MAX_SAFE_JWT_CHARS && incomingNotExpired) {
       await repairBloatedJwtRemote(tokens.accessToken);
     }
 
