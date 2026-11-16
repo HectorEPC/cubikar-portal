@@ -1,10 +1,10 @@
 // assets/js/main.js
 // Controlador interactivo sincronizado al 100% con ADM_CONST y ADM_ARQ
 
-import { CONST_TIERS, ARQ_TIERS, COMBO_TIERS, redirectToStripeCheckout, CUBIKAR_SUB_TEST_MODE } from './checkout.js?v=20261115_auth_ok';
-import { downloadFullEcosystemBackup } from './exportBackup.js?v=20261115_auth_ok';
-import { initAppSwitcher } from './appSwitcher.js?v=20261115_v10';
-import { initShowcaseRuleta } from './showcaseRuleta.js?v=20261115_auth_ok';
+import { CONST_TIERS, ARQ_TIERS, COMBO_TIERS, redirectToStripeCheckout, openCustomerPortal, CUBIKAR_SUB_TEST_MODE } from './checkout.js';
+import { downloadFullEcosystemBackup } from './exportBackup.js';
+import { initAppSwitcher } from './appSwitcher.js';
+import { initShowcaseRuleta } from './showcaseRuleta.js';
 import { 
   isUserAdmin, 
   openCubikarAdminModal,
@@ -23,10 +23,13 @@ import {
   toggleSelectAllAdminUsers,
   onAdminUserCheckboxChange,
   addCoAdmin,
-  removeCoAdmin
-} from './cubikarAdmin.js?v=20261115_auth_ok';
+  removeCoAdmin,
+  hydrateCoAdminsFromCloud
+} from './cubikarAdmin.js';
 import { 
   initAuth, 
+  hydrateIncomingSsoSession,
+  syncSubscriptionFromCloud,
   loginWithEmail, 
   loginWithGoogle,
   registerWithEmail, 
@@ -34,7 +37,27 @@ import {
   logout, 
   getCurrentState,
   buildSsoUrl
-} from './auth.js?v=20261115_v10';
+} from './auth.js';
+
+function showPortalNotification(message, type = 'info') {
+  try {
+    const existing = document.getElementById('cubikar-portal-toast');
+    if (existing) existing.remove();
+    const toast = document.createElement('div');
+    toast.id = 'cubikar-portal-toast';
+    const isSuccess = type === 'success';
+    const borderCls = isSuccess ? 'border-emerald-500/50 bg-emerald-950/95 text-emerald-100' : 'border-amber-500/50 bg-amber-950/95 text-amber-100';
+    const iconCls = isSuccess ? 'fa-solid fa-circle-check text-emerald-400' : 'fa-solid fa-circle-exclamation text-amber-400';
+    toast.className = `fixed top-24 right-4 z-[100060] max-w-md px-4 py-3 rounded-2xl border shadow-2xl flex items-center gap-3 text-xs font-semibold transition-all duration-300 ${borderCls}`;
+    toast.innerHTML = `<i class="${iconCls} text-base shrink-0"></i><span class="flex-1">${message}</span>`;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+      try { toast.remove(); } catch (_) {}
+    }, 6500);
+  } catch (_) {
+    alert(message);
+  }
+}
 
 let currentBillingCycle = 'monthly'; // 'monthly' | 'annual'
 let currentPricingProduct = 'const'; // 'const' | 'arq' | 'combo'
@@ -79,10 +102,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 1.1 Inicializar Álbum Ruleta Interactivo (Showcase Lumion x D5 Render)
   initShowcaseRuleta();
 
-  // 2. Inicializar observador de autenticación y estado del usuario
-  initAuth(state => {
+  // 2. Hidratar sesión SSO entrante y esperar inicialización de autenticación antes de evaluar tutorial o retornos de pago
+  let lastHydratedCoAdminEmail = '';
+  await hydrateIncomingSsoSession();
+  await initAuth(state => {
     updateAuthUI(state);
     if (state && state.user) {
+      const em = String(state.user.email || '').toLowerCase().trim();
+      if (em && em !== lastHydratedCoAdminEmail) {
+        lastHydratedCoAdminEmail = em;
+        hydrateCoAdminsFromCloud()
+          .then(() => updateAuthUI(getCurrentState()))
+          .catch(() => {});
+      }
       if (isOAuthReturn && !handledOAuthReturn) {
         handledOAuthReturn = true;
         window.history.replaceState({}, document.title, window.location.pathname);
@@ -95,6 +127,27 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     }
   });
+
+  // 2.1 Manejar retorno de Stripe Checkout (?pago=exitoso | ?pago=cancelado)
+  const pagoParam = urlParams.get('pago');
+  if (pagoParam === 'exitoso' || pagoParam === 'cancelado') {
+    const cleanParams = new URLSearchParams(window.location.search);
+    cleanParams.delete('pago');
+    const cleanQuery = cleanParams.toString();
+    const cleanUrl = window.location.pathname + (cleanQuery ? `?${cleanQuery}` : '') + window.location.hash;
+    window.history.replaceState({}, document.title, cleanUrl);
+
+    if (pagoParam === 'exitoso') {
+      try {
+        await syncSubscriptionFromCloud();
+        updateAuthUI(getCurrentState());
+        renderPricingCardsAndComparison();
+      } catch (_) {}
+      showPortalNotification('¡Pago procesado con éxito! Tu suscripción de Cubikar ha sido actualizada y activada.', 'success');
+    } else {
+      showPortalNotification('El proceso de pago en Stripe fue cancelado. No se realizó ningún cargo.', 'warning');
+    }
+  }
 
   // 3. Exponer funciones al scope global para eventos interactivos en HTML
   window.selectPricingProduct = selectPricingProduct;
@@ -131,8 +184,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   window.onAdminUserCheckboxChange = onAdminUserCheckboxChange;
   window.addCoAdmin = addCoAdmin;
   window.removeCoAdmin = removeCoAdmin;
+  window.getCurrentState = getCurrentState;
   window.scrollToEcosistema = () => {
-    const el = document.getElementById('ecosistema');
+    const el = document.getElementById('ecosistema-visual');
     if (el) el.scrollIntoView({ behavior: 'smooth' });
   };
 
@@ -487,6 +541,10 @@ export function handleTierSelection(planId) {
 }
 
 export async function launchApp(appId) {
+  if (appId === 'combo') {
+    openAppChooserModal();
+    return;
+  }
   const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
   const baseUrl = isLocalhost
     ? (appId === 'arq' ? '/ADM_ARQ/index.html' : '/ADM_CONST/index.html')
@@ -585,6 +643,20 @@ function completeAuthAndOpenChooser() {
   resetModalAuthControls();
   closeAuthModal();
   updateAuthUI(getCurrentState());
+  let pendingProd = window.__cubikarPendingProductIntent || null;
+  try {
+    if (!pendingProd && typeof sessionStorage !== 'undefined') {
+      pendingProd = sessionStorage.getItem('cubikar_pending_product_intent');
+    }
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.removeItem('cubikar_pending_product_intent');
+    }
+    window.__cubikarPendingProductIntent = null;
+  } catch (_) {}
+  if (pendingProd === 'const' || pendingProd === 'arq') {
+    launchApp(pendingProd);
+    return;
+  }
   openAppChooserModal();
 }
 
@@ -894,8 +966,8 @@ export async function handleLogout() {
   updateAuthUI(null);
 }
 
-export function handleStripePortal() {
-  alert('Accediendo al Portal de Facturación y Suscripción de Stripe de Cubikar...');
+export async function handleStripePortal() {
+  return openCustomerPortal();
 }
 
 export function switchSliceTab(type) {

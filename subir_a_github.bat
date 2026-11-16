@@ -13,7 +13,7 @@ if %ERRORLEVEL% equ 0 (
     echo ====================================================
     echo    EXITO: El portal se subio correctamente.
     echo ====================================================
-    echo Vercel actualizara el portal automaticamente.
+    echo Cloudflare Pages actualizara automaticamente el despliegue en produccion.
 ) else (
     echo.
     echo ====================================================

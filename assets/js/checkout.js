@@ -1,6 +1,8 @@
 // assets/js/checkout.js
 // Configuración exacta y completa de suscripciones de ADM_CONST y ADM_ARQ
 
+import { getSupabase } from './supabaseClient.js';
+
 // =========================================================================
 // MODO DE CONTROL: CUBIKAR SUB TEST vs CUBIKAR SUB ORIGINAL
 // true: Modo de prueba activo. Plan Plus de cortesía sin cobros, Stripe pausado.
@@ -320,40 +322,128 @@ export const COMBO_TIERS = {
 };
 
 export async function redirectToStripeCheckout(product = 'const', planId = 'plus', cycle = 'monthly') {
+  const savePendingProductIntent = (prod) => {
+    try {
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.setItem('cubikar_pending_product_intent', prod);
+      }
+      if (typeof window !== 'undefined') {
+        window.__cubikarPendingProductIntent = prod;
+      }
+    } catch (_) {}
+  };
+
+  const resolveActiveUser = async () => {
+    const state = typeof window.getCurrentState === 'function' ? window.getCurrentState() : null;
+    if (state?.user) return state.user;
+    try {
+      const sb = getSupabase();
+      const sess = sb ? await sb.auth.getSession() : null;
+      return sess?.data?.session?.user || null;
+    } catch (_) {
+      return null;
+    }
+  };
+
   if (CUBIKAR_SUB_TEST_MODE) {
     if (planId === 'pro') {
       alert('El Plan Pro estará habilitado al concluir la fase de pruebas. Durante este periodo de evaluación, tienes acceso gratuito al Plan Plus.');
+      savePendingProductIntent(product);
       if (window.openAuthModal) window.openAuthModal('register');
       return;
     }
-    // Para Plus o Free durante la prueba: registrarse o lanzar la app de inmediato
-    const state = typeof window.getCurrentState === 'function' ? window.getCurrentState() : null;
-    if (state?.user) {
+    // Para Plus o Free durante la prueba: registrarse o lanzar la app de inmediato si ya tiene sesión
+    const user = await resolveActiveUser();
+    if (user) {
       alert('¡Tu cuenta tiene acceso Plus gratuito activo por la fase de pruebas! Abriendo la aplicación...');
       if (window.launchApp) window.launchApp(product);
     } else {
+      savePendingProductIntent(product);
       if (window.openAuthModal) window.openAuthModal('register');
     }
     return;
   }
 
   if (planId === 'free') {
+    const user = await resolveActiveUser();
+    if (!user) {
+      savePendingProductIntent(product);
+      if (window.openAuthModal) window.openAuthModal('register');
+      return;
+    }
     alert('Tu cuenta incluye acceso gratuito inicial. Puedes comenzar de inmediato.');
     if (window.launchApp) window.launchApp(product);
     return;
   }
 
-  const productLinks = STRIPE_PAYMENT_LINKS[product] || STRIPE_PAYMENT_LINKS.const;
-  const planLinks = productLinks[planId] || productLinks.plus;
-  const targetUrl = planLinks[cycle] || planLinks.monthly;
+  try {
+    const sb = getSupabase();
+    if (!sb) {
+      alert('Servicio de autenticación no inicializado. Recarga la página e inténtalo de nuevo.');
+      return;
+    }
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session?.access_token) {
+      alert('Inicia sesión o regístrate antes de continuar al pago en Stripe.');
+      savePendingProductIntent(product);
+      if (window.openAuthModal) window.openAuthModal('login');
+      return;
+    }
 
-  if (targetUrl) {
-    window.location.href = targetUrl;
-  } else {
-    alert('Enlace de pago no disponible temporalmente. Inténtalo de nuevo.');
+    const normalizedProduct = (product === 'arq' || product === 'combo') ? product : 'const';
+    const normalizedCycle = cycle === 'annual' ? 'annual' : 'monthly';
+    const cleanBase = typeof window !== 'undefined'
+      ? `${window.location.origin}${window.location.pathname}`
+      : '';
+
+    const { data, error } = await sb.functions.invoke('create-checkout', {
+      body: {
+        plan: planId,
+        planId,
+        ciclo: normalizedCycle,
+        billingCycle: normalizedCycle,
+        producto: product,
+        returnUrl: cleanBase || undefined,
+        successUrl: cleanBase ? `${cleanBase}?pago=exitoso` : undefined,
+        cancelUrl: cleanBase ? `${cleanBase}?pago=cancelado` : undefined
+      }
+    });
+
+    if (!error && data?.url) {
+      window.location.href = data.url;
+      return;
+    }
+
+    alert(data?.error || error?.message || 'No se pudo crear la sesión de pago en Stripe. Inténtalo de nuevo.');
+  } catch (err) {
+    alert(err?.message || 'Error al iniciar el pago con Stripe.');
   }
 }
 
 export async function openCustomerPortal() {
-  alert('Redirigiendo a tu panel de suscripciones...');
+  try {
+    const sb = getSupabase();
+    if (!sb) {
+      alert('Servicio de autenticación no inicializado.');
+      return;
+    }
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session?.access_token) {
+      alert('Inicia sesión para gestionar tu suscripción y facturación en Stripe.');
+      if (window.openAuthModal) window.openAuthModal('login');
+      return;
+    }
+
+    const { data, error } = await sb.functions.invoke('create-portal-link', {
+      body: { returnUrl: typeof window !== 'undefined' ? window.location.href : '' }
+    });
+    if (!error && data?.url) {
+      window.location.href = data.url;
+      return;
+    }
+
+    alert(data?.error || error?.message || 'No se encontró una suscripción de Stripe activa asociada a tu cuenta.');
+  } catch (err) {
+    alert(err?.message || 'No se pudo conectar con el portal de facturación de Stripe.');
+  }
 }

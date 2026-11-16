@@ -86,9 +86,11 @@ try {
                     # Decodificar espacios y caracteres URL (%20, etc.)
                     $decodedPath = [System.Uri]::UnescapeDataString($rawPath)
 
-                    # Si la ruta apunta a aplicaciones hermanas (ADM_CONST o ADM_ARQ)
+                    # Si la ruta apunta a aplicaciones hermanas (ADM_CONST, ADM_ARQ o Cubikar)
                     if ($decodedPath.StartsWith("ADM_CONST", [System.StringComparison]::OrdinalIgnoreCase) -or 
-                        $decodedPath.StartsWith("ADM_ARQ", [System.StringComparison]::OrdinalIgnoreCase)) {
+                        $decodedPath.StartsWith("ADM_ARQ", [System.StringComparison]::OrdinalIgnoreCase) -or
+                        $decodedPath.StartsWith("Cubikar", [System.StringComparison]::OrdinalIgnoreCase) -or
+                        $decodedPath.StartsWith("Cubukar", [System.StringComparison]::OrdinalIgnoreCase)) {
                         $filePath = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($parentDir, $decodedPath))
                     } else {
                         $filePath = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($baseDir, $decodedPath))

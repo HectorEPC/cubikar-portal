@@ -1,5 +1,40 @@
 // assets/js/exportBackup.js
-// Motor de Exportación y Descarga de Respaldo Completo del Ecosistema Cubikar
+// Motor de Exportación y Descarga de Respaldo Completo del Ecosistema Cubikar (datos reales nube + local)
+
+import { getSupabase } from './supabaseClient.js';
+
+function csvEscape(val) {
+  const s = String(val ?? '').replace(/\r?\n/g, ' ');
+  if (/[",]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+function flattenTreeConceptsToCsv(nodes, parentPath = '', out = []) {
+  if (!Array.isArray(nodes)) return out;
+  for (const n of nodes) {
+    if (!n || typeof n !== 'object') continue;
+    const isConcept = n.type === 'concept' || (!Array.isArray(n.children) || n.children.length === 0);
+    if (isConcept && (n.code || n.clave || n.description || n.descripcion || n.title)) {
+      const qty = Number(n.quantity ?? n.cantidad ?? 0);
+      const pu = Number(n.unitPrice ?? n.precioUnitario ?? n.precio_unitario ?? 0);
+      const imp = Number(n.total ?? n.importe ?? (qty * pu)) || 0;
+      out.push([
+        csvEscape(parentPath || n.partida || ''),
+        csvEscape(n.code || n.clave || n.id || ''),
+        csvEscape(n.description || n.descripcion || n.title || n.name || ''),
+        csvEscape(n.unit || n.unidad || ''),
+        qty.toFixed(4),
+        pu.toFixed(4),
+        imp.toFixed(2)
+      ].join(','));
+    }
+    if (Array.isArray(n.children) && n.children.length > 0) {
+      const label = n.code ? `${n.code} ${n.description || n.title || ''}`.trim() : (n.description || n.title || parentPath);
+      flattenTreeConceptsToCsv(n.children, label, out);
+    }
+  }
+  return out;
+}
 
 export async function downloadFullEcosystemBackup(userName = 'Usuario', userEmail = '', companyName = 'Mi Estudio') {
   if (typeof JSZip === 'undefined') {
@@ -9,14 +44,190 @@ export async function downloadFullEcosystemBackup(userName = 'Usuario', userEmai
 
   const zip = new JSZip();
   const safeName = (companyName || userName || 'Usuario').replace(/[^a-zA-Z0-9_\-]/g, '_');
-  const rootFolderName = `Cubikar_${safeName}`;
-  const root = zip.folder(rootFolderName);
-
+  const root = zip.folder(`Cubikar_${safeName}`);
   const dateStr = new Date().toISOString().split('T')[0];
+  const cleanEmail = (userEmail || '').toLowerCase().trim();
 
-  // ==========================================
-  // README GENERAL DEL ECOSISTEMA
-  // ==========================================
+  // 1. Obtener proyectos reales desde Supabase (si hay sesión autenticada)
+  let cloudProjects = [];
+  let cloudConceptsByProj = new Map();
+  let cloudInsumosByProj = new Map();
+  let cloudEstimacionesByProj = new Map();
+  let cloudComprasByProj = new Map();
+  let cloudCronoByProj = new Map();
+  let cloudBitacoraByProj = new Map();
+
+  try {
+    const sb = getSupabase();
+    if (sb) {
+      const { data: sessData } = await sb.auth.getSession();
+      if (sessData?.session?.user) {
+        const { data: projs } = await sb
+          .from('proyectos')
+          .select('*, proyecto_colaboradores(*)')
+          .order('updated_at', { ascending: false });
+
+        if (Array.isArray(projs) && projs.length > 0) {
+          cloudProjects = projs;
+          const projIds = projs.map(p => p.id).filter(Boolean);
+          const groupByProj = (rows) => {
+            const m = new Map();
+            if (!Array.isArray(rows)) return m;
+            for (const r of rows) {
+              if (!m.has(r.proyecto_id)) m.set(r.proyecto_id, []);
+              m.get(r.proyecto_id).push(r);
+            }
+            return m;
+          };
+
+          const [resConceptos, eRes, comRes, crRes, bRes] = await Promise.all([
+            sb.from('catalogo_conceptos').select('*').in('proyecto_id', projIds),
+            sb.from('estimaciones').select('*').in('proyecto_id', projIds),
+            sb.from('compras_gastos').select('*').in('proyecto_id', projIds),
+            sb.from('cronograma_actividades').select('*').in('proyecto_id', projIds),
+            sb.from('bitacora_notas').select('*').in('proyecto_id', projIds)
+          ]);
+
+          const conceptIds = (resConceptos?.data || []).map(c => c.id).filter(Boolean);
+          const conceptToProj = new Map((resConceptos?.data || []).map(c => [c.id, c.proyecto_id]));
+          const iRes = conceptIds.length > 0
+            ? await sb.from('insumos_apu').select('*').in('concepto_id', conceptIds)
+            : { data: [] };
+
+          cloudConceptsByProj = groupByProj(resConceptos?.data);
+          cloudInsumosByProj = new Map();
+          for (const ins of (iRes?.data || [])) {
+            const pid = ins.proyecto_id || conceptToProj.get(ins.concepto_id);
+            if (!pid) continue;
+            if (!cloudInsumosByProj.has(pid)) cloudInsumosByProj.set(pid, []);
+            cloudInsumosByProj.get(pid).push(ins);
+          }
+          cloudEstimacionesByProj = groupByProj(eRes?.data);
+          cloudComprasByProj = groupByProj(comRes?.data);
+          cloudCronoByProj = groupByProj(crRes?.data);
+          cloudBitacoraByProj = groupByProj(bRes?.data);
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[ExportBackup] Aviso consultando datos en nube:', err?.message || err);
+  }
+
+  // 2. Complementar con proyectos locales offline si existen en este navegador
+  const localProjects = [];
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const deletedIds = new Set(JSON.parse(localStorage.getItem('cubikar_deleted_projects_v1') || '[]'));
+      const rawProjects = JSON.parse(localStorage.getItem('control_obra_projects_v1') || '[]');
+      if (Array.isArray(rawProjects)) {
+        for (const p of rawProjects) {
+          if (!p || !p.id || deletedIds.has(p.id) || (p.cloudId && deletedIds.has(p.cloudId))) continue;
+          const isOwnedOrMember = !cleanEmail ||
+            (p.ownerEmail || '').toLowerCase().trim() === cleanEmail ||
+            (Array.isArray(p.members) && p.members.some(m => (m.email || '').toLowerCase().trim() === cleanEmail));
+          if (isOwnedOrMember) {
+            localProjects.push(p);
+          }
+        }
+      }
+    }
+  } catch (_) {}
+
+  // Combinar por ID sin duplicar
+  const seenIds = new Set(cloudProjects.map(p => p.id));
+  const summaryRows = [
+    'Origen,ID,Nombre,Tipo_Obra,Ubicacion,Empresa,Moneda,Propietario,Actualizado'
+  ];
+
+  const projectsFolder = root.folder('Proyectos_Reales');
+
+  for (const cp of cloudProjects) {
+    const folderSlug = `${(cp.nombre || cp.clave || cp.id).replace(/[^a-zA-Z0-9_\- ]/g, '').trim().slice(0, 45) || 'Proyecto'}_${String(cp.id).slice(0, 8)}`;
+    const pDir = projectsFolder.folder(folderSlug);
+    summaryRows.push([
+      'Nube',
+      csvEscape(cp.id),
+      csvEscape(cp.nombre),
+      csvEscape(cp.tipo_obra),
+      csvEscape(cp.ubicacion),
+      csvEscape(cp.configuracion?.companyName || companyName),
+      csvEscape(cp.moneda || 'MXN'),
+      csvEscape(cp.owner_email || userEmail),
+      csvEscape(cp.updated_at || '')
+    ].join(','));
+
+    pDir.file('proyecto_metadata.json', JSON.stringify(cp, null, 2));
+
+    const concepts = cloudConceptsByProj.get(cp.id) || [];
+    pDir.file('catalogo_conceptos.json', JSON.stringify(concepts, null, 2));
+    const cRows = ['Partida,Clave,Descripcion,Unidad,Cantidad,Precio_Unitario,Importe'];
+    for (const c of concepts) {
+      const qty = Number(c.cantidad ?? 0);
+      const pu = Number(c.precio_unitario ?? c.costo_directo ?? 0);
+      cRows.push([
+        csvEscape(c.partida || c.parent_id || ''),
+        csvEscape(c.clave || ''),
+        csvEscape(c.descripcion || ''),
+        csvEscape(c.unidad || ''),
+        qty.toFixed(4),
+        pu.toFixed(4),
+        (qty * pu).toFixed(2)
+      ].join(','));
+    }
+    pDir.file('catalogo_conceptos.csv', '\uFEFF' + cRows.join('\n'));
+
+    const insumos = cloudInsumosByProj.get(cp.id) || [];
+    if (insumos.length > 0) pDir.file('insumos_apu.json', JSON.stringify(insumos, null, 2));
+
+    const ests = cloudEstimacionesByProj.get(cp.id) || [];
+    if (ests.length > 0) pDir.file('estimaciones.json', JSON.stringify(ests, null, 2));
+
+    const compras = cloudComprasByProj.get(cp.id) || [];
+    if (compras.length > 0) pDir.file('compras_gastos.json', JSON.stringify(compras, null, 2));
+
+    const crono = cloudCronoByProj.get(cp.id) || [];
+    if (crono.length > 0) pDir.file('cronograma_actividades.json', JSON.stringify(crono, null, 2));
+
+    const bitacora = cloudBitacoraByProj.get(cp.id) || [];
+    if (bitacora.length > 0) pDir.file('bitacora_notas.json', JSON.stringify(bitacora, null, 2));
+  }
+
+  for (const lp of localProjects) {
+    if (seenIds.has(lp.id) || (lp.cloudId && seenIds.has(lp.cloudId))) continue;
+    const folderSlug = `${(lp.projectName || lp.id).replace(/[^a-zA-Z0-9_\- ]/g, '').trim().slice(0, 45) || 'Proyecto'}_${String(lp.id).slice(0, 8)}`;
+    const pDir = projectsFolder.folder(folderSlug);
+    summaryRows.push([
+      'Local',
+      csvEscape(lp.id),
+      csvEscape(lp.projectName),
+      csvEscape(lp.tipoObra || ''),
+      csvEscape(lp.projectLocation || ''),
+      csvEscape(lp.companyName || companyName),
+      csvEscape(lp.currency || 'MXN'),
+      csvEscape(lp.ownerEmail || userEmail),
+      csvEscape(lp.createdAt || '')
+    ].join(','));
+
+    pDir.file('proyecto_metadata.json', JSON.stringify(lp, null, 2));
+    try {
+      const rawTree = localStorage.getItem(`control_obra_treeData_${lp.id}`);
+      const rawSettings = localStorage.getItem(`control_obra_settings_${lp.id}`);
+      const rawEst = localStorage.getItem(`estimaciones_data_${lp.id}`);
+      const rawCompras = localStorage.getItem(`compras_data_${lp.id}`);
+      if (rawSettings) pDir.file('configuracion.json', rawSettings);
+      if (rawEst) pDir.file('estimaciones.json', rawEst);
+      if (rawCompras) pDir.file('compras_gastos.json', rawCompras);
+      if (rawTree) {
+        pDir.file('presupuesto_tree.json', rawTree);
+        const treeLines = ['Partida,Clave,Descripcion,Unidad,Cantidad,Precio_Unitario,Importe'];
+        flattenTreeConceptsToCsv(JSON.parse(rawTree), '', treeLines);
+        pDir.file('catalogo_conceptos.csv', '\uFEFF' + treeLines.join('\n'));
+      }
+    } catch (_) {}
+  }
+
+  const totalExported = summaryRows.length - 1;
+  root.file('RESUMEN_PROYECTOS.csv', '\uFEFF' + summaryRows.join('\n'));
   root.file(
     'LEEME_RESPALDO_CUBIKAR.txt',
     `========================================================================\n` +
@@ -24,82 +235,13 @@ export async function downloadFullEcosystemBackup(userName = 'Usuario', userEmai
     `Generado el: ${new Date().toLocaleString()}\n` +
     `Empresa / Titular: ${companyName}\n` +
     `Usuario: ${userName} (${userEmail})\n` +
+    `Proyectos reales exportados: ${totalExported} (Nube: ${cloudProjects.length}, Locales adicionales: ${Math.max(0, totalExported - cloudProjects.length)})\n` +
     `========================================================================\n\n` +
-    `Este archivo ZIP contiene la información íntegra y organizada de sus\n` +
-    `aplicaciones del ecosistema Cubikar, estructurada por producto y pestañas:\n\n` +
-    `1. Cubikar Arquitectura:\n` +
-    `   - 01. Tabla de Alcances\n` +
-    `   - 02. Presupuesto Base y Honorarios (Cost-Plus / Insumos)\n` +
-    `   - 03. Seguimiento y Control (Minutas y Acuerdos)\n` +
-    `   - 04. Cronograma y Entregas (Calendario de Planos)\n` +
-    `   - 05. Cobros y Estimaciones (Facturación de Honorarios)\n\n` +
-    `2. Cubikar Construcción:\n` +
-    `   - 01. Presupuesto Base y APU (Catálogos, Matrices y Explosión Insumos)\n` +
-    `   - 02. Cronograma de Obra (Jornadas, Lluvias y Calendario de Ejecución)\n` +
-    `   - 03. Estimaciones de Avance (Números Generadores y Carátulas de Cobro)\n` +
-    `   - 04. Compras y Gastos ERP (Control de Gastos y Comprobantes)\n` +
-    `   - 05. Bitácora Digital de Obra (Anotaciones Legales y Evidencias)\n\n` +
-    `Toda la información es propiedad de ${companyName}.\n`
+    (totalExported > 0
+      ? `Cada carpeta dentro de Proyectos_Reales/ contiene los metadatos JSON,\ncatálogo CSV/JSON, insumos APU, estimaciones, compras, cronograma y bitácora del proyecto.\n`
+      : `No se encontraron proyectos reales registrados para esta cuenta en la sesión actual.\nInicia sesión o crea/abre proyectos antes de generar el respaldo.\n`)
   );
 
-  // ==========================================
-  // 1. CUBIKAR ARQUITECTURA
-  // ==========================================
-  const arqFolder = root.folder('Cubikar Arquitectura');
-  
-  // 01. Tabla de Alcances
-  const arqAlcances = arqFolder.folder('01. Tabla de Alcances');
-  arqAlcances.file('README_ALCANCES.txt', 'Contiene los entregables del proyecto ejecutivo, especificaciones y matriz de responsabilidades.');
-  arqAlcances.file('catalogo_alcances_ejecutivos.csv', 'Clave,Fase,Entregable,Estatus,Responsable\nARQ-01,Anteproyecto,Plantas Arquitectónicas,Aprobado,Arq. Titular\nARQ-02,Proyecto Ejecutivo,Planos Estructurales,En Proceso,Ing. Calculista');
-
-  // 02. Presupuesto y Honorarios
-  const arqPresupuesto = arqFolder.folder('02. Presupuesto Base y Honorarios');
-  arqPresupuesto.file('README_PRESUPUESTO.txt', 'Contiene el presupuesto de honorarios profesionales, costos indirectos de oficina y cálculo Cost-Plus.');
-  arqPresupuesto.file('resumen_honorarios_despacho.csv', 'Concepto,Monto_MXN,Pct_Utilidad,Subtotal,IVA,Total\nHonorarios Diseño Ejecutivo,250000.00,15%,287500.00,46000.00,333500.00');
-
-  // 03. Seguimiento y Control
-  const arqSeguimiento = arqFolder.folder('03. Seguimiento y Control');
-  arqSeguimiento.file('README_SEGUIMIENTO.txt', 'Contiene minutas de reunión con clientes, autorizaciones y control de cambios.');
-
-  // 04. Cronograma y Entregas
-  const arqCronograma = arqFolder.folder('04. Cronograma y Entregas');
-  arqCronograma.file('README_CRONOGRAMA.txt', 'Fechas clave de entrega de planos, revisiones de obra y entregables finales.');
-
-  // 05. Cobros y Estimaciones
-  const arqCobros = arqFolder.folder('05. Cobros y Estimaciones');
-  arqCobros.file('README_ESTIMACIONES.txt', 'Facturas, anticipos y parcialidades cobradas al cliente final.');
-
-  // ==========================================
-  // 2. CUBIKAR CONSTRUCCIÓN
-  // ==========================================
-  const constFolder = root.folder('Cubikar Construccion');
-
-  // 01. Presupuesto Base y APU
-  const constPresupuesto = constFolder.folder('01. Presupuesto Base y APU');
-  constPresupuesto.file('README_PRESUPUESTO_OBRA.txt', 'Presupuestos de obra, catálogo de conceptos, matrices de precios unitarios (APU) y explosión general de insumos.');
-  constPresupuesto.file('catalogo_conceptos_muestra.csv', 'Clave,Descripcion,Unidad,Cantidad,P.U.,Importe\n1.01,Trazo y nivelacion de terreno,m2,250.00,18.50,4625.00\n1.02,Excavacion a mano en cepa,m3,45.00,210.00,9450.00');
-
-  // 02. Cronograma de Obra
-  const constCronograma = constFolder.folder('02. Cronograma de Obra');
-  constCronograma.file('README_PROGRAMA_OBRA.txt', 'Cronograma valorizado de ejecución, jornadas semanales, días festivos y registro pluvial.');
-
-  // 03. Estimaciones de Avance
-  const constEstimaciones = constFolder.folder('03. Estimaciones de Avance');
-  constEstimaciones.file('README_ESTIMACIONES_OBRA.txt', 'Carátulas de estimación, números generadores de obra y amortización de anticipos.');
-
-  // 04. Compras y Gastos ERP
-  const constCompras = constFolder.folder('04. Compras y Gastos ERP');
-  constCompras.file('README_COMPRAS.txt', 'Control de compras de materiales, nóminas de mano de obra y facturación de proveedores.');
-  constCompras.folder('Comprobantes_y_Facturas').file('info_comprobantes.txt', 'Carpeta reservada para comprobantes XML y PDF sincronizados.');
-
-  // 05. Bitácora Digital de Obra
-  const constBitacora = constFolder.folder('05. Bitacora Digital de Obra');
-  constBitacora.file('README_BITACORA.txt', 'Notas oficiales foliadas de bitácora, firmas de supervisión y acuerdos en sitio.');
-  constBitacora.folder('Evidencias_Fotograficas').file('info_evidencias.txt', 'Fotografías de avance de obra y reportes de supervisión.');
-
-  // ==========================================
-  // GENERAR ARCHIVO Y DESCARGAR
-  // ==========================================
   const content = await zip.generateAsync({ type: 'blob' });
   const downloadUrl = URL.createObjectURL(content);
   const a = document.createElement('a');

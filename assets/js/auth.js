@@ -2,8 +2,8 @@
 // Manejador de Autenticación, Registro y Estado de Sesión en el Portal Central Cubikar
 // Totalmente sincronizado con Supabase Auth y los esquemas de ADM_CONST y ADM_ARQ
 
-import { getSupabase } from './supabaseClient.js?v=20261115_auth_ok';
-import { CUBIKAR_SUB_TEST_MODE } from './checkout.js?v=20261115_auth_ok';
+import { getSupabase } from './supabaseClient.js';
+import { CUBIKAR_SUB_TEST_MODE } from './checkout.js';
 import {
   writeSharedSsoCookie,
   clearSharedSsoCookie,
@@ -13,7 +13,7 @@ import {
   scrubSsoHashParams,
   getLastSignOutTimestamp,
   buildSsoTargetUrl
-} from './ssoHelper.js?v=20261115_v10';
+} from './ssoHelper.js';
 
 export const GOOGLE_CLIENT_ID = '1097638023851-36b44hlrj7fgslfcmqlvf77dk89h7eus.apps.googleusercontent.com';
 export const STORAGE_KEY_CLOSED_SESSIONS = 'control_obra_closed_sessions_v1';
@@ -136,10 +136,11 @@ function scheduleBackgroundProfileSync(userId, onStateChange = null) {
   }, 0);
 }
 
+let ssoHydrationInProgress = false;
+
 async function tryHydrateSsoSession(sb) {
   if (!sb) return null;
   const hashTokens = extractIncomingSsoFromHash();
-  scrubSsoHashParams();
   let tokens = hashTokens;
   const closedList = getClosedSessionsList();
   const lastSignOutTs = getLastSignOutTimestamp();
@@ -148,12 +149,74 @@ async function tryHydrateSsoSession(sb) {
     const cookieTokens = readSharedSsoCookie();
     const cookieEmail = (cookieTokens?.email || '').toLowerCase().trim();
     const isNewerCookie = cookieTokens?.ts > 0 && lastSignOutTs > 0 && cookieTokens.ts > lastSignOutTs;
-    if (cookieTokens?.refreshToken && (!closedList.includes(cookieEmail) || isNewerCookie)) {
+    if ((cookieTokens?.refreshToken || cookieTokens?.email) && (!closedList.includes(cookieEmail) || isNewerCookie)) {
       tokens = cookieTokens;
     }
   }
-  if (!tokens?.refreshToken) return null;
+  if (!tokens?.refreshToken && !tokens?.email) {
+    scrubSsoHashParams();
+    return null;
+  }
+
+  explicitAuthDepth += 1;
+  ssoHydrationInProgress = true;
   try {
+    const tutEmail = (tokens?.email || '').toLowerCase().trim();
+    if (tutEmail && TUTORIAL_ACCOUNTS[tutEmail]) {
+      const tut = TUTORIAL_ACCOUNTS[tutEmail];
+      const syntheticUser = {
+        id: tut.id,
+        email: tut.email,
+        aud: 'authenticated',
+        role: 'authenticated',
+        user_metadata: {
+          full_name: tut.name,
+          name: tut.name,
+          empresa_nombre: tut.company,
+          plan: 'plus',
+          subscription: { planId: 'plus', billingCycle: 'monthly', isBetaTest: true }
+        },
+        app_metadata: { provider: 'email', providers: ['email'] }
+      };
+      const syntheticProfile = {
+        id: tut.id,
+        empresa_id: tut.companyId,
+        nombre_completo: tut.name,
+        email: tut.email,
+        rol: tut.role || 'owner',
+        avatar_url: '',
+        empresas: {
+          id: tut.companyId,
+          nombre: tut.company,
+          plan: 'plus',
+          estado_suscripcion: 'active',
+          acceso_arq: true,
+          plan_arq: 'plus',
+          acceso_const: true,
+          plan_const: 'plus'
+        }
+      };
+      const syntheticSession = {
+        access_token: tokens.accessToken || ('tut_access_token_' + tut.id),
+        refresh_token: tokens.refreshToken || ('tut_refresh_token_' + tut.id),
+        user: syntheticUser,
+        expires_at: Math.floor(Date.now() / 1000) + 86400 * 30
+      };
+      currentUser = syntheticUser;
+      currentProfile = syntheticProfile;
+      currentCompany = syntheticProfile.empresas;
+      markSessionOpen(tutEmail);
+      writeSharedSsoCookie(syntheticSession);
+      syncLocalUserStorage(currentUser, currentProfile, currentCompany);
+      return syntheticSession;
+    }
+
+    if (!tokens.refreshToken) return null;
+
+    if (tokens.fromHash && tokens.email) {
+      markSessionOpen(tokens.email);
+    }
+
     const { data, error } = tokens.accessToken
       ? await sb.auth.setSession({ access_token: tokens.accessToken, refresh_token: tokens.refreshToken })
       : await sb.auth.refreshSession({ refresh_token: tokens.refreshToken });
@@ -173,7 +236,16 @@ async function tryHydrateSsoSession(sb) {
   } catch (err) {
     console.warn('[Portal Auth] No se pudo hidratar sesión SSO entrante:', err?.message || err);
     return null;
+  } finally {
+    scrubSsoHashParams();
+    ssoHydrationInProgress = false;
+    explicitAuthDepth = Math.max(0, explicitAuthDepth - 1);
   }
+}
+
+export async function hydrateIncomingSsoSession(sbInstance = null) {
+  const sb = sbInstance || getSupabase();
+  return tryHydrateSsoSession(sb);
 }
 
 /**
@@ -198,7 +270,7 @@ export async function initAuth(onStateChange) {
         window.location.hash.includes('access_token') ||
         window.location.search.includes('code=')
       );
-      const isExplicitInteractive = explicitAuthDepth > 0 || isOAuthRedirect;
+      const isExplicitInteractive = explicitAuthDepth > 0 || ssoHydrationInProgress || isOAuthRedirect;
 
       if (isExplicitInteractive) {
         markSessionOpen(email);
@@ -218,6 +290,13 @@ export async function initAuth(onStateChange) {
           if (onStateChange) onStateChange(null);
         }, 0);
         return;
+      }
+
+      const prevEmail = (currentUser?.email || '').toLowerCase().trim();
+      if ((prevEmail && prevEmail !== email) || (currentProfile && currentProfile.id !== session.user.id)) {
+        currentProfile = null;
+        currentCompany = null;
+        resetProfileCache();
       }
 
       currentUser = session.user;
@@ -247,12 +326,24 @@ export async function initAuth(onStateChange) {
   });
 
   try {
-    // 1. Verificar sesión existente o hidratar SSO entrante desde subdominios Cubikar
+    // 1. Inspeccionar si viene SSO explícito en hash o cookie o si cambió el email respecto al usuario local previo
+    const incomingHashTokens = extractIncomingSsoFromHash();
+    const cookieTokens = readSharedSsoCookie();
+    const lastSignOutTs = getLastSignOutTimestamp();
+    let prevLocalEmail = '';
+    try {
+      const rawPrev = typeof localStorage !== 'undefined' ? localStorage.getItem('control_obra_active_user_v1') : null;
+      if (rawPrev) {
+        prevLocalEmail = (JSON.parse(rawPrev)?.email || '').toLowerCase().trim();
+      }
+    } catch (_) {}
+
     let { data: { session }, error } = await sb.auth.getSession();
     const closedList = getClosedSessionsList();
     if (session?.user) {
       const email = (session.user.email || '').toLowerCase().trim();
-      if (closedList.includes(email)) {
+      const incomingSameEmail = Boolean(incomingHashTokens?.email && incomingHashTokens.email === email);
+      if (closedList.includes(email) && !incomingSameEmail) {
         console.info(`[Portal Auth] Sesión persistida pertenece a usuario con sesión cerrada (${email}). Purgando.`);
         clearLocalSupabaseTokens();
         clearLocalUserStorage();
@@ -264,18 +355,42 @@ export async function initAuth(onStateChange) {
       }
     }
 
-    if (!session?.user || error) {
+    const activeEmail = (session?.user?.email || '').toLowerCase().trim();
+    if (activeEmail && prevLocalEmail && activeEmail !== prevLocalEmail) {
+      currentProfile = null;
+      currentCompany = null;
+      resetProfileCache();
+    }
+
+    const cookieEmail = (cookieTokens?.email || '').toLowerCase().trim();
+    const cookieTargetsDifferentUser = Boolean(
+      cookieEmail &&
+      cookieEmail !== activeEmail &&
+      (!closedList.includes(cookieEmail) || (cookieTokens?.ts > 0 && lastSignOutTs > 0 && cookieTokens.ts > lastSignOutTs))
+    );
+    const hashTargetsDifferentUser = Boolean(incomingHashTokens?.email && incomingHashTokens.email !== activeEmail);
+    const hashTargetsNewToken = Boolean(incomingHashTokens?.refreshToken && session?.refresh_token !== incomingHashTokens.refreshToken);
+
+    if (!session?.user || error || hashTargetsDifferentUser || hashTargetsNewToken || cookieTargetsDifferentUser) {
       const ssoSession = await tryHydrateSsoSession(sb);
       if (ssoSession?.user) {
         session = ssoSession;
         error = null;
       }
+    } else if (incomingHashTokens) {
+      scrubSsoHashParams();
     }
+
     if (session?.user && !error) {
       const userEmail = (session.user.email || '').toLowerCase().trim();
       if (getClosedSessionsList().includes(userEmail)) {
         if (onStateChange) onStateChange(null);
         return;
+      }
+      if ((currentUser?.email || '').toLowerCase().trim() !== userEmail || (prevLocalEmail && prevLocalEmail !== userEmail)) {
+        currentProfile = null;
+        currentCompany = null;
+        resetProfileCache();
       }
       currentUser = session.user;
       writeSharedSsoCookie(session);
@@ -290,6 +405,8 @@ export async function initAuth(onStateChange) {
     if (onStateChange) onStateChange(null);
   }
 }
+
+export const initPortalAuth = initAuth;
 
 /**
  * Cargar perfil de usuario y datos de empresa desde Supabase (con deduplicación)
@@ -321,6 +438,10 @@ export async function loadUserProfileAndCompany(userId, forceRefresh = false) {
             id,
             nombre,
             plan,
+            plan_const,
+            acceso_const,
+            plan_arq,
+            acceso_arq,
             estado_suscripcion,
             logo_url
           )
@@ -684,7 +805,8 @@ export async function mountGoogleSignInButton({
 /**
  * Cerrar sesión
  */
-export async function logout() {
+export async function logout(options = {}) {
+  const scope = options?.scope === 'global' ? 'global' : 'local';
   const email = (currentUser?.email || '').toLowerCase().trim();
   if (email) {
     markSessionClosed(email);
@@ -701,8 +823,6 @@ export async function logout() {
   googleSignInBusy = false;
   resetProfileCache();
   clearSharedSsoCookie({ markSignOut: true });
-  clearLocalSupabaseTokens();
-  clearLocalUserStorage();
 
   const slotEl = document.getElementById('google-signin-gsi-slot');
   if (slotEl) slotEl.dataset.gsiRendered = '0';
@@ -714,15 +834,17 @@ export async function logout() {
 
   const sb = getSupabase();
   if (sb) {
+    if (scope === 'global') {
+      // Ejecutar scope global ANTES de limpiar tokens o llamar scope local para enviar el JWT válido
+      try {
+        await sb.auth.signOut({ scope: 'global' }).catch(() => {});
+      } catch (_) {}
+    }
     try {
       await sb.auth.signOut({ scope: 'local' }).catch(() => {});
     } catch (_) {}
-    try {
-      await sb.auth.signOut({ scope: 'global' }).catch(() => {});
-    } catch (_) {}
   }
 
-  // Doble pase de purga para garantizar que ningún token sobreviva
   clearLocalSupabaseTokens();
   clearLocalUserStorage();
   currentUser = null;
@@ -756,6 +878,60 @@ export async function buildSsoUrl(targetUrl, remember = true) {
 /**
  * Sincronizar usuario activo en LocalStorage para compatibilidad inmediata con ADM_CONST y ADM_ARQ
  */
+export function resolveUserProfileAndPlan(user, profile, company) {
+  const hasExplicitProductFields = Boolean(
+    company && (
+      company.plan_const != null ||
+      company.plan_arq != null ||
+      company.acceso_const != null ||
+      company.acceso_arq != null
+    )
+  );
+  const legacyFallbackPlan = !hasExplicitProductFields
+    ? (company?.plan || user?.user_metadata?.subscription?.planId || 'free')
+    : 'free';
+
+  const rawConstPlan = (company?.acceso_const === false && !company?.plan_const)
+    ? 'free'
+    : (company?.plan_const || legacyFallbackPlan || 'free');
+  const rawArqPlan = (company?.acceso_arq === false && !company?.plan_arq)
+    ? 'free'
+    : (company?.plan_arq || legacyFallbackPlan || 'free');
+
+  const effectiveConstPlan = rawConstPlan === 'pro'
+    ? 'pro'
+    : (CUBIKAR_SUB_TEST_MODE ? 'plus' : rawConstPlan);
+  const effectiveArqPlan = rawArqPlan === 'pro'
+    ? 'pro'
+    : (CUBIKAR_SUB_TEST_MODE ? 'plus' : rawArqPlan);
+
+  const accesoConst = company?.acceso_const != null
+    ? Boolean(company.acceso_const)
+    : (effectiveConstPlan !== 'free');
+  const accesoArq = company?.acceso_arq != null
+    ? Boolean(company.acceso_arq)
+    : (effectiveArqPlan !== 'free');
+
+  const plan = (company?.plan === 'pro' || effectiveConstPlan === 'pro' || effectiveArqPlan === 'pro')
+    ? 'pro'
+    : (CUBIKAR_SUB_TEST_MODE
+        ? 'plus'
+        : (effectiveConstPlan === 'plus' || effectiveArqPlan === 'plus'
+            ? 'plus'
+            : (company?.plan || user?.user_metadata?.subscription?.planId || 'free')));
+
+  const billingCycle = company?.billing_cycle || user?.user_metadata?.subscription?.billingCycle || 'monthly';
+
+  return {
+    plan,
+    plan_const: effectiveConstPlan,
+    plan_arq: effectiveArqPlan,
+    acceso_const: accesoConst,
+    acceso_arq: accesoArq,
+    billingCycle
+  };
+}
+
 export function syncLocalUserStorage(user, profile, company) {
   if (typeof localStorage === 'undefined' || !user) return;
   try {
@@ -769,10 +945,14 @@ export function syncLocalUserStorage(user, profile, company) {
                         user.user_metadata?.empresa_nombre || 
                         'Mi Empresa';
 
-    const plan = (CUBIKAR_SUB_TEST_MODE ? 'plus' : null) ||
-                 company?.plan || 
-                 user.user_metadata?.subscription?.planId || 
-                 'free';
+    const {
+      plan,
+      plan_const: effectiveConstPlan,
+      plan_arq: effectiveArqPlan,
+      acceso_const: accesoConst,
+      acceso_arq: accesoArq,
+      billingCycle
+    } = resolveUserProfileAndPlan(user, profile, company);
 
     const cleanEmail = (user.email || '').toLowerCase().trim();
 
@@ -783,27 +963,73 @@ export function syncLocalUserStorage(user, profile, company) {
       company: companyName,
       avatarUrl: profile?.avatar_url || user.user_metadata?.avatar_url || user.user_metadata?.picture || '',
       plan: plan,
+      plan_const: effectiveConstPlan,
+      plan_arq: effectiveArqPlan,
+      acceso_const: accesoConst,
+      acceso_arq: accesoArq,
+      billingCycle,
       role: profile?.rol || 'owner'
     };
 
     localStorage.setItem('control_obra_active_user_v1', JSON.stringify(userData));
     localStorage.setItem('control_obra_active_user_v1_last', JSON.stringify(userData));
 
-    if (CUBIKAR_SUB_TEST_MODE && cleanEmail) {
+    if (cleanEmail) {
       try {
-        const testSub = {
-          planId: 'plus',
-          billingCycle: 'monthly',
-          isBetaTest: true,
+        localStorage.setItem(`cubikar_subscription_${cleanEmail}`, JSON.stringify({
+          planId: plan,
+          plan_const: effectiveConstPlan,
+          plan_arq: effectiveArqPlan,
+          acceso_const: accesoConst,
+          acceso_arq: accesoArq,
+          billingCycle,
+          ...(CUBIKAR_SUB_TEST_MODE && plan !== 'pro' ? { isBetaTest: true } : {}),
           updatedAt: new Date().toISOString()
-        };
-        localStorage.setItem(`adm_const_subscription_${cleanEmail}`, JSON.stringify(testSub));
-        localStorage.setItem(`adm_arq_subscription_${cleanEmail}`, JSON.stringify(testSub));
+        }));
+        localStorage.setItem(`adm_const_subscription_${cleanEmail}`, JSON.stringify({
+          planId: effectiveConstPlan,
+          plan_const: effectiveConstPlan,
+          acceso_const: accesoConst,
+          billingCycle,
+          ...(CUBIKAR_SUB_TEST_MODE && effectiveConstPlan !== 'pro' ? { isBetaTest: true } : {}),
+          updatedAt: new Date().toISOString()
+        }));
+        localStorage.setItem(`adm_arq_subscription_${cleanEmail}`, JSON.stringify({
+          planId: effectiveArqPlan,
+          plan_arq: effectiveArqPlan,
+          acceso_arq: accesoArq,
+          billingCycle,
+          ...(CUBIKAR_SUB_TEST_MODE && effectiveArqPlan !== 'pro' ? { isBetaTest: true } : {}),
+          updatedAt: new Date().toISOString()
+        }));
       } catch (_) {}
     }
   } catch (err) {
     console.warn('[Portal Auth] Error al sincronizar almacenamiento local:', err);
   }
+}
+
+export const syncLocalUserSession = syncLocalUserStorage;
+
+export async function syncSubscriptionFromCloud() {
+  const sb = getSupabase();
+  if (!sb) return null;
+  let userId = currentUser?.id;
+  if (!userId) {
+    try {
+      const { data } = await sb.auth.getSession();
+      if (data?.session?.user) {
+        currentUser = data.session.user;
+        userId = currentUser.id;
+      }
+    } catch (_) {}
+  }
+  if (!userId) return null;
+  const res = await loadUserProfileAndCompany(userId, true);
+  if (res && currentUser) {
+    syncLocalUserStorage(currentUser, currentProfile, currentCompany);
+  }
+  return res;
 }
 
 /**

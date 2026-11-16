@@ -1134,7 +1134,6 @@
 
           </div>
         </div>
-        </div>
 
       </div>
 
@@ -1983,7 +1982,7 @@
         <div class="flex items-center gap-3 flex-1 max-w-lg">
           <div class="relative w-full">
             <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-500 text-xs"></i>
-            <input type="text" oninput="setAdminTableSearch(this.value)" placeholder="Buscar por nombre o correo de cliente..."
+            <input type="text" id="admin-users-search" oninput="setAdminTableSearch(this.value)" placeholder="Buscar por nombre o correo de cliente..."
                    class="w-full bg-[#07080c] border border-white/10 rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-hidden focus:border-cyan-400 transition">
           </div>
         </div>
@@ -2005,6 +2004,28 @@
               <option value="activo">🟢 Activo (≤15 días)</option>
               <option value="reposo">🟡 Reposo (>15 días)</option>
               <option value="inactivo">🔴 Inactivo</option>
+            </select>
+          </div>
+
+          <!-- Filtro Plan -->
+          <div class="flex items-center gap-1.5">
+            <span class="text-[11px] text-slate-400 font-bold font-mono">Plan:</span>
+            <select onchange="setAdminFilterPlan(this.value)" class="bg-[#07080c] border border-white/10 text-slate-200 text-xs rounded-lg px-2.5 py-1 focus:outline-hidden focus:border-cyan-400 cursor-pointer">
+              <option value="all">Todos los planes</option>
+              <option value="free">Gratis</option>
+              <option value="plus">Plus</option>
+              <option value="pro">Pro</option>
+              <option value="combo">Suite Combo</option>
+            </select>
+          </div>
+
+          <!-- Filtro Ciclo -->
+          <div class="flex items-center gap-1.5">
+            <span class="text-[11px] text-slate-400 font-bold font-mono">Ciclo:</span>
+            <select onchange="setAdminFilterCycle(this.value)" class="bg-[#07080c] border border-white/10 text-slate-200 text-xs rounded-lg px-2.5 py-1 focus:outline-hidden focus:border-cyan-400 cursor-pointer">
+              <option value="all">Todos</option>
+              <option value="monthly">Mensual</option>
+              <option value="annual">Anual</option>
             </select>
           </div>
         </div>
@@ -2090,7 +2111,7 @@
                 <span>Administrador Maestro</span>
                 <span class="text-[9.5px] bg-amber-400 text-slate-950 px-1.5 py-0.2 rounded-full font-bold">SUPERADMIN</span>
               </div>
-              <div class="font-mono text-slate-400 text-[11px]">admin@cubikar.app</div>
+              <div class="font-mono text-slate-400 text-[11px]">hepc.90@gmail.com</div>
             </div>
           </div>
           <span class="text-[10px] text-amber-300 font-bold bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-500/40">Propietario</span>
@@ -2225,7 +2246,7 @@
   </div>
 
   <!-- Scripts -->
-  <script type="module" src="assets/js/main.js?v=20261115_v10"></script>
+  <script type="module" src="assets/js/main.js"></script>
 
 </body>
 </html>

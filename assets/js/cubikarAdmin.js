@@ -2,7 +2,8 @@
 // Módulo de Administración Maestra de Cubikar para el Portal Central (cubikar.app)
 // Supervisión integral de clientes, membresías, consumos técnicos de IA y margen SaaS de ambas aplicaciones
 
-import { getSupabase } from './supabaseClient.js?v=20261115_auth_ok';
+import { getSupabase } from './supabaseClient.js';
+import { CONST_TIERS, ARQ_TIERS, COMBO_TIERS } from './checkout.js';
 const getSupabaseClient = getSupabase;
 
 // Administrador Maestro Oficial
@@ -20,6 +21,38 @@ export const DEFAULT_MARKET_RATES = {
   storageMbMonth: 0.0005,  // $0.0005 MXN por cada MB al mes (~$0.50 MXN por GB)
   bandwidthMb: 0.002       // $0.002 MXN por cada MB de transferencia y Realtime
 };
+
+function escapeAdminHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/`/g, '&#96;');
+}
+
+function escapeAdminAttr(value) {
+  return escapeAdminHtml(value);
+}
+
+async function getAdminSessionContext() {
+  try {
+    const sb = getSupabaseClient();
+    if (sb?.auth?.getSession) {
+      const { data: sessionData } = await sb.auth.getSession();
+      const session = sessionData?.session || null;
+      return {
+        sb,
+        token: session?.access_token || '',
+        email: (session?.user?.email || '').toLowerCase().trim()
+      };
+    }
+    return { sb, token: '', email: '' };
+  } catch {
+    return { sb: null, token: '', email: '' };
+  }
+}
 
 // =========================================================================
 // 1. GESTIÓN DE ROLES ADMINISTRATIVOS
@@ -57,6 +90,120 @@ export function saveCoAdminsList(list) {
   } catch (_) {}
 }
 
+async function syncCoAdminToBackend(email, name, isCoAdmin) {
+  const cleanEmail = String(email || '').toLowerCase().trim();
+  if (!cleanEmail || cleanEmail === MASTER_ADMIN_EMAIL.toLowerCase()) return false;
+
+  const { sb, token, email: callerEmail } = await getAdminSessionContext();
+  if (token) {
+    const endpoints = ['/api/admin-users', 'https://const.cubikar.app/api/admin-users'];
+    for (const ep of endpoints) {
+      try {
+        const res = await fetch(ep, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            action: 'set_coadmin',
+            email: cleanEmail,
+            name: String(name || '').trim() || cleanEmail.split('@')[0],
+            isCoAdmin: Boolean(isCoAdmin)
+          })
+        });
+        if (res.ok) return true;
+      } catch (_) {}
+    }
+  }
+
+  // Respaldo directo en Supabase cubikar_registros si es el Administrador Maestro
+  try {
+    if (sb && isUserMasterAdmin(callerEmail)) {
+      const { data: existingRows } = await sb
+        .from('cubikar_registros')
+        .select('email, nombre, metadata')
+        .ilike('email', cleanEmail)
+        .limit(1);
+      const prevRow = Array.isArray(existingRows) ? existingRows[0] : null;
+      const prevMeta = (prevRow?.metadata && typeof prevRow.metadata === 'object') ? prevRow.metadata : {};
+      const nextMeta = {
+        ...prevMeta,
+        is_co_admin: Boolean(isCoAdmin),
+        isCoAdmin: Boolean(isCoAdmin),
+        updated_by: callerEmail || MASTER_ADMIN_EMAIL,
+        updated_at: new Date().toISOString()
+      };
+      const { error } = await sb.from('cubikar_registros').upsert({
+        email: cleanEmail,
+        nombre: prevRow?.nombre || String(name || '').trim() || cleanEmail.split('@')[0],
+        metadata: nextMeta
+      }, { onConflict: 'email' });
+      if (!error) return true;
+    }
+  } catch (_) {}
+
+  return false;
+}
+
+export async function hydrateCoAdminsFromCloud() {
+  const { sb, token } = await getAdminSessionContext();
+  if (token) {
+    const endpoints = ['/api/admin-users?check_self=1', 'https://const.cubikar.app/api/admin-users?check_self=1'];
+    for (const url of endpoints) {
+      try {
+        const res = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.isAdmin && Array.isArray(data.coAdmins)) {
+            saveCoAdminsList(data.coAdmins);
+            renderCoAdminsListUI();
+            return data.coAdmins;
+          }
+          if (data && data.isAdmin === false) {
+            return getCoAdminsList();
+          }
+        }
+      } catch (_) {}
+    }
+  }
+
+  try {
+    if (sb) {
+      const { data: rows, error } = await sb.from('cubikar_registros').select('email, nombre, registered_at, metadata');
+      if (!error && Array.isArray(rows)) {
+        const cloudAdmins = rows
+          .filter(r => r?.email && (r?.metadata?.is_co_admin === true || r?.metadata?.isCoAdmin === true))
+          .map(r => {
+            const em = r.email.toLowerCase().trim();
+            return {
+              email: em,
+              name: r.nombre || em.split('@')[0],
+              role: 'admin',
+              canEdit: true,
+              canWrite: true,
+              canRead: true,
+              invitedBy: r.metadata?.updated_by || MASTER_ADMIN_EMAIL,
+              invitedAt: r.metadata?.updated_at || r.registered_at || new Date().toISOString(),
+              source: 'supabase'
+            };
+          });
+        saveCoAdminsList(cloudAdmins);
+        renderCoAdminsListUI();
+        return cloudAdmins;
+      }
+    }
+  } catch (_) {}
+
+  return getCoAdminsList();
+}
+
 export function isUserMasterAdmin(email) {
   if (!email) return false;
   return email.toLowerCase().trim() === MASTER_ADMIN_EMAIL.toLowerCase().trim();
@@ -86,9 +233,10 @@ export function addCoAdmin(email, name = '') {
     return false;
   }
 
+  const cleanName = String(name || '').trim() || cleanEmail.split('@')[0];
   list.push({
     email: cleanEmail,
-    name: name.trim() || cleanEmail.split('@')[0],
+    name: cleanName,
     role: 'admin',
     canEdit: true,
     canWrite: true,
@@ -98,22 +246,30 @@ export function addCoAdmin(email, name = '') {
   });
 
   saveCoAdminsList(list);
+  syncCoAdminToBackend(cleanEmail, cleanName, true);
   alert(`Administrador "${cleanEmail}" agregado con éxito.`);
   renderCoAdminsListUI();
   return true;
 }
 
-export function removeCoAdmin(email) {
+export function removeCoAdmin(email, opts = {}) {
   if (!email) return;
   const cleanEmail = email.toLowerCase().trim();
   if (cleanEmail === MASTER_ADMIN_EMAIL.toLowerCase().trim()) {
-    alert('No puedes eliminar al Administrador Maestro.');
+    if (!opts?.silent) alert('No puedes eliminar al Administrador Maestro.');
     return;
   }
 
-  const list = getCoAdminsList().filter(a => (a.email || '').toLowerCase().trim() !== cleanEmail);
+  const currentList = getCoAdminsList();
+  const existed = currentList.some(a => (a.email || '').toLowerCase().trim() === cleanEmail);
+  if (!existed) return;
+
+  const list = currentList.filter(a => (a.email || '').toLowerCase().trim() !== cleanEmail);
   saveCoAdminsList(list);
-  alert(`Acceso de administración revocado a "${cleanEmail}".`);
+  syncCoAdminToBackend(cleanEmail, '', false);
+  if (!opts?.silent) {
+    alert(`Acceso de administración revocado a "${cleanEmail}".`);
+  }
   renderCoAdminsListUI();
 }
 
@@ -126,23 +282,32 @@ export function getUserConsumptionData(userEmail) {
   const cleanEmail = userEmail.toLowerCase().trim();
   try {
     const raw = localStorage.getItem(`${STORAGE_KEY_CONSUMPTION}_${cleanEmail}`);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return {
+        tokensIA: Number(parsed?.tokensIA) || 0,
+        storageMB: Number(parsed?.storageMB) || 0,
+        bandwidthMB: Number(parsed?.bandwidthMB) || 0,
+        lastActivity: parsed?.lastActivity || null
+      };
+    }
   } catch (_) {}
 
   return {
-    tokensIA: 15400,
-    storageMB: 2.4,
-    bandwidthMB: 18.5,
-    lastActivity: new Date().toISOString()
+    tokensIA: 0,
+    storageMB: 0,
+    bandwidthMB: 0,
+    lastActivity: null
   };
 }
 
 export function evaluateUserActivity(user, consumption) {
   const now = new Date();
   const lastDateStr = consumption?.lastActivity || user?.lastLogin || user?.createdAt || null;
-  if (!lastDateStr) return 'activo';
+  if (!lastDateStr) return 'inactivo';
 
   const lastDate = new Date(lastDateStr);
+  if (Number.isNaN(lastDate.getTime())) return 'inactivo';
   const diffDays = Math.floor((now - lastDate) / (1000 * 60 * 60 * 24));
 
   if (diffDays <= 15) return 'activo';
@@ -155,19 +320,29 @@ export function calculateUserMetrics(user) {
   const rates = getMarketRates();
   const consumption = getUserConsumptionData(cleanEmail);
 
-  // Determinar planes de ambas apps o combo
-  let planConst = user?.subscriptionConst?.planId || user?.subscription?.planId || 'free';
-  let planArq = user?.subscriptionArq?.planId || user?.subscription?.planId || 'free';
-  let isSuiteCombo = user?.subscription?.isCombo || (planConst === 'pro' && planArq === 'pro');
+  const normalizePlan = (p) => {
+    const v = String(p || 'free').toLowerCase().trim();
+    return v === 'plus' || v === 'pro' ? v : 'free';
+  };
+  const normalizeCycle = (c) => (String(c || 'monthly').toLowerCase().trim() === 'annual' ? 'annual' : 'monthly');
 
-  let cycleConst = user?.subscriptionConst?.billingCycle || user?.subscription?.billingCycle || 'monthly';
-  let cycleArq = user?.subscriptionArq?.billingCycle || user?.subscription?.billingCycle || 'monthly';
+  // Determinar planes reales de ambas apps o combo desde tiers oficiales
+  const planConst = normalizePlan(user?.subscriptionConst?.planId || user?.subscription?.planId);
+  const planArq = normalizePlan(user?.subscriptionArq?.planId || user?.subscription?.planId);
+  const isSuiteCombo = Boolean(user?.subscription?.isCombo || (planConst === 'pro' && planArq === 'pro'));
 
-  // Precios base: Plus ($350 MXN), Pro ($750 MXN), Free ($0 MXN)
-  const priceMap = { free: 0, plus: 350, pro: 750 };
-  let gastoConst = priceMap[planConst] || 0;
-  let gastoArq = priceMap[planArq] || 0;
-  let totalGastoSub = isSuiteCombo ? (planConst === 'pro' ? 1200 : 590) : (gastoConst + gastoArq);
+  const cycleConst = normalizeCycle(user?.subscriptionConst?.billingCycle || user?.subscription?.billingCycle);
+  const cycleArq = normalizeCycle(user?.subscriptionArq?.billingCycle || user?.subscription?.billingCycle);
+  const billingCycle = (cycleConst === 'annual' || cycleArq === 'annual') ? 'annual' : 'monthly';
+
+  const gastoConst = CONST_TIERS[planConst]?.[cycleConst === 'annual' ? 'annualPrice' : 'monthlyPrice'] || 0;
+  const gastoArq = ARQ_TIERS[planArq]?.[cycleArq === 'annual' ? 'annualPrice' : 'monthlyPrice'] || 0;
+
+  let totalGastoSub = gastoConst + gastoArq;
+  if (isSuiteCombo) {
+    const comboTier = (planConst === 'pro' || planArq === 'pro') ? 'pro' : ((planConst === 'plus' || planArq === 'plus') ? 'plus' : 'free');
+    totalGastoSub = COMBO_TIERS[comboTier]?.[billingCycle === 'annual' ? 'annualPrice' : 'monthlyPrice'] || totalGastoSub;
+  }
 
   // Costo real de recursos consumidos
   const costoIA = ((consumption.tokensIA || 0) / 1000) * rates.aiTokenPer1k;
@@ -175,7 +350,7 @@ export function calculateUserMetrics(user) {
   const costoBandwidth = (consumption.bandwidthMB || 0) * rates.bandwidthMb;
   const totalCostoRecursos = Number((costoIA + costoStorage + costoBandwidth).toFixed(2));
 
-  let baseComparativa = totalGastoSub > 0 ? totalGastoSub : 15.0;
+  const baseComparativa = totalGastoSub > 0 ? totalGastoSub : 15.0;
   let pctConsumo = Number(((totalCostoRecursos / baseComparativa) * 100).toFixed(1));
   if (pctConsumo > 100) pctConsumo = 100;
 
@@ -189,6 +364,7 @@ export function calculateUserMetrics(user) {
     isSuiteCombo,
     cycleConst,
     cycleArq,
+    billingCycle,
     actividad,
     tokensIA: consumption.tokensIA || 0,
     storageMB: consumption.storageMB || 0,
@@ -273,6 +449,29 @@ export function updateAdminDeleteButtonUI() {
   }
 }
 
+function purgeEmailsFromLocalRegistries(targetEmails) {
+  if (!Array.isArray(targetEmails) || targetEmails.length === 0) return;
+  const targetSet = new Set(targetEmails.map(e => String(e || '').toLowerCase().trim()).filter(Boolean));
+  const storageKeys = [
+    STORAGE_KEY_REGISTERED_USERS,
+    'control_obra_registered_accounts_v1',
+    'control_obra_closed_sessions_v1'
+  ];
+  storageKeys.forEach(k => {
+    try {
+      const raw = localStorage.getItem(k);
+      if (!raw) return;
+      const list = JSON.parse(raw);
+      if (!Array.isArray(list)) return;
+      const filtered = list.filter(item => {
+        const em = typeof item === 'string' ? item : item?.email;
+        return !targetSet.has(String(em || '').toLowerCase().trim());
+      });
+      localStorage.setItem(k, JSON.stringify(filtered));
+    } catch (_) {}
+  });
+}
+
 export async function deleteSelectedAdminUsers() {
   const targets = Array.from(selectedAdminUserEmails).filter(e => !isUserMasterAdmin(e));
   if (targets.length === 0) {
@@ -284,36 +483,62 @@ export async function deleteSelectedAdminUsers() {
     return;
   }
 
-  // 1. Eliminar localmente
-  targets.forEach(email => {
-    try {
-      removeCoAdmin(email);
-      localStorage.removeItem(`${STORAGE_KEY_CONSUMPTION}_${email.toLowerCase().trim()}`);
-    } catch (_) {}
-  });
-
-  // 2. Eliminar en el backend seguro de la nube (auth.users y bases de datos)
+  // 1. Eliminar primero en el backend seguro de la nube (auth.users y bases de datos) y verificar res.ok
+  let deletedInCloud = false;
+  let lastErrorMsg = '';
   try {
+    const { token: bearerToken } = await getAdminSessionContext();
+
     const endpoints = ['/api/admin-users', 'https://const.cubikar.app/api/admin-users'];
     for (const ep of endpoints) {
       try {
+        const headers = {
+          'Content-Type': 'application/json'
+        };
+        if (bearerToken) headers['Authorization'] = `Bearer ${bearerToken}`;
+
         const res = await fetch(ep, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-admin-email': MASTER_ADMIN_EMAIL
-          },
+          headers,
           body: JSON.stringify({
             action: 'delete',
             emails: targets
           })
         });
-        if (res.ok) break;
-      } catch (_) {}
+        if (res.ok) {
+          deletedInCloud = true;
+          break;
+        } else {
+          const errPayload = await res.json().catch(() => ({}));
+          lastErrorMsg = errPayload?.error || `HTTP ${res.status}`;
+        }
+      } catch (e) {
+        lastErrorMsg = e?.message || String(e);
+      }
     }
   } catch (err) {
+    lastErrorMsg = err?.message || String(err);
     console.warn('[Cubikar Admin] Error al sincronizar eliminación con la nube:', err);
   }
+
+  if (!deletedInCloud) {
+    alert(`No se pudo eliminar en el servidor: ${lastErrorMsg || 'Error de conexión o permisos.'}`);
+    return;
+  }
+
+  // 2. Eliminar localmente tras confirmar éxito en servidor
+  const currentCoAdmins = getCoAdminsList();
+  targets.forEach(email => {
+    try {
+      const cleanEmail = email.toLowerCase().trim();
+      const wasCoAdmin = currentCoAdmins.some(a => (a.email || '').toLowerCase().trim() === cleanEmail);
+      if (wasCoAdmin) {
+        removeCoAdmin(cleanEmail, { silent: true });
+      }
+      localStorage.removeItem(`${STORAGE_KEY_CONSUMPTION}_${cleanEmail}`);
+    } catch (_) {}
+  });
+  purgeEmailsFromLocalRegistries(targets);
 
   selectedAdminUserEmails.clear();
   const selectAll = document.getElementById('admin-select-all-checkbox');
@@ -323,12 +548,49 @@ export async function deleteSelectedAdminUsers() {
   renderCubikarAdminTable();
 }
 
+export const deleteRegisteredUser = deleteSelectedAdminUsers;
+
+export async function updateAdminUserPlan(email, plan = 'free', billingCycle = 'monthly', producto = 'combo') {
+  const cleanEmail = String(email || '').toLowerCase().trim();
+  const normalizedPlan = ['free', 'plus', 'pro'].includes(String(plan || '').toLowerCase().trim())
+    ? String(plan).toLowerCase().trim()
+    : 'free';
+  const normalizedCycle = String(billingCycle || 'monthly').toLowerCase().trim() === 'annual' ? 'annual' : 'monthly';
+  if (!cleanEmail || isUserMasterAdmin(cleanEmail)) return false;
+
+  const { token: bearerToken } = await getAdminSessionContext();
+  const endpoints = ['/api/admin-users', 'https://const.cubikar.app/api/admin-users'];
+  for (const ep of endpoints) {
+    try {
+      const headers = { 'Content-Type': 'application/json' };
+      if (bearerToken) headers['Authorization'] = `Bearer ${bearerToken}`;
+      const res = await fetch(ep, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          action: 'update_plan',
+          email: cleanEmail,
+          plan: normalizedPlan,
+          billingCycle: normalizedCycle,
+          producto
+        })
+      });
+      if (res.ok) {
+        await renderCubikarAdminTable();
+        return true;
+      }
+    } catch (_) {}
+  }
+  return false;
+}
+
 // =========================================================================
 // 4. CARGA DE USUARIOS Y DATOS DESDE SUPABASE Y LOCAL
 // =========================================================================
 
 export async function fetchAllEcosystemUsers() {
   const usersMap = new Map();
+  let cloudLoadedSuccessfully = false;
 
   // 1. Administrador Maestro Oficial
   usersMap.set(MASTER_ADMIN_EMAIL.toLowerCase(), {
@@ -344,19 +606,27 @@ export async function fetchAllEcosystemUsers() {
 
   // 2. Consultar API Central Cloud de Usuarios (/api/admin-users o https://const.cubikar.app/api/admin-users)
   try {
+    const { token: bearerToken } = await getAdminSessionContext();
+
     const endpoints = ['/api/admin-users', 'https://const.cubikar.app/api/admin-users'];
     for (const url of endpoints) {
       try {
+        const headers = {
+          'Content-Type': 'application/json'
+        };
+        if (bearerToken) headers['Authorization'] = `Bearer ${bearerToken}`;
+
         const res = await fetch(url, {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-admin-email': MASTER_ADMIN_EMAIL
-          }
+          headers
         });
         if (res.ok) {
           const data = await res.json();
+          if (data && Array.isArray(data.coAdmins)) {
+            saveCoAdminsList(data.coAdmins);
+          }
           if (data && Array.isArray(data.users) && data.users.length > 0) {
+            cloudLoadedSuccessfully = true;
             data.users.forEach(u => {
               if (!u || !u.email) return;
               const em = u.email.toLowerCase().trim();
@@ -365,6 +635,7 @@ export async function fetchAllEcosystemUsers() {
               const planConst = u.subscriptionConst?.planId || u.subscription?.planId || 'free';
               const planArq = u.subscriptionArq?.planId || u.subscription?.planId || 'free';
               const isCombo = u.subscription?.isCombo || (isMaster ? true : (planConst === 'pro' && planArq === 'pro'));
+              const defaultCycle = u.subscription?.billingCycle || 'monthly';
 
               usersMap.set(em, {
                 id: u.id,
@@ -374,14 +645,14 @@ export async function fetchAllEcosystemUsers() {
                 lastLogin: u.lastLogin || u.createdAt || new Date().toISOString(),
                 subscription: isMaster
                   ? { planId: 'pro', billingCycle: 'annual', isCombo: true }
-                  : (u.subscription || { planId: 'free', billingCycle: 'monthly', isCombo }),
+                  : (u.subscription || { planId: 'free', billingCycle: defaultCycle, isCombo }),
                 subscriptionConst: isMaster
                   ? { planId: 'pro', billingCycle: 'annual' }
-                  : { planId: planConst, billingCycle: u.subscription?.billingCycle || 'monthly' },
+                  : { planId: planConst, billingCycle: u.subscriptionConst?.billingCycle || defaultCycle },
                 subscriptionArq: isMaster
                   ? { planId: 'pro', billingCycle: 'annual' }
-                  : { planId: planArq, billingCycle: u.subscription?.billingCycle || 'monthly' },
-                appUsage: isMaster ? 'ambas' : (u.appUsage || (planConst !== 'free' && planArq !== 'free' ? 'ambas' : (planConst !== 'free' ? 'const' : 'ambas'))),
+                  : { planId: planArq, billingCycle: u.subscriptionArq?.billingCycle || defaultCycle },
+                appUsage: isMaster ? 'ambas' : (u.appUsage || (planConst !== 'free' && planArq !== 'free' ? 'ambas' : (planConst !== 'free' ? 'const' : (planArq !== 'free' ? 'arq' : 'ambas')))),
                 source: u.source || 'cloud_api'
               });
             });
@@ -397,19 +668,41 @@ export async function fetchAllEcosystemUsers() {
     console.warn('[Cubikar Admin] Error consultando API de usuarios:', err);
   }
 
-  // 3. Complementar desde Supabase (tabla perfiles) si está disponible
+  // 3. Complementar desde Supabase (tabla perfiles join empresas) si está disponible
   try {
     const sb = getSupabaseClient();
     if (sb) {
-      const { data: profiles, error } = await sb.from('perfiles').select('*');
-      if (!error && Array.isArray(profiles)) {
+      const { data: profiles, error } = await sb.from('perfiles').select('*, empresas(*)');
+      if (!error && Array.isArray(profiles) && profiles.length > 0) {
+        cloudLoadedSuccessfully = true;
         profiles.forEach(p => {
           if (!p || !p.email) return;
           const em = p.email.toLowerCase().trim();
+          const isMaster = em === MASTER_ADMIN_EMAIL.toLowerCase();
+          const emp = p.empresas || {};
+          const hasExplicitProd = emp.plan_const != null || emp.plan_arq != null || emp.acceso_const != null || emp.acceso_arq != null;
+          const plan = isMaster ? 'pro' : (emp.plan || 'free');
+          const legacyFallback = !hasExplicitProd ? plan : 'free';
+          const planConst = isMaster ? 'pro' : ((emp.acceso_const === false && !emp.plan_const) ? 'free' : (emp.plan_const || legacyFallback || 'free'));
+          const planArq = isMaster ? 'pro' : ((emp.acceso_arq === false && !emp.plan_arq) ? 'free' : (emp.plan_arq || legacyFallback || 'free'));
+          const billingCycle = isMaster ? 'annual' : (emp.billing_cycle || 'monthly');
+          const isCombo = isMaster || (planConst === 'pro' && planArq === 'pro') || (Boolean(emp.acceso_const) && Boolean(emp.acceso_arq) && planConst === planArq && planConst !== 'free');
+          const appUsage = isCombo
+            ? 'ambas'
+            : (planConst !== 'free' && planArq !== 'free'
+              ? 'ambas'
+              : (planConst !== 'free' ? 'const' : (planArq !== 'free' ? 'arq' : 'ambas')));
+
           if (usersMap.has(em)) {
             const ex = usersMap.get(em);
             if (p.nombre_completo && (!ex.name || ex.name === em.split('@')[0])) {
               ex.name = p.nombre_completo;
+            }
+            if (!isMaster && p.empresas) {
+              ex.subscription = { planId: plan, billingCycle, isCombo };
+              ex.subscriptionConst = { planId: planConst, billingCycle };
+              ex.subscriptionArq = { planId: planArq, billingCycle };
+              ex.appUsage = appUsage;
             }
           } else {
             usersMap.set(em, {
@@ -418,10 +711,10 @@ export async function fetchAllEcosystemUsers() {
               email: em,
               createdAt: p.created_at || '2026-02-01T00:00:00.000Z',
               lastLogin: p.updated_at || p.created_at || new Date().toISOString(),
-              subscription: { planId: p.plan_id || 'free', billingCycle: p.billing_cycle || 'monthly' },
-              subscriptionConst: { planId: p.plan_const || p.plan_id || 'free', billingCycle: 'monthly' },
-              subscriptionArq: { planId: p.plan_arq || p.plan_id || 'free', billingCycle: 'monthly' },
-              appUsage: p.app_usage || 'ambas'
+              subscription: { planId: plan, billingCycle, isCombo },
+              subscriptionConst: { planId: planConst, billingCycle },
+              subscriptionArq: { planId: planArq, billingCycle },
+              appUsage
             });
           }
         });
@@ -429,37 +722,43 @@ export async function fetchAllEcosystemUsers() {
     }
   } catch (_) {}
 
-  // 4. Mergear con usuarios registrados localmente (todas las posibles claves del ecosistema)
-  try {
-    const storageKeys = [
-      STORAGE_KEY_REGISTERED_USERS,
-      'control_obra_registered_accounts_v1',
-      'control_obra_closed_sessions_v1'
-    ];
-    storageKeys.forEach(k => {
-      const rawLocal = localStorage.getItem(k);
-      if (rawLocal) {
-        const list = JSON.parse(rawLocal);
-        if (Array.isArray(list)) {
-          list.forEach(u => {
-            if (!u || !u.email) return;
-            const em = u.email.toLowerCase().trim();
-            if (!usersMap.has(em)) {
-              usersMap.set(em, {
-                ...u,
-                name: u.name || u.fullName || em.split('@')[0],
-                email: em,
-                appUsage: u.appUsage || 'ambas'
-              });
-            }
-          });
+  // 4. Solo usar localStorage como respaldo offline cuando la nube no pudo responder (evita reinyectar usuarios eliminados)
+  if (!cloudLoadedSuccessfully) {
+    try {
+      const storageKeys = [
+        STORAGE_KEY_REGISTERED_USERS,
+        'control_obra_registered_accounts_v1'
+      ];
+      storageKeys.forEach(k => {
+        const rawLocal = localStorage.getItem(k);
+        if (rawLocal) {
+          const list = JSON.parse(rawLocal);
+          if (Array.isArray(list)) {
+            list.forEach(u => {
+              if (!u) return;
+              const rawEmail = typeof u === 'string' ? u : u.email;
+              if (!rawEmail) return;
+              const em = rawEmail.toLowerCase().trim();
+              if (!usersMap.has(em)) {
+                const obj = typeof u === 'object' ? u : {};
+                usersMap.set(em, {
+                  ...obj,
+                  name: obj.name || obj.fullName || em.split('@')[0],
+                  email: em,
+                  appUsage: obj.appUsage || 'ambas'
+                });
+              }
+            });
+          }
         }
-      }
-    });
-  } catch (_) {}
+      });
+    } catch (_) {}
+  }
 
   return Array.from(usersMap.values());
 }
+
+export const fetchCloudAdminUsers = fetchAllEcosystemUsers;
 
 // =========================================================================
 // 5. RENDERIZADO DE LA TABLA Y KPIS
@@ -481,7 +780,7 @@ export async function renderCubikarAdminTable() {
     const formatDate = (d) => `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
 
     // Determinar aplicaciones utilizadas
-    const appUsage = u.appUsage || (metrics.planConst !== 'free' && metrics.planArq !== 'free' ? 'ambas' : (metrics.planConst !== 'free' ? 'const' : 'ambas'));
+    const appUsage = u.appUsage || (metrics.planConst !== 'free' && metrics.planArq !== 'free' ? 'ambas' : (metrics.planConst !== 'free' ? 'const' : (metrics.planArq !== 'free' ? 'arq' : 'ambas')));
 
     return {
       no: (idx + 1).toFixed(2),
@@ -492,6 +791,9 @@ export async function renderCubikarAdminTable() {
       appUsage,
       planConst: metrics.planConst,
       planArq: metrics.planArq,
+      cycleConst: metrics.cycleConst,
+      cycleArq: metrics.cycleArq,
+      billingCycle: metrics.billingCycle,
       isSuiteCombo: metrics.isSuiteCombo,
       inicioMembresia: formatDate(inicioSub),
       finMembresia: formatDate(finSub),
@@ -525,13 +827,29 @@ export async function renderCubikarAdminTable() {
     filtered = filtered.filter(d => d.actividad === adminFilterActivity);
   }
 
+  // Filtro por plan
+  if (adminFilterPlan !== 'all') {
+    if (adminFilterPlan === 'combo') {
+      filtered = filtered.filter(d => d.isSuiteCombo);
+    } else if (adminFilterPlan === 'free') {
+      filtered = filtered.filter(d => d.planConst === 'free' && d.planArq === 'free');
+    } else {
+      filtered = filtered.filter(d => d.planConst === adminFilterPlan || d.planArq === adminFilterPlan);
+    }
+  }
+
+  // Filtro por ciclo de facturación
+  if (adminFilterCycle !== 'all') {
+    filtered = filtered.filter(d => d.billingCycle === adminFilterCycle || d.cycleConst === adminFilterCycle || d.cycleArq === adminFilterCycle);
+  }
+
   // Actualizar KPIs Superiores
   updateAdminKpisUI(filtered);
 
   if (filtered.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="17" class="text-center py-12 text-slate-400 font-medium bg-slate-900/40">
+        <td colspan="15" class="text-center py-12 text-slate-400 font-medium bg-slate-900/40">
           <i class="fa-solid fa-filter-circle-xmark text-3xl mb-2 text-slate-500 block"></i>
           No se encontraron registros con los filtros seleccionados.
         </td>
@@ -541,6 +859,14 @@ export async function renderCubikarAdminTable() {
   }
 
   tbody.innerHTML = filtered.map(row => {
+    const safeEmailHtml = escapeAdminHtml(row.correo);
+    const safeEmailAttr = escapeAdminAttr(row.correo);
+    const safeNameHtml = escapeAdminHtml(row.nombre);
+    const safeNameAttr = escapeAdminAttr(row.nombre);
+    const safeInitialHtml = escapeAdminHtml((row.nombre || row.correo || '?').charAt(0).toUpperCase());
+    const safePlanConstHtml = escapeAdminHtml(row.planConst);
+    const safePlanArqHtml = escapeAdminHtml(row.planArq);
+
     // Insignia de Actividad (Semáforo)
     let badgeActividad = '';
     if (row.actividad === 'activo') {
@@ -570,8 +896,8 @@ export async function renderCubikarAdminTable() {
       const bArq = row.planArq === 'pro' ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' : (row.planArq === 'plus' ? 'bg-blue-500/20 text-blue-300 border-blue-500/40' : 'bg-slate-800 text-slate-400 border-slate-700');
       badgeSuscripciones = `
         <div class="flex items-center justify-center gap-1.5 flex-wrap">
-          <span class="px-1.5 py-0.5 rounded text-[9.5px] font-bold border uppercase ${bConst}" title="Cubikar Construcción">Const: ${row.planConst}</span>
-          <span class="px-1.5 py-0.5 rounded text-[9.5px] font-bold border uppercase ${bArq}" title="Cubikar Arquitectura">Arq: ${row.planArq}</span>
+          <span class="px-1.5 py-0.5 rounded text-[9.5px] font-bold border uppercase ${bConst}" title="Cubikar Construcción">Const: ${safePlanConstHtml}</span>
+          <span class="px-1.5 py-0.5 rounded text-[9.5px] font-bold border uppercase ${bArq}" title="Cubikar Arquitectura">Arq: ${safePlanArqHtml}</span>
         </div>
       `;
     }
@@ -583,7 +909,7 @@ export async function renderCubikarAdminTable() {
           ${isUserMasterAdmin(row.correo) ? `
             <span class="text-amber-400/60 text-xs" title="Administrador Maestro protegido"><i class="fa-solid fa-lock"></i></span>
           ` : `
-            <input type="checkbox" value="${row.correo}" ${selectedAdminUserEmails.has(row.correo) ? 'checked' : ''} onchange="onAdminUserCheckboxChange(this)"
+            <input type="checkbox" value="${safeEmailAttr}" ${selectedAdminUserEmails.has(row.correo) ? 'checked' : ''} onchange="onAdminUserCheckboxChange(this)"
                    class="admin-user-checkbox rounded border-slate-700 text-rose-600 focus:ring-rose-500 cursor-pointer w-4 h-4">
           `}
         </td>
@@ -593,14 +919,14 @@ export async function renderCubikarAdminTable() {
         <td class="px-3.5 py-2.5 font-semibold text-white whitespace-nowrap">
           <div class="flex items-center gap-2">
             <div class="w-6 h-6 rounded-full bg-slate-800 text-amber-400 border border-slate-700 flex items-center justify-center font-bold text-[10px] shrink-0">
-              ${row.nombre.charAt(0).toUpperCase()}
+              ${safeInitialHtml}
             </div>
-            <span class="truncate max-w-[150px]" title="${row.nombre}">${row.nombre}</span>
+            <span class="truncate max-w-[150px]" title="${safeNameAttr}">${safeNameHtml}</span>
           </div>
         </td>
         <!-- Correo -->
         <td class="px-3.5 py-2.5 font-mono text-slate-300 whitespace-nowrap">
-          <span class="truncate max-w-[170px] block" title="${row.correo}">${row.correo}</span>
+          <span class="truncate max-w-[170px] block" title="${safeEmailAttr}">${safeEmailHtml}</span>
         </td>
         <!-- Apps en uso -->
         <td class="px-3 py-2.5 text-center whitespace-nowrap">${badgeApp}</td>
@@ -690,6 +1016,7 @@ export function openCoAdminsModal() {
   modal.classList.remove('hidden');
   modal.style.display = 'flex';
   renderCoAdminsListUI();
+  hydrateCoAdminsFromCloud().catch(() => {});
 }
 
 export function closeCoAdminsModal() {
@@ -710,31 +1037,42 @@ export function renderCoAdminsListUI() {
     container.innerHTML = `
       <div class="p-6 text-center text-slate-400 bg-slate-900/50 rounded-xl border border-slate-800 text-xs">
         <i class="fa-solid fa-users-slash text-2xl text-slate-500 mb-2 block"></i>
-        Actualmente no hay co-administradores invitados. Solo el Administrador Maestro (${MASTER_ADMIN_EMAIL}) tiene acceso.
+        Actualmente no hay co-administradores invitados. Solo el Administrador Maestro (${escapeAdminHtml(MASTER_ADMIN_EMAIL)}) tiene acceso.
       </div>
     `;
     return;
   }
 
-  container.innerHTML = list.map(admin => `
+  container.innerHTML = list.map(admin => {
+    const safeName = escapeAdminHtml(admin.name || admin.email);
+    const safeEmailHtml = escapeAdminHtml(admin.email);
+    const safeEmailAttr = escapeAdminAttr(admin.email);
+    const safeEmailJsArg = escapeAdminAttr(
+      String(admin.email || '')
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/"/g, '\\"')
+    );
+    return `
     <div class="p-3 bg-slate-900 border border-slate-800 rounded-xl flex items-center justify-between gap-3 text-xs">
       <div class="flex items-center gap-2.5 min-w-0">
         <div class="w-8 h-8 rounded-full bg-blue-600/20 text-blue-400 border border-blue-500/40 flex items-center justify-center font-bold text-xs shrink-0">
           <i class="fa-solid fa-shield"></i>
         </div>
         <div class="min-w-0">
-          <div class="font-bold text-white truncate">${admin.name || admin.email}</div>
-          <div class="text-[11px] font-mono text-slate-400 truncate">${admin.email}</div>
+          <div class="font-bold text-white truncate">${safeName}</div>
+          <div class="text-[11px] font-mono text-slate-400 truncate">${safeEmailHtml}</div>
           <div class="text-[10px] text-emerald-400 flex items-center gap-1 mt-0.5">
             <i class="fa-solid fa-check text-[8px]"></i> Permisos: Acceso SuperAdmin
           </div>
         </div>
       </div>
-      <button type="button" onclick="removeCoAdmin('${admin.email}')" class="px-2.5 py-1 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 border border-rose-500/30 text-xs font-bold transition cursor-pointer">
+      <button type="button" data-coadmin-email="${safeEmailAttr}" onclick="removeCoAdmin(this.getAttribute('data-coadmin-email') || '${safeEmailJsArg}')" class="px-2.5 py-1 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 border border-rose-500/30 text-xs font-bold transition cursor-pointer">
         Eliminar
       </button>
     </div>
-  `).join('');
+  `;
+  }).join('');
 }
 
 export function openMarketRatesModal() {
@@ -784,9 +1122,22 @@ export function exportCubikarDatabaseToExcel() {
   XLSX.writeFile(wb, `Cubikar_Ecosistema_Admin_${new Date().toISOString().slice(0, 10)}.xlsx`);
 }
 
+let adminSearchDebounceTimer = null;
+
 export function setAdminTableSearch(text) {
   adminTableFilterText = text;
-  renderCubikarAdminTable();
+  if (adminSearchDebounceTimer) clearTimeout(adminSearchDebounceTimer);
+  adminSearchDebounceTimer = setTimeout(() => {
+    renderCubikarAdminTable();
+  }, 300);
+}
+
+export function copySupabaseSqlScript() {
+  const sql = `CREATE POLICY "conceptos_select" ON public.catalogo_conceptos FOR SELECT USING (public.check_user_project_access(proyecto_id::text));`;
+  if (navigator?.clipboard?.writeText) {
+    navigator.clipboard.writeText(sql).catch(() => {});
+  }
+  return sql;
 }
 
 export function setAdminFilterActivity(val) {
