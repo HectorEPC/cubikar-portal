@@ -2,8 +2,8 @@
 // Manejador de Autenticación, Registro y Estado de Sesión en el Portal Central Cubikar
 // Totalmente sincronizado con Supabase Auth y los esquemas de ADM_CONST y ADM_ARQ
 
-import { getSupabase } from './supabaseClient.js?v=20261116_cf5';
-import { CUBIKAR_SUB_TEST_MODE } from './checkout.js?v=20261116_cf5';
+import { getSupabase, SUPABASE_CONFIG } from './supabaseClient.js?v=20261116_cf6';
+import { CUBIKAR_SUB_TEST_MODE } from './checkout.js?v=20261116_cf6';
 import {
   writeSharedSsoCookie,
   clearSharedSsoCookie,
@@ -13,7 +13,7 @@ import {
   scrubSsoHashParams,
   getLastSignOutTimestamp,
   buildSsoTargetUrl
-} from './ssoHelper.js?v=20261116_cf5';
+} from './ssoHelper.js?v=20261116_cf6';
 
 export const GOOGLE_CLIENT_ID = '1097638023851-36b44hlrj7fgslfcmqlvf77dk89h7eus.apps.googleusercontent.com';
 export const STORAGE_KEY_CLOSED_SESSIONS = 'control_obra_closed_sessions_v1';
@@ -137,6 +137,186 @@ function scheduleBackgroundProfileSync(userId, onStateChange = null) {
 }
 
 let ssoHydrationInProgress = false;
+const MAX_SAFE_JWT_CHARS = 4500;
+let compactSessionInFlightPromise = null;
+const repairedJwtFingerprints = new Set();
+
+function extractJwtExpSeconds(token) {
+  if (!token || typeof token !== 'string') return 0;
+  try {
+    const parts = token.split('.');
+    if (parts.length < 2) return 0;
+    const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const pad = b64.length % 4 ? b64 + '='.repeat(4 - (b64.length % 4)) : b64;
+    const payload = JSON.parse(atob(pad));
+    return Number(payload?.exp || 0) || 0;
+  } catch (_) {
+    return 0;
+  }
+}
+
+function hasBloatedUserMetadata(user) {
+  const meta = user?.user_metadata;
+  if (!meta || typeof meta !== 'object') return false;
+  if (meta.cubikar_collaboration_v1 && typeof meta.cubikar_collaboration_v1 === 'object') return true;
+  for (const imgKey of ['avatar_url', 'picture']) {
+    const val = meta[imgKey];
+    if (typeof val === 'string' && (val.startsWith('data:') || val.length > 600)) return true;
+  }
+  const cs = meta.cubikar_cloud_state_v2;
+  if (cs && typeof cs === 'object') {
+    if (Array.isArray(cs.ownedProjects) && cs.ownedProjects.length > 0) return true;
+    if (Array.isArray(cs.collaboratedProjects) && cs.collaboratedProjects.length > 0) return true;
+    if (Array.isArray(cs.deletedProjectIds) && cs.deletedProjectIds.length > 15) return true;
+  }
+  if (Array.isArray(meta.cubikar_dismissed_notifications) && meta.cubikar_dismissed_notifications.length > 25) return true;
+  if (Array.isArray(meta.cubikar_read_mentions) && meta.cubikar_read_mentions.length > 25) return true;
+  try {
+    if (JSON.stringify(meta).length > 3600) return true;
+  } catch (_) {}
+  return false;
+}
+
+function isJwtSessionBloated(session) {
+  const token = session?.access_token;
+  if (typeof token === 'string' && token.length > MAX_SAFE_JWT_CHARS) return true;
+  return hasBloatedUserMetadata(session?.user);
+}
+
+async function repairBloatedJwtRemote(accessToken) {
+  if (!accessToken || typeof accessToken !== 'string' || !accessToken.includes('.')) return false;
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  const endpoints = [];
+  const addEndpoint = (u) => { if (u && !endpoints.includes(u)) endpoints.push(u); };
+  addEndpoint('/api/admin-users');
+  if (origin !== 'https://const.cubikar.app') {
+    addEndpoint('https://const.cubikar.app/api/admin-users');
+  }
+
+  for (const endpoint of endpoints) {
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'slim_own_jwt_metadata',
+          accessToken
+        })
+      });
+      if (!res.ok) continue;
+      const json = await res.json().catch(() => null);
+      if (json?.ok) return true;
+    } catch (_) {}
+  }
+  return false;
+}
+
+async function refreshCleanSession(sb, refreshToken) {
+  if (!sb) return null;
+  try {
+    const { data, error } = refreshToken
+      ? await sb.auth.refreshSession({ refresh_token: refreshToken })
+      : await sb.auth.refreshSession();
+    if (!error && data?.session?.access_token) {
+      return data.session;
+    }
+  } catch (_) {}
+
+  if (refreshToken && SUPABASE_CONFIG?.url && SUPABASE_CONFIG?.anonKey) {
+    try {
+      const res = await fetch(`${SUPABASE_CONFIG.url}/auth/v1/token?grant_type=refresh_token`, {
+        method: 'POST',
+        headers: {
+          apikey: SUPABASE_CONFIG.anonKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ refresh_token: refreshToken })
+      });
+      if (res.ok) {
+        const tok = await res.json().catch(() => null);
+        if (tok?.access_token) {
+          const setRes = await sb.auth.setSession({
+            access_token: tok.access_token,
+            refresh_token: tok.refresh_token || refreshToken
+          });
+          return setRes?.data?.session || tok;
+        }
+      }
+    } catch (_) {}
+  }
+  return null;
+}
+
+export async function ensureCompactAuthSession(sbClient = null, sessionOverride = null) {
+  if (compactSessionInFlightPromise) {
+    return compactSessionInFlightPromise;
+  }
+
+  compactSessionInFlightPromise = (async () => {
+    const sb = sbClient || getSupabase();
+    let session = sessionOverride || null;
+    if (!session && sb) {
+      try {
+        const { data } = await sb.auth.getSession();
+        session = data?.session || null;
+      } catch (_) {}
+    }
+    if (!session) {
+      const localTok = readLocalSupabaseTokens();
+      if (localTok?.accessToken && localTok?.refreshToken) {
+        session = { access_token: localTok.accessToken, refresh_token: localTok.refreshToken, user: null };
+      }
+    }
+    if (!session || !isJwtSessionBloated(session)) {
+      return session;
+    }
+    if (!session.access_token || !session.access_token.includes('.')) {
+      return session;
+    }
+
+    const fp = `${session.access_token.length}_${session.access_token.slice(-16)}`;
+    if (repairedJwtFingerprints.has(fp)) {
+      return session;
+    }
+    try {
+      const prevTs = Number(typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('cubikar_jwt_slim_ts_' + fp) || 0 : 0);
+      if (prevTs > 0 && (Date.now() - prevTs) < 10000) {
+        return session;
+      }
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.setItem('cubikar_jwt_slim_ts_' + fp, String(Date.now()));
+      }
+    } catch (_) {}
+    repairedJwtFingerprints.add(fp);
+
+    const exp = extractJwtExpSeconds(session.access_token);
+    if (exp > 0 && exp < Math.floor(Date.now() / 1000) + 30 && session.refresh_token) {
+      const renewed = await refreshCleanSession(sb, session.refresh_token);
+      if (renewed?.access_token) {
+        session = renewed;
+        if (!isJwtSessionBloated(session)) {
+          return session;
+        }
+      }
+    }
+
+    const repaired = await repairBloatedJwtRemote(session.access_token);
+    if (!repaired) {
+      return session;
+    }
+
+    const cleanSession = await refreshCleanSession(sb, session.refresh_token);
+    if (cleanSession?.access_token) {
+      console.info(`[Portal Auth] Sesión JWT compactada automáticamente (${session.access_token.length} -> ${cleanSession.access_token.length} bytes).`);
+      return cleanSession;
+    }
+    return session;
+  })().finally(() => {
+    compactSessionInFlightPromise = null;
+  });
+
+  return compactSessionInFlightPromise;
+}
 
 async function tryHydrateSsoSession(sb) {
   if (!sb) return null;
@@ -217,11 +397,16 @@ async function tryHydrateSsoSession(sb) {
       markSessionOpen(tokens.email);
     }
 
-    const { data, error } = tokens.accessToken
+    if (tokens.accessToken && tokens.accessToken.length > MAX_SAFE_JWT_CHARS) {
+      await repairBloatedJwtRemote(tokens.accessToken);
+    }
+
+    const { data, error } = (tokens.accessToken && tokens.accessToken.length <= MAX_SAFE_JWT_CHARS)
       ? await sb.auth.setSession({ access_token: tokens.accessToken, refresh_token: tokens.refreshToken })
       : await sb.auth.refreshSession({ refresh_token: tokens.refreshToken });
     if (error || !data?.session?.user) return null;
-    const userEmail = (data.session.user.email || '').toLowerCase().trim();
+    const compactSession = (await ensureCompactAuthSession(sb, data.session)) || data.session;
+    const userEmail = (compactSession.user.email || '').toLowerCase().trim();
     const isExplicitSso = Boolean(tokens.fromHash || (tokens.ts && tokens.ts > lastSignOutTs));
     if (isExplicitSso) {
       markSessionOpen(userEmail);
@@ -232,7 +417,7 @@ async function tryHydrateSsoSession(sb) {
       } catch (_) {}
       return null;
     }
-    return data.session;
+    return compactSession;
   } catch (err) {
     console.warn('[Portal Auth] No se pudo hidratar sesión SSO entrante:', err?.message || err);
     return null;
@@ -297,6 +482,21 @@ export async function initAuth(onStateChange) {
         currentProfile = null;
         currentCompany = null;
         resetProfileCache();
+      }
+
+      if (isJwtSessionBloated(session)) {
+        setTimeout(async () => {
+          const cleanSession = (await ensureCompactAuthSession(sb, session)) || session;
+          if (!cleanSession?.user) return;
+          currentUser = cleanSession.user;
+          writeSharedSsoCookie(cleanSession);
+          syncLocalUserStorage(currentUser, currentProfile, currentCompany);
+          if (onStateChange) {
+            onStateChange({ user: currentUser, profile: currentProfile, company: currentCompany, event });
+          }
+          scheduleBackgroundProfileSync(currentUser.id, onStateChange);
+        }, 0);
+        return;
       }
 
       currentUser = session.user;
@@ -382,6 +582,9 @@ export async function initAuth(onStateChange) {
     }
 
     if (session?.user && !error) {
+      if (isJwtSessionBloated(session)) {
+        session = (await ensureCompactAuthSession(sb, session)) || session;
+      }
       const userEmail = (session.user.email || '').toLowerCase().trim();
       if (getClosedSessionsList().includes(userEmail)) {
         if (onStateChange) onStateChange(null);
@@ -546,6 +749,14 @@ export async function loginWithEmail(email, password) {
     }
 
     if (authError) throw authError;
+
+    if (data?.session && isJwtSessionBloated(data.session)) {
+      const compact = await ensureCompactAuthSession(sb, data.session);
+      if (compact?.user) {
+        data.session = compact;
+        data.user = compact.user;
+      }
+    }
 
     if (data?.user) {
       currentUser = data.user;
@@ -717,6 +928,14 @@ export async function loginWithGoogleIdToken(idToken, rawNonce) {
   try {
     const { data, error } = await sb.auth.signInWithIdToken(payload);
     if (error) throw error;
+
+    if (data?.session && isJwtSessionBloated(data.session)) {
+      const compact = await ensureCompactAuthSession(sb, data.session);
+      if (compact?.user) {
+        data.session = compact;
+        data.user = compact.user;
+      }
+    }
 
     if (data?.user) {
       currentUser = data.user;
