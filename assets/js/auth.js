@@ -2,8 +2,8 @@
 // Manejador de Autenticación, Registro y Estado de Sesión en el Portal Central Cubikar
 // Totalmente sincronizado con Supabase Auth y los esquemas de ADM_CONST y ADM_ARQ
 
-import { getSupabase, SUPABASE_CONFIG } from './supabaseClient.js?v=20261116_cf10';
-import { CUBIKAR_SUB_TEST_MODE } from './checkout.js?v=20261116_cf10';
+import { getSupabase, SUPABASE_CONFIG } from './supabaseClient.js?v=20261116_cf11';
+import { CUBIKAR_SUB_TEST_MODE } from './checkout.js?v=20261116_cf11';
 import {
   writeSharedSsoCookie,
   clearSharedSsoCookie,
@@ -13,7 +13,7 @@ import {
   scrubSsoHashParams,
   getLastSignOutTimestamp,
   buildSsoTargetUrl
-} from './ssoHelper.js?v=20261116_cf10';
+} from './ssoHelper.js?v=20261116_cf11';
 
 export const GOOGLE_CLIENT_ID = '1097638023851-36b44hlrj7fgslfcmqlvf77dk89h7eus.apps.googleusercontent.com';
 export const STORAGE_KEY_CLOSED_SESSIONS = 'control_obra_closed_sessions_v1';
@@ -234,7 +234,9 @@ function isJwtSessionBloated(session) {
 }
 
 async function repairBloatedJwtRemote(accessToken) {
-  if (!accessToken || typeof accessToken !== 'string' || !accessToken.includes('.')) return false;
+  if (!accessToken || typeof accessToken !== 'string' || !accessToken.includes('.')) {
+    return { ok: false };
+  }
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
   const endpoints = [];
   const addEndpoint = (u) => { if (u && !endpoints.includes(u)) endpoints.push(u); };
@@ -246,6 +248,7 @@ async function repairBloatedJwtRemote(accessToken) {
     addEndpoint('https://cubikar.app/api/admin-users');
   }
 
+  let lastFailure = { ok: false };
   for (const endpoint of endpoints) {
     try {
       const res = await fetch(endpoint, {
@@ -256,12 +259,19 @@ async function repairBloatedJwtRemote(accessToken) {
           accessToken
         })
       });
-      if (!res.ok) continue;
       const json = await res.json().catch(() => null);
-      if (json?.ok) return true;
+      if (res.ok && json?.ok) return { ok: true };
+      if (json && (json.needsServiceRoleKey || res.status === 422)) {
+        lastFailure = {
+          ok: false,
+          status: res.status,
+          error: json.error || '',
+          needsServiceRoleKey: Boolean(json.needsServiceRoleKey)
+        };
+      }
     } catch (_) {}
   }
-  return false;
+  return lastFailure;
 }
 
 async function refreshCleanSession(sb, refreshToken) {
@@ -361,10 +371,31 @@ export async function ensureCompactAuthSession(sbClient = null, sessionOverride 
     }
 
     markUserCompactCooldown(uid, session.access_token.length);
-    const repaired = await repairBloatedJwtRemote(session.access_token);
-    if (!repaired) {
+    const repairResult = await repairBloatedJwtRemote(session.access_token);
+    if (!repairResult?.ok) {
+      if (session.refresh_token) {
+        lastCompactRefreshAt = Date.now();
+        const postFailRefresh = await refreshCleanSession(sb, session.refresh_token);
+        if (postFailRefresh?.access_token && !isJwtSessionBloated(postFailRefresh)) {
+          lastCompactRefreshAt = Date.now();
+          if (typeof window !== 'undefined') window.__cubikarOversizedJwtBlocked = false;
+          markUserCompactCooldown(uid, postFailRefresh.access_token.length);
+          console.info(`[Portal Auth] Sesión JWT renovada y compactada (${session.access_token.length} -> ${postFailRefresh.access_token.length} bytes).`);
+          return postFailRefresh;
+        }
+      }
+      if (session.access_token.length > 12000 && typeof window !== 'undefined') {
+        window.__cubikarOversizedJwtBlocked = true;
+        if (window.__cubikarOversizedJwtWarnedFp !== fp) {
+          window.__cubikarOversizedJwtWarnedFp = fp;
+          console.warn(
+            `[Portal Auth] Token JWT de ${session.access_token.length} bytes excede el límite HTTP (${repairResult?.error || 'requiere SUPABASE_SERVICE_ROLE_KEY o migración SQL'}). Se bloquearon peticiones pesadas localmente hasta compactar y volver a iniciar sesión.`
+          );
+        }
+      }
       return session;
     }
+    if (typeof window !== 'undefined') window.__cubikarOversizedJwtBlocked = false;
 
     let latestRefreshToken = session.refresh_token;
     if (sb) {

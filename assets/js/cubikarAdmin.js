@@ -2,8 +2,8 @@
 // Módulo de Administración Maestra de Cubikar para el Portal Central (cubikar.app)
 // Supervisión integral de clientes, membresías, consumos técnicos de IA y margen SaaS de ambas aplicaciones
 
-import { getSupabase } from './supabaseClient.js?v=20261116_cf10';
-import { CONST_TIERS, ARQ_TIERS, COMBO_TIERS } from './checkout.js?v=20261116_cf10';
+import { getSupabase } from './supabaseClient.js?v=20261116_cf11';
+import { CONST_TIERS, ARQ_TIERS, COMBO_TIERS } from './checkout.js?v=20261116_cf11';
 const getSupabaseClient = getSupabase;
 
 // Administrador Maestro Oficial
