@@ -1,10 +1,10 @@
 // assets/js/main.js
 // Controlador interactivo sincronizado al 100% con ADM_CONST y ADM_ARQ
 
-import { CONST_TIERS, ARQ_TIERS, COMBO_TIERS, redirectToStripeCheckout, openCustomerPortal, CUBIKAR_SUB_TEST_MODE } from './checkout.js?v=20261116_cf11';
-import { downloadFullEcosystemBackup } from './exportBackup.js?v=20261116_cf11';
-import { initAppSwitcher } from './appSwitcher.js?v=20261116_cf11';
-import { initShowcaseRuleta } from './showcaseRuleta.js?v=20261116_cf11';
+import { CONST_TIERS, ARQ_TIERS, COMBO_TIERS, redirectToStripeCheckout, openCustomerPortal, CUBIKAR_SUB_TEST_MODE } from './checkout.js?v=20261116_cf12';
+import { downloadFullEcosystemBackup } from './exportBackup.js?v=20261116_cf12';
+import { initAppSwitcher } from './appSwitcher.js?v=20261116_cf12';
+import { initShowcaseRuleta } from './showcaseRuleta.js?v=20261116_cf12';
 import { 
   isUserAdmin, 
   openCubikarAdminModal,
@@ -25,7 +25,7 @@ import {
   addCoAdmin,
   removeCoAdmin,
   hydrateCoAdminsFromCloud
-} from './cubikarAdmin.js?v=20261116_cf11';
+} from './cubikarAdmin.js?v=20261116_cf12';
 import { 
   initAuth, 
   hydrateIncomingSsoSession,
@@ -37,7 +37,7 @@ import {
   logout, 
   getCurrentState,
   buildSsoUrl
-} from './auth.js?v=20261116_cf11';
+} from './auth.js?v=20261116_cf12';
 
 function showPortalNotification(message, type = 'info') {
   try {
@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const isLogoutReturn = urlParams.get('logout') === '1';
   if (isLogoutReturn) {
     try {
-      await logout();
+      await logout({ skipServerSignOut: true });
       updateAuthUI(null);
     } catch (_) {}
     window.history.replaceState({}, document.title, window.location.pathname);
