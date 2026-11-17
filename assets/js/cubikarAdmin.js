@@ -2,8 +2,8 @@
 // Módulo de Administración Maestra de Cubikar para el Portal Central (cubikar.app)
 // Supervisión integral de clientes, membresías, consumos técnicos de IA y margen SaaS de ambas aplicaciones
 
-import { getSupabase } from './supabaseClient.js?v=20261116_cf12';
-import { CONST_TIERS, ARQ_TIERS, COMBO_TIERS } from './checkout.js?v=20261116_cf12';
+import { getSupabase } from './supabaseClient.js?v=20261116_cf13';
+import { CONST_TIERS, ARQ_TIERS, COMBO_TIERS } from './checkout.js?v=20261116_cf13';
 const getSupabaseClient = getSupabase;
 
 // Administrador Maestro Oficial
@@ -892,12 +892,14 @@ export async function renderCubikarAdminTable() {
     if (row.isSuiteCombo) {
       badgeSuscripciones = `<span class="px-2.5 py-0.5 rounded-full text-[10.5px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-400/40 uppercase whitespace-nowrap"><i class="fa-solid fa-crown text-[9px] mr-1"></i>Suite Completa Pro</span>`;
     } else {
-      const bConst = row.planConst === 'pro' ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' : (row.planConst === 'plus' ? 'bg-blue-500/20 text-blue-300 border-blue-500/40' : 'bg-slate-800 text-slate-400 border-slate-700');
-      const bArq = row.planArq === 'pro' ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' : (row.planArq === 'plus' ? 'bg-blue-500/20 text-blue-300 border-blue-500/40' : 'bg-slate-800 text-slate-400 border-slate-700');
+      const bConst = row.planConst === 'pro' ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' : (row.planConst === 'plus' ? 'bg-blue-500/20 text-blue-300 border-blue-500/40' : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40');
+      const bArq = row.planArq === 'pro' ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' : (row.planArq === 'plus' ? 'bg-blue-500/20 text-blue-300 border-blue-500/40' : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40');
+      const iconConst = row.planConst === 'pro' ? '<i class="fa-solid fa-crown mr-1 text-[8.5px]"></i>' : (row.planConst === 'plus' ? '<i class="fa-solid fa-bolt mr-1 text-[8.5px]"></i>' : '<i class="fa-solid fa-seedling mr-1 text-[8.5px]"></i>');
+      const iconArq = row.planArq === 'pro' ? '<i class="fa-solid fa-crown mr-1 text-[8.5px]"></i>' : (row.planArq === 'plus' ? '<i class="fa-solid fa-bolt mr-1 text-[8.5px]"></i>' : '<i class="fa-solid fa-seedling mr-1 text-[8.5px]"></i>');
       badgeSuscripciones = `
         <div class="flex items-center justify-center gap-1.5 flex-wrap">
-          <span class="px-1.5 py-0.5 rounded text-[9.5px] font-bold border uppercase ${bConst}" title="Cubikar Construcción">Const: ${safePlanConstHtml}</span>
-          <span class="px-1.5 py-0.5 rounded text-[9.5px] font-bold border uppercase ${bArq}" title="Cubikar Arquitectura">Arq: ${safePlanArqHtml}</span>
+          <span class="px-1.5 py-0.5 rounded text-[9.5px] font-bold border uppercase flex items-center ${bConst}" title="Cubikar Construcción">${iconConst}Const: ${safePlanConstHtml}</span>
+          <span class="px-1.5 py-0.5 rounded text-[9.5px] font-bold border uppercase flex items-center ${bArq}" title="Cubikar Arquitectura">${iconArq}Arq: ${safePlanArqHtml}</span>
         </div>
       `;
     }

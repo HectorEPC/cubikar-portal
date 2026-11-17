@@ -1,10 +1,10 @@
 // assets/js/main.js
 // Controlador interactivo sincronizado al 100% con ADM_CONST y ADM_ARQ
 
-import { CONST_TIERS, ARQ_TIERS, COMBO_TIERS, redirectToStripeCheckout, openCustomerPortal, CUBIKAR_SUB_TEST_MODE } from './checkout.js?v=20261116_cf12';
-import { downloadFullEcosystemBackup } from './exportBackup.js?v=20261116_cf12';
-import { initAppSwitcher } from './appSwitcher.js?v=20261116_cf12';
-import { initShowcaseRuleta } from './showcaseRuleta.js?v=20261116_cf12';
+import { CONST_TIERS, ARQ_TIERS, COMBO_TIERS, redirectToStripeCheckout, openCustomerPortal, CUBIKAR_SUB_TEST_MODE } from './checkout.js?v=20261116_cf13';
+import { downloadFullEcosystemBackup } from './exportBackup.js?v=20261116_cf13';
+import { initAppSwitcher } from './appSwitcher.js?v=20261116_cf13';
+import { initShowcaseRuleta } from './showcaseRuleta.js?v=20261116_cf13';
 import { 
   isUserAdmin, 
   openCubikarAdminModal,
@@ -25,7 +25,7 @@ import {
   addCoAdmin,
   removeCoAdmin,
   hydrateCoAdminsFromCloud
-} from './cubikarAdmin.js?v=20261116_cf12';
+} from './cubikarAdmin.js?v=20261116_cf13';
 import { 
   initAuth, 
   hydrateIncomingSsoSession,
@@ -37,7 +37,7 @@ import {
   logout, 
   getCurrentState,
   buildSsoUrl
-} from './auth.js?v=20261116_cf12';
+} from './auth.js?v=20261116_cf13';
 
 function showPortalNotification(message, type = 'info') {
   try {
@@ -272,11 +272,11 @@ function renderPricingCardsAndComparison() {
     const subtext = isAnnual ? plan.subtextAnnual : plan.subtextMonthly;
 
     let cardBorder = 'border-slate-800 bg-slate-900/60';
-    let iconBoxCls = 'bg-slate-800 text-slate-400';
+    let iconBoxCls = 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
     let iconName = 'fa-solid fa-seedling';
     let btnCls = 'bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700';
-    let btnText = `<span>Comenzar con ${plan.name}</span>`;
-    let checkIconCls = 'text-slate-500';
+    let btnText = `<i class="fa-solid fa-seedling text-[11px]"></i><span>Comenzar con ${plan.name}</span>`;
+    let checkIconCls = 'text-emerald-400';
 
     if (isPlus) {
       cardBorder = 'border-2 border-blue-500/80 shadow-2xl glow-blue bg-gradient-to-b from-slate-900 via-slate-900/90 to-slate-950 transform lg:-translate-y-2';
@@ -513,9 +513,9 @@ function renderDynamicComparisonTable(productLabel, accentColor) {
         <thead>
           <tr class="border-b border-slate-800 bg-slate-950/60 text-slate-300">
             <th class="py-3 px-5 font-bold">Métrica / Función</th>
-            <th class="py-3 px-5 font-bold text-center text-slate-400">Gratuita ($0)</th>
-            <th class="py-3 px-5 font-bold text-center text-blue-400">Plus</th>
-            <th class="py-3 px-5 font-bold text-center text-amber-400">Pro</th>
+            <th class="py-3 px-5 font-bold text-center text-emerald-400"><i class="fa-solid fa-seedling mr-1"></i>Gratuita ($0)</th>
+            <th class="py-3 px-5 font-bold text-center text-blue-400"><i class="fa-solid fa-bolt mr-1"></i>Plus</th>
+            <th class="py-3 px-5 font-bold text-center text-amber-400"><i class="fa-solid fa-crown mr-1"></i>Pro</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-800 text-slate-300">
