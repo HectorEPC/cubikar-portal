@@ -1,10 +1,10 @@
 // assets/js/main.js
 // Controlador interactivo sincronizado al 100% con ADM_CONST y ADM_ARQ
 
-import { CONST_TIERS, ARQ_TIERS, COMBO_TIERS, redirectToStripeCheckout, openCustomerPortal, CUBIKAR_SUB_TEST_MODE } from './checkout.js?v=20261117_cf15';
-import { downloadFullEcosystemBackup } from './exportBackup.js?v=20261117_cf15';
-import { initAppSwitcher } from './appSwitcher.js?v=20261117_cf15';
-import { initShowcaseRuleta } from './showcaseRuleta.js?v=20261117_cf15';
+import { CONST_TIERS, ARQ_TIERS, COMBO_TIERS, redirectToStripeCheckout, openCustomerPortal, CUBIKAR_SUB_TEST_MODE } from './checkout.js?v=20261117_cf30';
+import { downloadFullEcosystemBackup } from './exportBackup.js?v=20261117_cf30';
+import { initAppSwitcher } from './appSwitcher.js?v=20261117_cf30';
+import { initShowcaseRuleta } from './showcaseRuleta.js?v=20261117_cf30';
 import { 
   isUserAdmin, 
   openCubikarAdminModal,
@@ -30,7 +30,7 @@ import {
   onS3BackupUserChange,
   onS3BackupDateChange,
   downloadS3BackupObject
-} from './cubikarAdmin.js?v=20261117_cf15';
+} from './cubikarAdmin.js?v=20261117_cf30';
 import { 
   initAuth, 
   syncSubscriptionFromCloud,
@@ -41,7 +41,7 @@ import {
   logout, 
   getCurrentState,
   buildSsoUrl
-} from './auth.js?v=20261117_cf15';
+} from './auth.js?v=20261117_cf30';
 
 function showPortalNotification(message, type = 'info') {
   try {

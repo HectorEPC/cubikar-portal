@@ -1,7 +1,7 @@
 // assets/js/checkout.js
 // Configuración exacta y completa de suscripciones de ADM_CONST y ADM_ARQ
 
-import { getSupabase } from './supabaseClient.js?v=20261117_cf15';
+import { getSupabase } from './supabaseClient.js?v=20261117_cf30';
 
 // =========================================================================
 // MODO DE CONTROL: CUBIKAR SUB TEST vs CUBIKAR SUB ORIGINAL
