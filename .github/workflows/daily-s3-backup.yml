@@ -1,0 +1,72 @@
+name: Respaldo Diario S3 por Usuario
+
+on:
+  schedule:
+    - cron: '30 3 * * *'
+  workflow_dispatch:
+    inputs:
+      only_email:
+        description: 'Respaldar únicamente este correo (opcional)'
+        required: false
+        default: ''
+      dry_run:
+        description: 'Solo simular sin escribir en S3'
+        type: boolean
+        required: false
+        default: false
+      skip_pg_dump:
+        description: 'Omitir pg_dump completo aunque exista SUPABASE_DB_URL'
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cubikar-daily-s3-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Obtener código
+        uses: actions/checkout@v4
+
+      - name: Configurar Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Respaldo por usuario y proyecto en AWS S3
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_S3_ENDPOINT: ${{ secrets.AWS_S3_ENDPOINT }}
+          BACKUP_KEEP_DAILY: '7'
+          BACKUP_KEEP_WEEKLY: '4'
+          BACKUP_ONLY_EMAIL: ${{ inputs.only_email }}
+          BACKUP_DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
+        run: python3 scripts/backup_users_to_s3.py
+
+      - name: Dump completo de PostgreSQL a S3 (opcional si existe SUPABASE_DB_URL)
+        if: ${{ !inputs.dry_run && !inputs.skip_pg_dump && secrets.SUPABASE_DB_URL != '' }}
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_S3_ENDPOINT: ${{ secrets.AWS_S3_ENDPOINT }}
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client
+          pg_dump --no-owner --no-acl --format=plain "$SUPABASE_DB_URL" | gzip -9 > /tmp/cubikar_full_db.sql.gz
+          python3 scripts/backup_users_to_s3.py --upload-pg-dump /tmp/cubikar_full_db.sql.gz
+          rm -f /tmp/cubikar_full_db.sql.gz

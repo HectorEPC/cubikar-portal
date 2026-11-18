@@ -1,7 +1,7 @@
 // assets/js/checkout.js
 // Configuración exacta y completa de suscripciones de ADM_CONST y ADM_ARQ
 
-import { getSupabase } from './supabaseClient.js?v=20261116_cf13';
+import { getSupabase } from './supabaseClient.js?v=20261117_cf15';
 
 // =========================================================================
 // MODO DE CONTROL: CUBIKAR SUB TEST vs CUBIKAR SUB ORIGINAL
@@ -348,7 +348,25 @@ export const COMBO_TIERS = {
   }
 };
 
+let checkoutInFlight = false;
+if (typeof window !== 'undefined') {
+  window.addEventListener('pageshow', (event) => {
+    if (event.persisted) checkoutInFlight = false;
+  });
+}
+
 export async function redirectToStripeCheckout(product = 'const', planId = 'plus', cycle = 'monthly') {
+  if (checkoutInFlight) return;
+  checkoutInFlight = true;
+  let redirecting = false;
+  try {
+    redirecting = await runCheckoutFlow(product, planId, cycle);
+  } finally {
+    if (!redirecting) checkoutInFlight = false;
+  }
+}
+
+async function runCheckoutFlow(product, planId, cycle) {
   const savePendingProductIntent = (prod) => {
     try {
       if (typeof sessionStorage !== 'undefined') {
@@ -372,52 +390,55 @@ export async function redirectToStripeCheckout(product = 'const', planId = 'plus
     }
   };
 
+  const normalizedProduct = (product === 'arq' || product === 'combo') ? product : 'const';
+
   if (CUBIKAR_SUB_TEST_MODE) {
+    const user = await resolveActiveUser();
     if (planId === 'pro') {
       alert('El Plan Pro estará habilitado al concluir la fase de pruebas. Durante este periodo de evaluación, tienes acceso gratuito al Plan Plus.');
-      savePendingProductIntent(product);
-      if (window.openAuthModal) window.openAuthModal('register');
-      return;
+      if (!user) {
+        savePendingProductIntent(normalizedProduct);
+        if (window.openAuthModal) window.openAuthModal('register');
+      }
+      return false;
     }
     // Para Plus o Free durante la prueba: registrarse o lanzar la app de inmediato si ya tiene sesión
-    const user = await resolveActiveUser();
     if (user) {
       alert('¡Tu cuenta tiene acceso Plus gratuito activo por la fase de pruebas! Abriendo la aplicación...');
-      if (window.launchApp) window.launchApp(product);
+      if (window.launchApp) window.launchApp(normalizedProduct);
     } else {
-      savePendingProductIntent(product);
+      savePendingProductIntent(normalizedProduct);
       if (window.openAuthModal) window.openAuthModal('register');
     }
-    return;
+    return false;
   }
 
   if (planId === 'free') {
     const user = await resolveActiveUser();
     if (!user) {
-      savePendingProductIntent(product);
+      savePendingProductIntent(normalizedProduct);
       if (window.openAuthModal) window.openAuthModal('register');
-      return;
+      return false;
     }
     alert('Tu cuenta incluye acceso gratuito inicial. Puedes comenzar de inmediato.');
-    if (window.launchApp) window.launchApp(product);
-    return;
+    if (window.launchApp) window.launchApp(normalizedProduct);
+    return false;
   }
 
   try {
     const sb = getSupabase();
     if (!sb) {
       alert('Servicio de autenticación no inicializado. Recarga la página e inténtalo de nuevo.');
-      return;
+      return false;
     }
     const { data: { session } } = await sb.auth.getSession();
     if (!session?.access_token) {
       alert('Inicia sesión o regístrate antes de continuar al pago en Stripe.');
-      savePendingProductIntent(product);
+      savePendingProductIntent(normalizedProduct);
       if (window.openAuthModal) window.openAuthModal('login');
-      return;
+      return false;
     }
 
-    const normalizedProduct = (product === 'arq' || product === 'combo') ? product : 'const';
     const normalizedCycle = cycle === 'annual' ? 'annual' : 'monthly';
     const cleanBase = typeof window !== 'undefined'
       ? `${window.location.origin}${window.location.pathname}`
@@ -429,7 +450,7 @@ export async function redirectToStripeCheckout(product = 'const', planId = 'plus
         planId,
         ciclo: normalizedCycle,
         billingCycle: normalizedCycle,
-        producto: product,
+        producto: normalizedProduct,
         returnUrl: cleanBase || undefined,
         successUrl: cleanBase ? `${cleanBase}?pago=exitoso` : undefined,
         cancelUrl: cleanBase ? `${cleanBase}?pago=cancelado` : undefined
@@ -437,14 +458,18 @@ export async function redirectToStripeCheckout(product = 'const', planId = 'plus
     });
 
     if (!error && data?.url) {
+      try {
+        sessionStorage.setItem('cubikar_pending_checkout', JSON.stringify({ product: normalizedProduct, planId, cycle: normalizedCycle }));
+      } catch (_) {}
       window.location.href = data.url;
-      return;
+      return true;
     }
 
     alert(data?.error || error?.message || 'No se pudo crear la sesión de pago en Stripe. Inténtalo de nuevo.');
   } catch (err) {
     alert(err?.message || 'Error al iniciar el pago con Stripe.');
   }
+  return false;
 }
 
 export async function openCustomerPortal() {

@@ -1,10 +1,10 @@
 // assets/js/main.js
 // Controlador interactivo sincronizado al 100% con ADM_CONST y ADM_ARQ
 
-import { CONST_TIERS, ARQ_TIERS, COMBO_TIERS, redirectToStripeCheckout, openCustomerPortal, CUBIKAR_SUB_TEST_MODE } from './checkout.js?v=20261116_cf13';
-import { downloadFullEcosystemBackup } from './exportBackup.js?v=20261116_cf13';
-import { initAppSwitcher } from './appSwitcher.js?v=20261116_cf13';
-import { initShowcaseRuleta } from './showcaseRuleta.js?v=20261116_cf13';
+import { CONST_TIERS, ARQ_TIERS, COMBO_TIERS, redirectToStripeCheckout, openCustomerPortal, CUBIKAR_SUB_TEST_MODE } from './checkout.js?v=20261117_cf15';
+import { downloadFullEcosystemBackup } from './exportBackup.js?v=20261117_cf15';
+import { initAppSwitcher } from './appSwitcher.js?v=20261117_cf15';
+import { initShowcaseRuleta } from './showcaseRuleta.js?v=20261117_cf15';
 import { 
   isUserAdmin, 
   openCubikarAdminModal,
@@ -24,11 +24,15 @@ import {
   onAdminUserCheckboxChange,
   addCoAdmin,
   removeCoAdmin,
-  hydrateCoAdminsFromCloud
-} from './cubikarAdmin.js?v=20261116_cf13';
+  hydrateCoAdminsFromCloud,
+  openS3BackupsAdminModal,
+  closeS3BackupsAdminModal,
+  onS3BackupUserChange,
+  onS3BackupDateChange,
+  downloadS3BackupObject
+} from './cubikarAdmin.js?v=20261117_cf15';
 import { 
   initAuth, 
-  hydrateIncomingSsoSession,
   syncSubscriptionFromCloud,
   loginWithEmail, 
   loginWithGoogle,
@@ -37,7 +41,7 @@ import {
   logout, 
   getCurrentState,
   buildSsoUrl
-} from './auth.js?v=20261116_cf13';
+} from './auth.js?v=20261117_cf15';
 
 function showPortalNotification(message, type = 'info') {
   try {
@@ -65,17 +69,128 @@ let currentAuthMode = 'login';       // 'login' | 'register'
 let googleAuthInProgress = false;
 let googleAuthWatchdog = null;
 
+const PENDING_CHECKOUT_KEY = 'cubikar_pending_checkout';
+const CHECKOUT_VERIFY_ATTEMPTS = 6;
+const CHECKOUT_VERIFY_BASE_DELAY_MS = 1000;
+
+function readPendingCheckout() {
+  try {
+    return JSON.parse(sessionStorage.getItem(PENDING_CHECKOUT_KEY) || 'null');
+  } catch (_) {
+    return null;
+  }
+}
+
+function isCheckoutReflectedOnServer(company, pending) {
+  if (!company) return false;
+  const isPaid = (p) => p === 'plus' || p === 'pro';
+  if (!pending?.planId) {
+    return [company.plan, company.plan_const, company.plan_arq].some(isPaid);
+  }
+  const products = pending.product === 'combo' ? ['const', 'arq'] : [pending.product === 'arq' ? 'arq' : 'const'];
+  return products.every(prod => (company[`plan_${prod}`] || company.plan) === pending.planId);
+}
+
+async function verifyCheckoutReturn() {
+  const pending = readPendingCheckout();
+  showPortalNotification('Verificando pago…', 'info');
+  for (let attempt = 0; attempt < CHECKOUT_VERIFY_ATTEMPTS; attempt++) {
+    if (attempt > 0) {
+      await new Promise(resolve => setTimeout(resolve, CHECKOUT_VERIFY_BASE_DELAY_MS * 2 ** (attempt - 1)));
+    }
+    try {
+      const res = await syncSubscriptionFromCloud();
+      if (isCheckoutReflectedOnServer(res?.company, pending)) {
+        try { sessionStorage.removeItem(PENDING_CHECKOUT_KEY); } catch (_) {}
+        updateAuthUI(getCurrentState());
+        renderPricingCardsAndComparison();
+        showPortalNotification('¡Pago confirmado! Tu suscripción de Cubikar ha sido actualizada y activada.', 'success');
+        return;
+      }
+    } catch (_) {}
+  }
+  showPortalNotification('Verificando pago… Stripe aún no confirma tu suscripción. Se activará en cuanto llegue la confirmación; recarga la página en unos minutos.', 'info');
+}
+
+function exposeGlobalHandlers() {
+  Object.assign(window, {
+    selectPricingProduct,
+    setBillingCycle,
+    handleTierSelection,
+    triggerDemoBackupDownload: handleDownloadMyBackup,
+    handleDownloadMyBackup,
+    launchApp,
+    openAuthModal,
+    closeAuthModal,
+    toggleAuthMode,
+    openAppChooserModal,
+    closeAppChooserModal,
+    handleAuthSubmit,
+    handleGoogleSignIn,
+    openUserDashboard,
+    closeUserDashboard,
+    handleLogout,
+    handleStripePortal,
+    openCubikarAdminModal,
+    closeCubikarAdminModal,
+    openCoAdminsModal,
+    closeCoAdminsModal,
+    openMarketRatesModal,
+    closeMarketRatesModal,
+    saveMarketRatesFromModal,
+    exportCubikarDatabaseToExcel,
+    setAdminAppScope,
+    setAdminTableSearch,
+    setAdminFilterActivity,
+    setAdminFilterPlan,
+    setAdminFilterCycle,
+    toggleSelectAllAdminUsers,
+    onAdminUserCheckboxChange,
+    addCoAdmin,
+    removeCoAdmin,
+    openS3BackupsAdminModal,
+    closeS3BackupsAdminModal,
+    onS3BackupUserChange,
+    onS3BackupDateChange,
+    downloadS3BackupObject,
+    getCurrentState,
+    switchSliceTab,
+    switchCollabMode,
+    openShowcaseLightbox,
+    closeShowcaseLightbox,
+    scrollToEcosistema: () => {
+      const el = document.getElementById('ecosistema-visual');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    }
+  });
+}
+
+exposeGlobalHandlers();
+
 document.addEventListener('DOMContentLoaded', async () => {
+  // Render inicial de tarjetas y tabla comparativa antes de cualquier espera de red
+  renderPricingCardsAndComparison();
+
   // Sincronizar visibilidad del banner de prueba (Cubikar Sub Test)
   const subBanner = document.getElementById('banner-cubikar-sub-test');
   if (subBanner) {
     subBanner.style.display = CUBIKAR_SUB_TEST_MODE ? 'flex' : 'none';
   }
 
-  // Manejar retorno de logout desde aplicaciones satélite (Cubikar Construcción o Cubikar Arquitectura)
   const urlParams = new URLSearchParams(window.location.search);
-  const isLogoutReturn = urlParams.get('logout') === '1';
-  if (isLogoutReturn) {
+  const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+  const isOAuthReturn = hashParams.has('access_token') || urlParams.has('code');
+  const pagoParam = urlParams.get('pago');
+  let handledOAuthReturn = false;
+
+  // 1. Inicializar App Switcher (Selector de Apps de 9 puntos)
+  initAppSwitcher('cubikar-app-switcher-mount', 'portal');
+
+  // 1.1 Inicializar Álbum Ruleta Interactivo (Showcase Lumion x D5 Render)
+  initShowcaseRuleta();
+
+  // Manejar retorno de logout desde aplicaciones satélite (Cubikar Construcción o Cubikar Arquitectura)
+  if (urlParams.get('logout') === '1') {
     try {
       await logout({ skipServerSignOut: true });
       updateAuthUI(null);
@@ -84,7 +199,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Manejar errores de retorno OAuth
-  const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
   const errorDesc = urlParams.get('error_description') || urlParams.get('error') || hashParams.get('error_description') || hashParams.get('error');
   if (errorDesc) {
     console.error('[Supabase OAuth Error]:', errorDesc);
@@ -92,19 +206,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.history.replaceState({}, document.title, window.location.pathname);
   }
 
-  let handledOAuthReturn = false;
-  const isOAuthReturn = window.location.hash.includes('access_token') || 
-                        window.location.search.includes('code=');
-
-  // 1. Inicializar App Switcher (Selector de Apps de 9 puntos)
-  initAppSwitcher('cubikar-app-switcher-mount', 'portal');
-
-  // 1.1 Inicializar Álbum Ruleta Interactivo (Showcase Lumion x D5 Render)
-  initShowcaseRuleta();
-
-  // 2. Hidratar sesión SSO entrante y esperar inicialización de autenticación antes de evaluar tutorial o retornos de pago
+  // 2. Inicializar autenticación (incluye hidratación SSO entrante) antes de evaluar retornos de pago
   let lastHydratedCoAdminEmail = '';
-  await hydrateIncomingSsoSession();
   await initAuth(state => {
     updateAuthUI(state);
     if (state && state.user) {
@@ -125,11 +228,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (authModal && !authModal.classList.contains('hidden') && !googleAuthInProgress && state.event === 'SIGNED_IN') {
         completeAuthAndOpenChooser();
       }
+    } else {
+      lastHydratedCoAdminEmail = '';
     }
   });
 
   // 2.1 Manejar retorno de Stripe Checkout (?pago=exitoso | ?pago=cancelado)
-  const pagoParam = urlParams.get('pago');
   if (pagoParam === 'exitoso' || pagoParam === 'cancelado') {
     const cleanParams = new URLSearchParams(window.location.search);
     cleanParams.delete('pago');
@@ -138,60 +242,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.history.replaceState({}, document.title, cleanUrl);
 
     if (pagoParam === 'exitoso') {
-      try {
-        await syncSubscriptionFromCloud();
-        updateAuthUI(getCurrentState());
-        renderPricingCardsAndComparison();
-      } catch (_) {}
-      showPortalNotification('¡Pago procesado con éxito! Tu suscripción de Cubikar ha sido actualizada y activada.', 'success');
+      verifyCheckoutReturn();
     } else {
+      try { sessionStorage.removeItem(PENDING_CHECKOUT_KEY); } catch (_) {}
       showPortalNotification('El proceso de pago en Stripe fue cancelado. No se realizó ningún cargo.', 'warning');
     }
   }
-
-  // 3. Exponer funciones al scope global para eventos interactivos en HTML
-  window.selectPricingProduct = selectPricingProduct;
-  window.setBillingCycle = setBillingCycle;
-  window.handleTierSelection = handleTierSelection;
-  window.triggerDemoBackupDownload = handleDownloadMyBackup;
-  window.handleDownloadMyBackup = handleDownloadMyBackup;
-  window.launchApp = launchApp;
-  window.openAuthModal = openAuthModal;
-  window.closeAuthModal = closeAuthModal;
-  window.toggleAuthMode = toggleAuthMode;
-  window.openAppChooserModal = openAppChooserModal;
-  window.closeAppChooserModal = closeAppChooserModal;
-  window.handleAuthSubmit = handleAuthSubmit;
-  window.handleGoogleSignIn = handleGoogleSignIn;
-  window.openUserDashboard = openUserDashboard;
-  window.closeUserDashboard = closeUserDashboard;
-  window.handleLogout = handleLogout;
-  window.handleStripePortal = handleStripePortal;
-  window.openCubikarAdminModal = openCubikarAdminModal;
-  window.closeCubikarAdminModal = closeCubikarAdminModal;
-  window.openCoAdminsModal = openCoAdminsModal;
-  window.closeCoAdminsModal = closeCoAdminsModal;
-  window.openMarketRatesModal = openMarketRatesModal;
-  window.closeMarketRatesModal = closeMarketRatesModal;
-  window.saveMarketRatesFromModal = saveMarketRatesFromModal;
-  window.exportCubikarDatabaseToExcel = exportCubikarDatabaseToExcel;
-  window.setAdminAppScope = setAdminAppScope;
-  window.setAdminTableSearch = setAdminTableSearch;
-  window.setAdminFilterActivity = setAdminFilterActivity;
-  window.setAdminFilterPlan = setAdminFilterPlan;
-  window.setAdminFilterCycle = setAdminFilterCycle;
-  window.toggleSelectAllAdminUsers = toggleSelectAllAdminUsers;
-  window.onAdminUserCheckboxChange = onAdminUserCheckboxChange;
-  window.addCoAdmin = addCoAdmin;
-  window.removeCoAdmin = removeCoAdmin;
-  window.getCurrentState = getCurrentState;
-  window.scrollToEcosistema = () => {
-    const el = document.getElementById('ecosistema-visual');
-    if (el) el.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  // 4. Render inicial de tarjetas y tabla comparativa
-  renderPricingCardsAndComparison();
 });
 
 // =========================================================================
@@ -536,8 +592,20 @@ function renderDynamicComparisonTable(productLabel, accentColor) {
 // =========================================================================
 // ACCIONES Y STRIPE CHECKOUT
 // =========================================================================
-export function handleTierSelection(planId) {
-  redirectToStripeCheckout(currentPricingProduct, planId, currentBillingCycle);
+export async function handleTierSelection(planId) {
+  const ctaButtons = document.querySelectorAll('#pricing-cards-container button');
+  ctaButtons.forEach(btn => {
+    btn.disabled = true;
+    btn.classList.add('opacity-60', 'cursor-wait');
+  });
+  try {
+    await redirectToStripeCheckout(currentPricingProduct, planId, currentBillingCycle);
+  } finally {
+    ctaButtons.forEach(btn => {
+      btn.disabled = false;
+      btn.classList.remove('opacity-60', 'cursor-wait');
+    });
+  }
 }
 
 export async function launchApp(appId) {
@@ -562,7 +630,7 @@ export async function handleDownloadMyBackup() {
                    state?.user?.user_metadata?.full_name || 
                    state?.user?.user_metadata?.name || 
                    'Usuario_Cubikar';
-  const userEmail = state?.user?.email || 'contacto@cubikar.app';
+  const userEmail = state?.user?.email || '';
   const companyName = state?.company?.nombre || 
                       state?.user?.user_metadata?.empresa_nombre || 
                       'Despacho_y_Constructora';
@@ -1000,10 +1068,10 @@ export function switchSliceTab(type) {
     if (gridArq) gridArq.classList.add('hidden');
   }
 }
-window.switchSliceTab = switchSliceTab;
 
 let collabModeTimer = null;
 let currentCollabMode = 'owned';
+let collabAutoCycleEnabled = true;
 
 export function switchCollabMode(mode, manual = true) {
   currentCollabMode = mode;
@@ -1055,21 +1123,33 @@ export function switchCollabMode(mode, manual = true) {
     }
   }
 
-  if (manual && collabModeTimer) {
+  if (manual) {
+    collabAutoCycleEnabled = false;
+    stopCollabAutoCycle();
+  }
+}
+
+function stopCollabAutoCycle() {
+  if (collabModeTimer) {
     clearInterval(collabModeTimer);
     collabModeTimer = null;
   }
 }
-window.switchCollabMode = switchCollabMode;
 
-function initCollabAutoCycle() {
-  if (collabModeTimer) clearInterval(collabModeTimer);
+function startCollabAutoCycle() {
+  stopCollabAutoCycle();
+  if (!collabAutoCycleEnabled || document.hidden) return;
   collabModeTimer = setInterval(() => {
     const nextMode = currentCollabMode === 'owned' ? 'invited' : 'owned';
     switchCollabMode(nextMode, false);
   }, 6500);
 }
-initCollabAutoCycle();
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) stopCollabAutoCycle();
+  else startCollabAutoCycle();
+});
+startCollabAutoCycle();
 
 /* =========================================================================
    LIGHTBOX SHOWCASE INTERACTIVO
@@ -1086,7 +1166,6 @@ export function openShowcaseLightbox(src, title) {
     document.body.style.overflow = 'hidden';
   }
 }
-window.openShowcaseLightbox = openShowcaseLightbox;
 
 export function closeShowcaseLightbox() {
   const modal = document.getElementById('modal-showcase-lightbox');
@@ -1096,11 +1175,18 @@ export function closeShowcaseLightbox() {
     document.body.style.overflow = '';
   }
 }
-window.closeShowcaseLightbox = closeShowcaseLightbox;
 
 window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
-    closeShowcaseLightbox();
+    const s3Modal = document.getElementById('modal-admin-s3-backups');
+    if (s3Modal && !s3Modal.classList.contains('hidden')) {
+      closeS3BackupsAdminModal();
+      return;
+    }
+    const lightbox = document.getElementById('modal-showcase-lightbox');
+    if (lightbox && !lightbox.classList.contains('hidden')) {
+      closeShowcaseLightbox();
+    }
   }
 });
 

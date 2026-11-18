@@ -70,8 +70,26 @@ export function initShowcaseRuleta() {
 
   renderRuletaStructure(mount);
   bindRuletaEvents();
-  updateSlide(0, false);
+  // La primera diapositiva es un GIF pesado: se carga cuando la página terminó de cargar.
+  whenPageLoaded(() => loadSlideImagesAround(currentIndex));
   startSlideAutoPlay(HERO_SLIDES[0].duration);
+}
+
+function whenPageLoaded(callback) {
+  if (document.readyState === 'complete') callback();
+  else window.addEventListener('load', callback, { once: true });
+}
+
+function loadSlideImage(idx) {
+  const img = document.querySelector(`#carousel-slide-${idx} img[data-src]`);
+  if (!img) return;
+  img.src = img.dataset.src;
+  img.removeAttribute('data-src');
+}
+
+function loadSlideImagesAround(idx) {
+  loadSlideImage(idx);
+  loadSlideImage((idx + 1) % HERO_SLIDES.length);
 }
 
 function renderRuletaStructure(container) {
@@ -95,10 +113,10 @@ function renderRuletaStructure(container) {
                 class="carousel-slide ${idx === 0 ? 'active' : 'inactive'} absolute inset-0 w-full h-full flex items-center justify-center bg-[#021026]"
               >
                 <img 
-                  src="${slide.image}" 
+                  data-src="${slide.image}" 
                   alt="${slide.title}" 
                   class="w-full h-full object-contain sm:object-cover object-center transform transition-transform duration-[6000ms] ease-out ${idx === 0 ? 'scale-100' : 'scale-105'}"
-                  loading="${idx < 2 ? 'eager' : 'lazy'}"
+                  decoding="async"
                 >
                 <!-- Sombras sutiles de viñeta cinematográfica para integración limpia -->
                 <div class="absolute inset-0 bg-gradient-to-t from-[#07080c]/50 via-transparent to-black/15 pointer-events-none"></div>
@@ -125,16 +143,22 @@ function bindRuletaEvents() {
   if (viewport) {
     viewport.addEventListener('mouseenter', () => {
       isPaused = true;
-      pauseProgressBar();
+      if (!document.hidden) pauseProgressBar();
     });
     viewport.addEventListener('mouseleave', () => {
       isPaused = false;
-      resumeProgressBar();
+      if (!document.hidden) resumeProgressBar();
     });
   }
+  document.addEventListener('visibilitychange', () => {
+    if (isPaused) return;
+    if (document.hidden) pauseProgressBar();
+    else resumeProgressBar();
+  });
 }
 
 function updateSlide(newIdx, animateProgress = true) {
+  loadSlideImagesAround(newIdx);
   HERO_SLIDES.forEach((_, idx) => {
     const el = document.getElementById(`carousel-slide-${idx}`);
     if (el) {

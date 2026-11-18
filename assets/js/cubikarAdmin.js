@@ -2,8 +2,9 @@
 // Módulo de Administración Maestra de Cubikar para el Portal Central (cubikar.app)
 // Supervisión integral de clientes, membresías, consumos técnicos de IA y margen SaaS de ambas aplicaciones
 
-import { getSupabase } from './supabaseClient.js?v=20261116_cf13';
-import { CONST_TIERS, ARQ_TIERS, COMBO_TIERS } from './checkout.js?v=20261116_cf13';
+import { getSupabase } from './supabaseClient.js?v=20261117_cf15';
+import { CONST_TIERS, ARQ_TIERS, COMBO_TIERS } from './checkout.js?v=20261117_cf15';
+import { loadXLSX } from './libLoader.js?v=20261117_cf15';
 const getSupabaseClient = getSupabase;
 
 // Administrador Maestro Oficial
@@ -146,60 +147,46 @@ async function syncCoAdminToBackend(email, name, isCoAdmin) {
   return false;
 }
 
+let verifiedAdminState = { email: '', isAdmin: false };
+
 export async function hydrateCoAdminsFromCloud() {
-  const { sb, token } = await getAdminSessionContext();
-  if (token) {
-    const endpoints = ['/api/admin-users?check_self=1', 'https://const.cubikar.app/api/admin-users?check_self=1'];
-    for (const url of endpoints) {
-      try {
-        const res = await fetch(url, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-          }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data?.isAdmin && Array.isArray(data.coAdmins)) {
-            saveCoAdminsList(data.coAdmins);
-            renderCoAdminsListUI();
-            return data.coAdmins;
-          }
-          if (data && data.isAdmin === false) {
-            return getCoAdminsList();
-          }
-        }
-      } catch (_) {}
-    }
+  const { token, email } = await getAdminSessionContext();
+  if (verifiedAdminState.email !== email) {
+    verifiedAdminState = { email, isAdmin: false };
+  }
+  if (!token) {
+    saveCoAdminsList([]);
+    renderCoAdminsListUI();
+    return [];
   }
 
-  try {
-    if (sb) {
-      const { data: rows, error } = await sb.from('cubikar_registros').select('email, nombre, registered_at, metadata');
-      if (!error && Array.isArray(rows)) {
-        const cloudAdmins = rows
-          .filter(r => r?.email && (r?.metadata?.is_co_admin === true || r?.metadata?.isCoAdmin === true))
-          .map(r => {
-            const em = r.email.toLowerCase().trim();
-            return {
-              email: em,
-              name: r.nombre || em.split('@')[0],
-              role: 'admin',
-              canEdit: true,
-              canWrite: true,
-              canRead: true,
-              invitedBy: r.metadata?.updated_by || MASTER_ADMIN_EMAIL,
-              invitedAt: r.metadata?.updated_at || r.registered_at || new Date().toISOString(),
-              source: 'supabase'
-            };
-          });
-        saveCoAdminsList(cloudAdmins);
+  const endpoints = ['/api/admin-users?check_self=1', 'https://const.cubikar.app/api/admin-users?check_self=1'];
+  for (const url of endpoints) {
+    try {
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if (!res.ok) continue;
+      const data = await res.json();
+      if (data?.isAdmin === true) {
+        verifiedAdminState = { email, isAdmin: true };
+        const coAdmins = Array.isArray(data.coAdmins) ? data.coAdmins : [];
+        saveCoAdminsList(coAdmins);
         renderCoAdminsListUI();
-        return cloudAdmins;
+        return coAdmins;
       }
-    }
-  } catch (_) {}
+      if (data?.isAdmin === false) {
+        verifiedAdminState = { email, isAdmin: false };
+        saveCoAdminsList([]);
+        renderCoAdminsListUI();
+        return [];
+      }
+    } catch (_) {}
+  }
 
   return getCoAdminsList();
 }
@@ -210,14 +197,18 @@ export function isUserMasterAdmin(email) {
 }
 
 export function isUserAdmin(email) {
-  if (!email) return false;
-  const cleanEmail = email.toLowerCase().trim();
-  if (cleanEmail === MASTER_ADMIN_EMAIL.toLowerCase().trim()) return true;
-  const coAdmins = getCoAdminsList();
-  return coAdmins.some(a => (a.email || '').toLowerCase().trim() === cleanEmail);
+  const cleanEmail = String(email || '').toLowerCase().trim();
+  if (!cleanEmail) return false;
+  if (isUserMasterAdmin(cleanEmail)) return true;
+  return verifiedAdminState.isAdmin && verifiedAdminState.email === cleanEmail;
 }
 
-export function addCoAdmin(email, name = '') {
+function removeCoAdminLocally(cleanEmail) {
+  saveCoAdminsList(getCoAdminsList().filter(a => (a.email || '').toLowerCase().trim() !== cleanEmail));
+  renderCoAdminsListUI();
+}
+
+export async function addCoAdmin(email, name = '') {
   if (!email || !email.trim()) {
     alert('Ingresa un correo electrónico válido.');
     return false;
@@ -244,33 +235,40 @@ export function addCoAdmin(email, name = '') {
     invitedBy: MASTER_ADMIN_EMAIL,
     invitedAt: new Date().toISOString()
   });
-
   saveCoAdminsList(list);
-  syncCoAdminToBackend(cleanEmail, cleanName, true);
-  alert(`Administrador "${cleanEmail}" agregado con éxito.`);
   renderCoAdminsListUI();
+
+  const synced = await syncCoAdminToBackend(cleanEmail, cleanName, true);
+  if (!synced) {
+    removeCoAdminLocally(cleanEmail);
+    alert(`No se pudo registrar a "${cleanEmail}" como co-administrador en el servidor. No se aplicó ningún cambio.`);
+    return false;
+  }
+  alert(`Administrador "${cleanEmail}" agregado con éxito.`);
   return true;
 }
 
-export function removeCoAdmin(email, opts = {}) {
-  if (!email) return;
+export async function removeCoAdmin(email) {
+  if (!email) return false;
   const cleanEmail = email.toLowerCase().trim();
   if (cleanEmail === MASTER_ADMIN_EMAIL.toLowerCase().trim()) {
-    if (!opts?.silent) alert('No puedes eliminar al Administrador Maestro.');
-    return;
+    alert('No puedes eliminar al Administrador Maestro.');
+    return false;
   }
 
-  const currentList = getCoAdminsList();
-  const existed = currentList.some(a => (a.email || '').toLowerCase().trim() === cleanEmail);
-  if (!existed) return;
+  const previous = getCoAdminsList().find(a => (a.email || '').toLowerCase().trim() === cleanEmail);
+  if (!previous) return false;
 
-  const list = currentList.filter(a => (a.email || '').toLowerCase().trim() !== cleanEmail);
-  saveCoAdminsList(list);
-  syncCoAdminToBackend(cleanEmail, '', false);
-  if (!opts?.silent) {
-    alert(`Acceso de administración revocado a "${cleanEmail}".`);
+  removeCoAdminLocally(cleanEmail);
+  const synced = await syncCoAdminToBackend(cleanEmail, previous.name || '', false);
+  if (!synced) {
+    saveCoAdminsList([...getCoAdminsList(), previous]);
+    renderCoAdminsListUI();
+    alert(`No se pudo revocar el acceso de "${cleanEmail}" en el servidor. No se aplicó ningún cambio.`);
+    return false;
   }
-  renderCoAdminsListUI();
+  alert(`Acceso de administración revocado a "${cleanEmail}".`);
+  return true;
 }
 
 // =========================================================================
@@ -390,6 +388,10 @@ let adminFilterAppScope = 'all'; // 'all' | 'const' | 'arq'
 
 export let selectedAdminUserEmails = new Set();
 
+let adminUsersCache = null;
+let adminUsersRequestSeq = 0;
+let visibleAdminUserEmails = new Set();
+
 export function setAdminAppScope(scope) {
   adminFilterAppScope = scope;
   ['all', 'const', 'arq'].forEach(s => {
@@ -402,7 +404,7 @@ export function setAdminAppScope(scope) {
       }
     }
   });
-  renderCubikarAdminTable();
+  renderAdminTableFromCache();
 }
 
 export function onAdminUserCheckboxChange(checkbox) {
@@ -473,13 +475,14 @@ function purgeEmailsFromLocalRegistries(targetEmails) {
 }
 
 export async function deleteSelectedAdminUsers() {
-  const targets = Array.from(selectedAdminUserEmails).filter(e => !isUserMasterAdmin(e));
+  const targets = Array.from(selectedAdminUserEmails)
+    .filter(e => visibleAdminUserEmails.has(e) && !isUserMasterAdmin(e));
   if (targets.length === 0) {
-    alert('Selecciona al menos un usuario para eliminar (el Administrador Maestro está protegido).');
+    alert('Selecciona al menos un usuario visible para eliminar (el Administrador Maestro está protegido).');
     return;
   }
 
-  if (!confirm(`¿Estás seguro de que deseas eliminar permanentemente a los ${targets.length} usuario(s) seleccionados?`)) {
+  if (!confirm(`¿Estás seguro de que deseas eliminar permanentemente a estos ${targets.length} usuario(s)?\n\n${targets.join('\n')}`)) {
     return;
   }
 
@@ -526,15 +529,11 @@ export async function deleteSelectedAdminUsers() {
     return;
   }
 
-  // 2. Eliminar localmente tras confirmar éxito en servidor
-  const currentCoAdmins = getCoAdminsList();
-  targets.forEach(email => {
+  // 2. Eliminar localmente tras confirmar éxito en servidor (el registro en la nube ya no existe: no re-sincronizar)
+  const targetSet = new Set(targets.map(e => e.toLowerCase().trim()));
+  saveCoAdminsList(getCoAdminsList().filter(a => !targetSet.has((a.email || '').toLowerCase().trim())));
+  targetSet.forEach(cleanEmail => {
     try {
-      const cleanEmail = email.toLowerCase().trim();
-      const wasCoAdmin = currentCoAdmins.some(a => (a.email || '').toLowerCase().trim() === cleanEmail);
-      if (wasCoAdmin) {
-        removeCoAdmin(cleanEmail, { silent: true });
-      }
       localStorage.removeItem(`${STORAGE_KEY_CONSUMPTION}_${cleanEmail}`);
     } catch (_) {}
   });
@@ -544,8 +543,8 @@ export async function deleteSelectedAdminUsers() {
   const selectAll = document.getElementById('admin-select-all-checkbox');
   if (selectAll) selectAll.checked = false;
 
-  alert('Usuario(s) procesado(s) y eliminado(s) correctamente.');
-  renderCubikarAdminTable();
+  alert(`Usuario(s) eliminado(s) correctamente:\n\n${targets.join('\n')}`);
+  renderCubikarAdminTable({ refresh: true });
 }
 
 export const deleteRegisteredUser = deleteSelectedAdminUsers;
@@ -576,7 +575,7 @@ export async function updateAdminUserPlan(email, plan = 'free', billingCycle = '
         })
       });
       if (res.ok) {
-        await renderCubikarAdminTable();
+        await renderCubikarAdminTable({ refresh: true });
         return true;
       }
     } catch (_) {}
@@ -764,13 +763,35 @@ export const fetchCloudAdminUsers = fetchAllEcosystemUsers;
 // 5. RENDERIZADO DE LA TABLA Y KPIS
 // =========================================================================
 
-export async function renderCubikarAdminTable() {
+export async function renderCubikarAdminTable({ refresh = false } = {}) {
   const tbody = document.getElementById('admin-cubikar-table-body');
   if (!tbody) return;
 
-  const allUsers = await fetchAllEcosystemUsers();
+  if (refresh || !adminUsersCache) {
+    const seq = ++adminUsersRequestSeq;
+    if (!adminUsersCache) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="15" class="text-center py-12 text-slate-400 font-medium bg-slate-900/40">
+            <i class="fa-solid fa-spinner fa-spin text-2xl mb-2 text-slate-500 block"></i>
+            Cargando usuarios del ecosistema...
+          </td>
+        </tr>
+      `;
+    }
+    const users = await fetchAllEcosystemUsers();
+    if (seq !== adminUsersRequestSeq) return;
+    adminUsersCache = users;
+  }
 
-  const dataset = allUsers.map((u, idx) => {
+  renderAdminTableFromCache();
+}
+
+function renderAdminTableFromCache() {
+  const tbody = document.getElementById('admin-cubikar-table-body');
+  if (!tbody || !adminUsersCache) return;
+
+  const dataset = adminUsersCache.map((u, idx) => {
     const metrics = calculateUserMetrics(u);
     const regDate = u.createdAt ? new Date(u.createdAt) : new Date('2026-01-31');
     const inicioSub = regDate;
@@ -846,6 +867,11 @@ export async function renderCubikarAdminTable() {
   // Actualizar KPIs Superiores
   updateAdminKpisUI(filtered);
 
+  visibleAdminUserEmails = new Set(filtered.map(d => d.correo));
+  selectedAdminUserEmails.forEach(email => {
+    if (!visibleAdminUserEmails.has(email)) selectedAdminUserEmails.delete(email);
+  });
+
   if (filtered.length === 0) {
     tbody.innerHTML = `
       <tr>
@@ -855,6 +881,7 @@ export async function renderCubikarAdminTable() {
         </td>
       </tr>
     `;
+    updateAdminDeleteButtonUI();
     return;
   }
 
@@ -928,7 +955,14 @@ export async function renderCubikarAdminTable() {
         </td>
         <!-- Correo -->
         <td class="px-3.5 py-2.5 font-mono text-slate-300 whitespace-nowrap">
-          <span class="truncate max-w-[170px] block" title="${safeEmailAttr}">${safeEmailHtml}</span>
+          <div class="flex items-center justify-between gap-1.5">
+            <span class="truncate max-w-[170px] block" title="${safeEmailAttr}">${safeEmailHtml}</span>
+            <button type="button" onclick="openS3BackupsAdminModal('${safeEmailAttr}')"
+                    class="text-slate-500 hover:text-emerald-400 p-1 rounded hover:bg-slate-800 transition cursor-pointer shrink-0"
+                    title="Ver respaldos S3 de ${safeEmailAttr}">
+              <i class="fa-solid fa-cloud-arrow-down text-[11px]"></i>
+            </button>
+          </div>
         </td>
         <!-- Apps en uso -->
         <td class="px-3 py-2.5 text-center whitespace-nowrap">${badgeApp}</td>
@@ -1001,7 +1035,7 @@ export function openCubikarAdminModal() {
   if (!modal) return;
   modal.classList.remove('hidden');
   modal.style.display = 'flex';
-  renderCubikarAdminTable();
+  renderCubikarAdminTable({ refresh: true });
 }
 
 export function closeCubikarAdminModal() {
@@ -1110,16 +1144,19 @@ export function saveMarketRatesFromModal() {
   };
   saveMarketRates(rates);
   closeMarketRatesModal();
-  renderCubikarAdminTable();
+  renderAdminTableFromCache();
 }
 
-export function exportCubikarDatabaseToExcel() {
-  if (typeof XLSX === 'undefined') {
-    alert('Librería de exportación cargando. Intente de nuevo en un momento.');
-    return;
-  }
+export async function exportCubikarDatabaseToExcel() {
   const table = document.getElementById('admin-cubikar-table');
   if (!table) return;
+  let XLSX;
+  try {
+    XLSX = await loadXLSX();
+  } catch (err) {
+    alert(err?.message || 'No se pudo cargar la librería de exportación a Excel.');
+    return;
+  }
   const wb = XLSX.utils.table_to_book(table, { sheet: 'Bases de Datos Cubikar' });
   XLSX.writeFile(wb, `Cubikar_Ecosistema_Admin_${new Date().toISOString().slice(0, 10)}.xlsx`);
 }
@@ -1129,9 +1166,7 @@ let adminSearchDebounceTimer = null;
 export function setAdminTableSearch(text) {
   adminTableFilterText = text;
   if (adminSearchDebounceTimer) clearTimeout(adminSearchDebounceTimer);
-  adminSearchDebounceTimer = setTimeout(() => {
-    renderCubikarAdminTable();
-  }, 300);
+  adminSearchDebounceTimer = setTimeout(renderAdminTableFromCache, 150);
 }
 
 export function copySupabaseSqlScript() {
@@ -1144,17 +1179,249 @@ export function copySupabaseSqlScript() {
 
 export function setAdminFilterActivity(val) {
   adminFilterActivity = val;
-  renderCubikarAdminTable();
+  renderAdminTableFromCache();
 }
 
 export function setAdminFilterPlan(val) {
   adminFilterPlan = val;
-  renderCubikarAdminTable();
+  renderAdminTableFromCache();
 }
 
 export function setAdminFilterCycle(val) {
   adminFilterCycle = val;
-  renderCubikarAdminTable();
+  renderAdminTableFromCache();
+}
+
+let currentS3BackupEmail = '';
+let currentS3BackupDate = '';
+
+function formatBytesShort(bytes) {
+  const n = Number(bytes || 0);
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+async function fetchS3BackupManifestFromApi(email, dateStr = '') {
+  const bodyEl = document.getElementById('s3-backup-manifest-body');
+  const statusEl = document.getElementById('s3-backup-status-area');
+  const dateSelect = document.getElementById('s3-backup-date-select');
+  if (!bodyEl) return;
+
+  if (statusEl) {
+    statusEl.classList.add('hidden');
+    statusEl.innerHTML = '';
+  }
+  bodyEl.innerHTML = `
+    <div class="py-10 text-center text-slate-400 space-y-2">
+      <i class="fa-solid fa-spinner fa-spin text-2xl text-emerald-400"></i>
+      <p>Consultando respaldos en AWS S3 para <strong>${escapeAdminHtml(email)}</strong>...</p>
+    </div>
+  `;
+
+  const { token } = await getAdminSessionContext();
+  if (!token) {
+    bodyEl.innerHTML = `<div class="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300">Se requiere sesión activa verificada para consultar S3.</div>`;
+    return;
+  }
+
+  try {
+    const qs = new URLSearchParams({ action: 's3_backups', email });
+    if (dateStr) qs.set('date', dateStr);
+    const res = await fetch(`/api/admin-users?${qs.toString()}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      bodyEl.innerHTML = `<div class="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300">${escapeAdminHtml(data?.error || 'Error consultando respaldos S3.')}</div>`;
+      return;
+    }
+
+    if (!data.configured) {
+      if (dateSelect) dateSelect.innerHTML = '<option value="">Sin S3 configurado</option>';
+      bodyEl.innerHTML = `
+        <div class="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 space-y-2">
+          <div class="font-bold flex items-center gap-2"><i class="fa-solid fa-triangle-exclamation text-amber-400"></i>Faltan variables AWS S3 en cubikar-portal</div>
+          <p class="text-[11px] text-amber-100/80">Agrega <code>AWS_S3_BUCKET</code>, <code>AWS_REGION</code>, <code>AWS_ACCESS_KEY_ID</code> y <code>AWS_SECRET_ACCESS_KEY</code> como Secretos en el Worker <code>cubikar-portal</code> para inspeccionar y descargar respaldos desde aquí.</p>
+        </div>
+      `;
+      return;
+    }
+
+    const dates = Array.isArray(data.dates) ? data.dates : [];
+    currentS3BackupDate = data.selectedDate || dates[0] || '';
+    if (dateSelect) {
+      dateSelect.innerHTML = dates.length > 0
+        ? dates.map(d => `<option value="${escapeAdminAttr(d)}" ${d === currentS3BackupDate ? 'selected' : ''}>${escapeAdminHtml(d)}</option>`).join('')
+        : '<option value="">Sin respaldos aún</option>';
+    }
+
+    if (dates.length === 0 || !data.manifest) {
+      bodyEl.innerHTML = `
+        <div class="py-10 text-center text-slate-400 space-y-2">
+          <i class="fa-solid fa-folder-open text-2xl text-slate-500"></i>
+          <p class="font-semibold text-white">No hay snapshots S3 registrados aún para ${escapeAdminHtml(email)}</p>
+          <p class="text-[11px] text-slate-500">Se generan automáticamente cada día vía GitHub Actions (<code>scripts/backup_users_to_s3.py</code>).</p>
+        </div>
+      `;
+      return;
+    }
+
+    const m = data.manifest;
+    const projects = Array.isArray(m.projects) ? m.projects : [];
+    const safeCuentaKey = escapeAdminAttr(m.cuentaKey || '');
+    const safeEmailArg = escapeAdminAttr(email);
+
+    bodyEl.innerHTML = `
+      <div class="grid grid-cols-3 gap-2">
+        <div class="p-3 rounded-xl bg-[#07080c] border border-white/10">
+          <div class="text-[10px] text-slate-400 uppercase">Fecha UTC</div>
+          <div class="font-mono font-bold text-white mt-0.5">${escapeAdminHtml(m.backupDate || currentS3BackupDate)}</div>
+        </div>
+        <div class="p-3 rounded-xl bg-[#07080c] border border-white/10">
+          <div class="text-[10px] text-slate-400 uppercase">Proyectos</div>
+          <div class="font-mono font-bold text-emerald-300 mt-0.5">${Number(m.totalProjects || 0)} <span class="text-[10px] text-slate-400">(${Number(m.trashedProjects || 0)} papelera)</span></div>
+        </div>
+        <div class="p-3 rounded-xl bg-[#07080c] border border-white/10">
+          <div class="text-[10px] text-slate-400 uppercase">Datos Cuenta</div>
+          <div class="font-mono font-bold text-sky-300 mt-0.5">${formatBytesShort(m.cuentaBytes)}</div>
+        </div>
+      </div>
+
+      ${safeCuentaKey ? `
+        <div class="p-3.5 rounded-xl bg-[#07080c] border border-white/10 flex items-center justify-between gap-3">
+          <div class="min-w-0">
+            <div class="font-bold text-white flex items-center gap-1.5">
+              <i class="fa-solid fa-id-card text-sky-400"></i>
+              <span>Cuenta, Perfil, Plan e Invitaciones</span>
+            </div>
+            <div class="text-[10.5px] font-mono text-slate-400 truncate mt-0.5">${escapeAdminHtml(m.cuentaKey)} (${formatBytesShort(m.cuentaBytes)})</div>
+          </div>
+          <button type="button" onclick="downloadS3BackupObject('${safeCuentaKey}', this)"
+                  class="px-3 py-1.5 rounded-lg bg-sky-600/20 hover:bg-sky-600 text-sky-300 hover:text-white border border-sky-500/30 font-bold text-xs transition shrink-0 cursor-pointer flex items-center gap-1.5">
+            <i class="fa-solid fa-download"></i>
+            <span>cuenta.json.gz</span>
+          </button>
+        </div>
+      ` : ''}
+
+      <div class="space-y-2">
+        <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Proyectos respaldados (${projects.length})</div>
+        ${projects.length === 0 ? '<div class="p-3 rounded-xl bg-[#07080c] border border-white/10 text-slate-400">Este usuario no tiene obras propias en esta fecha.</div>' : projects.map(p => `
+          <div class="p-3 rounded-xl bg-[#07080c] border border-white/10 flex items-center justify-between gap-3">
+            <div class="min-w-0">
+              <div class="font-bold text-white flex items-center gap-2 flex-wrap">
+                <span class="truncate max-w-[300px]">${escapeAdminHtml(p.nombre || 'Proyecto')}</span>
+                ${p.isTrashed ? '<span class="px-1.5 py-0.5 rounded text-[9.5px] bg-rose-500/15 text-rose-300 border border-rose-500/30">En Papelera</span>' : '<span class="px-1.5 py-0.5 rounded text-[9.5px] bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Activo</span>'}
+              </div>
+              <div class="text-[10.5px] text-slate-400 mt-0.5 font-mono truncate">
+                ${escapeAdminHtml(p.id)} • ${formatBytesShort(p.compressedBytes)} • ${(p.counts?.catalogo_conceptos || 0)} conceptos • ${(p.counts?.bitacora_notas || 0)} bitácora
+              </div>
+            </div>
+            <button type="button" onclick="downloadS3BackupObject('${escapeAdminAttr(p.s3Key || '')}', this)"
+                    class="px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/30 font-bold text-xs transition shrink-0 cursor-pointer flex items-center gap-1.5">
+              <i class="fa-solid fa-download"></i>
+              <span>.json.gz</span>
+            </button>
+          </div>
+        `).join('')}
+      </div>
+
+      <div class="p-3 rounded-xl bg-slate-900/90 border border-white/10 text-[10.5px] text-slate-400 space-y-1">
+        <div class="font-bold text-slate-300">Comando para restaurar en Supabase desde este snapshot:</div>
+        <code class="block font-mono text-[10px] text-emerald-300 break-all">python3 scripts/restore_user_from_s3.py --email ${safeEmailArg} --date ${escapeAdminHtml(currentS3BackupDate)} --clear-deleted --apply</code>
+      </div>
+    `;
+  } catch (err) {
+    bodyEl.innerHTML = `<div class="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300">Error de red consultando respaldos: ${escapeAdminHtml(err?.message || err)}</div>`;
+  }
+}
+
+export async function openS3BackupsAdminModal(targetEmail = '') {
+  const modal = document.getElementById('modal-admin-s3-backups');
+  const userSelect = document.getElementById('s3-backup-user-select');
+  if (!modal) return;
+
+  let users = Array.isArray(adminUsersCache) && adminUsersCache.length > 0
+    ? adminUsersCache
+    : [];
+  if (users.length === 0) {
+    try {
+      users = await fetchAllEcosystemUsers();
+      if (Array.isArray(users) && users.length > 0) adminUsersCache = users;
+    } catch (_) {
+      users = [];
+    }
+  }
+  const chosenEmail = String(targetEmail || currentS3BackupEmail || users[0]?.email || MASTER_ADMIN_EMAIL).toLowerCase().trim();
+  currentS3BackupEmail = chosenEmail;
+  currentS3BackupDate = '';
+
+  if (userSelect) {
+    const emailSet = new Map();
+    users.forEach(u => {
+      const em = String(u?.email || '').toLowerCase().trim();
+      if (em) emailSet.set(em, u.name || em);
+    });
+    if (chosenEmail && !emailSet.has(chosenEmail)) {
+      emailSet.set(chosenEmail, chosenEmail);
+    }
+    userSelect.innerHTML = Array.from(emailSet.entries())
+      .map(([em, nm]) => `<option value="${escapeAdminAttr(em)}" ${em === chosenEmail ? 'selected' : ''}>${escapeAdminHtml(nm)} (${escapeAdminHtml(em)})</option>`)
+      .join('');
+  }
+
+  modal.classList.remove('hidden');
+  modal.style.display = 'flex';
+  await fetchS3BackupManifestFromApi(chosenEmail, '');
+}
+
+export function closeS3BackupsAdminModal() {
+  const modal = document.getElementById('modal-admin-s3-backups');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
+  }
+}
+
+export function onS3BackupUserChange(email) {
+  const clean = String(email || '').toLowerCase().trim();
+  if (!clean) return Promise.resolve();
+  currentS3BackupEmail = clean;
+  currentS3BackupDate = '';
+  return fetchS3BackupManifestFromApi(clean, '');
+}
+
+export function onS3BackupDateChange(dateStr) {
+  if (!currentS3BackupEmail || !dateStr) return Promise.resolve();
+  currentS3BackupDate = dateStr;
+  return fetchS3BackupManifestFromApi(currentS3BackupEmail, dateStr);
+}
+
+export async function downloadS3BackupObject(s3Key, btnEl = null) {
+  if (!s3Key) return;
+  if (btnEl) btnEl.disabled = true;
+  try {
+    const { token } = await getAdminSessionContext();
+    const res = await fetch('/api/admin-users', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ action: 'presign_s3_backup', s3Key })
+    });
+    const data = await res.json();
+    if (!res.ok || !data?.downloadUrl) {
+      alert(data?.error || 'No se pudo obtener el enlace temporal de descarga S3.');
+      return;
+    }
+    window.open(data.downloadUrl, '_blank', 'noopener');
+  } catch (err) {
+    alert(err?.message || 'Error generando descarga S3.');
+  } finally {
+    if (btnEl) btnEl.disabled = false;
+  }
 }
 
 // Exponer en window para onclicks del DOM
@@ -1179,4 +1446,9 @@ if (typeof window !== 'undefined') {
   window.deleteSelectedAdminUsers = deleteSelectedAdminUsers;
   window.addCoAdmin = addCoAdmin;
   window.removeCoAdmin = removeCoAdmin;
+  window.openS3BackupsAdminModal = openS3BackupsAdminModal;
+  window.closeS3BackupsAdminModal = closeS3BackupsAdminModal;
+  window.onS3BackupUserChange = onS3BackupUserChange;
+  window.onS3BackupDateChange = onS3BackupDateChange;
+  window.downloadS3BackupObject = downloadS3BackupObject;
 }

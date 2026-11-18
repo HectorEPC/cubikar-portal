@@ -2,8 +2,8 @@
 // Manejador de Autenticación, Registro y Estado de Sesión en el Portal Central Cubikar
 // Totalmente sincronizado con Supabase Auth y los esquemas de ADM_CONST y ADM_ARQ
 
-import { getSupabase, SUPABASE_CONFIG } from './supabaseClient.js?v=20261116_cf13';
-import { CUBIKAR_SUB_TEST_MODE } from './checkout.js?v=20261116_cf13';
+import { getSupabase, SUPABASE_CONFIG } from './supabaseClient.js?v=20261117_cf15';
+import { CUBIKAR_SUB_TEST_MODE } from './checkout.js?v=20261117_cf15';
 import {
   writeSharedSsoCookie,
   clearSharedSsoCookie,
@@ -13,7 +13,7 @@ import {
   scrubSsoHashParams,
   getLastSignOutTimestamp,
   buildSsoTargetUrl
-} from './ssoHelper.js?v=20261116_cf13';
+} from './ssoHelper.js?v=20261117_cf15';
 
 export const GOOGLE_CLIENT_ID = '1097638023851-36b44hlrj7fgslfcmqlvf77dk89h7eus.apps.googleusercontent.com';
 export const STORAGE_KEY_CLOSED_SESSIONS = 'control_obra_closed_sessions_v1';
@@ -423,6 +423,12 @@ export async function ensureCompactAuthSession(sbClient = null, sessionOverride 
   return compactSessionInFlightPromise;
 }
 
+function isInvalidSessionTokenError(error) {
+  if (!error) return false;
+  const status = Number(error.status || 0);
+  return (status >= 400 && status < 500) || /invalid|not found|already used|revoked|expired/i.test(String(error.message || ''));
+}
+
 async function tryHydrateSsoSession(sb) {
   if (!sb) return null;
   const hashTokens = extractIncomingSsoFromHash();
@@ -438,7 +444,7 @@ async function tryHydrateSsoSession(sb) {
       tokens = cookieTokens;
     }
   }
-  if (!tokens?.refreshToken && !tokens?.email) {
+  if (!tokens?.refreshToken) {
     scrubSsoHashParams();
     return null;
   }
@@ -446,58 +452,6 @@ async function tryHydrateSsoSession(sb) {
   explicitAuthDepth += 1;
   ssoHydrationInProgress = true;
   try {
-    const tutEmail = (tokens?.email || '').toLowerCase().trim();
-    if (tutEmail && TUTORIAL_ACCOUNTS[tutEmail]) {
-      const tut = TUTORIAL_ACCOUNTS[tutEmail];
-      const syntheticUser = {
-        id: tut.id,
-        email: tut.email,
-        aud: 'authenticated',
-        role: 'authenticated',
-        user_metadata: {
-          full_name: tut.name,
-          name: tut.name,
-          empresa_nombre: tut.company,
-          plan: 'plus',
-          subscription: { planId: 'plus', billingCycle: 'monthly', isBetaTest: true }
-        },
-        app_metadata: { provider: 'email', providers: ['email'] }
-      };
-      const syntheticProfile = {
-        id: tut.id,
-        empresa_id: tut.companyId,
-        nombre_completo: tut.name,
-        email: tut.email,
-        rol: tut.role || 'owner',
-        avatar_url: '',
-        empresas: {
-          id: tut.companyId,
-          nombre: tut.company,
-          plan: 'plus',
-          estado_suscripcion: 'active',
-          acceso_arq: true,
-          plan_arq: 'plus',
-          acceso_const: true,
-          plan_const: 'plus'
-        }
-      };
-      const syntheticSession = {
-        access_token: tokens.accessToken || ('tut_access_token_' + tut.id),
-        refresh_token: tokens.refreshToken || ('tut_refresh_token_' + tut.id),
-        user: syntheticUser,
-        expires_at: Math.floor(Date.now() / 1000) + 86400 * 30
-      };
-      currentUser = syntheticUser;
-      currentProfile = syntheticProfile;
-      currentCompany = syntheticProfile.empresas;
-      markSessionOpen(tutEmail);
-      writeSharedSsoCookie(syntheticSession);
-      syncLocalUserStorage(currentUser, currentProfile, currentCompany);
-      return syntheticSession;
-    }
-
-    if (!tokens.refreshToken) return null;
-
     if (tokens.fromHash && tokens.email) {
       markSessionOpen(tokens.email);
     }
@@ -511,7 +465,12 @@ async function tryHydrateSsoSession(sb) {
     const { data, error } = (tokens.accessToken && tokens.accessToken.length <= MAX_SAFE_JWT_CHARS)
       ? await sb.auth.setSession({ access_token: tokens.accessToken, refresh_token: tokens.refreshToken })
       : await sb.auth.refreshSession({ refresh_token: tokens.refreshToken });
-    if (error || !data?.session?.user) return null;
+    if (error || !data?.session?.user) {
+      if (!tokens.fromHash && isInvalidSessionTokenError(error)) {
+        clearSharedSsoCookie({ markSignOut: false });
+      }
+      return null;
+    }
     const compactSession = (await ensureCompactAuthSession(sb, data.session)) || data.session;
     const userEmail = (compactSession.user.email || '').toLowerCase().trim();
     const isExplicitSso = Boolean(tokens.fromHash || (tokens.ts && tokens.ts > lastSignOutTs));
@@ -527,6 +486,9 @@ async function tryHydrateSsoSession(sb) {
     return compactSession;
   } catch (err) {
     console.warn('[Portal Auth] No se pudo hidratar sesión SSO entrante:', err?.message || err);
+    if (!tokens.fromHash && isInvalidSessionTokenError(err)) {
+      clearSharedSsoCookie({ markSignOut: false });
+    }
     return null;
   } finally {
     scrubSsoHashParams();
@@ -552,7 +514,9 @@ export async function initAuth(onStateChange) {
 
   // Listener síncrono: nunca ejecutar queries Supabase dentro de onAuthStateChange
   // para evitar contención/bloqueo del lock interno (navigator.locks) de GoTrue.
+  // INITIAL_SESSION se ignora: la sesión inicial se procesa una sola vez más abajo (evento 'INIT').
   sb.auth.onAuthStateChange((event, session) => {
+    if (event === 'INITIAL_SESSION') return;
     if (session?.user) {
       const email = (session.user.email || '').toLowerCase().trim();
       const closedList = getClosedSessionsList();
@@ -560,7 +524,7 @@ export async function initAuth(onStateChange) {
       const isOAuthRedirect = typeof window !== 'undefined' && (
         window.location.hash.includes('cubikar_sso_') ||
         window.location.hash.includes('access_token') ||
-        window.location.search.includes('code=')
+        new URLSearchParams(window.location.search).has('code')
       );
       const isExplicitInteractive = explicitAuthDepth > 0 || ssoHydrationInProgress || isOAuthRedirect;
 
@@ -755,6 +719,7 @@ export async function loadUserProfileAndCompany(userId, forceRefresh = false) {
             acceso_const,
             plan_arq,
             acceso_arq,
+            billing_cycle,
             estado_suscripcion,
             logo_url
           )
@@ -793,74 +758,14 @@ export async function loginWithEmail(email, password) {
   const cleanEmail = (email || '').trim().toLowerCase();
   explicitAuthDepth += 1;
   try {
-    let data = null;
-    let authError = null;
+    const { data, error } = await sb.auth.signInWithPassword({
+      email: cleanEmail,
+      password: password
+    });
+    if (error) throw error;
+    if (!data?.user) throw new Error('No se pudo iniciar sesión. Verifica tus datos e inténtalo de nuevo.');
 
-    try {
-      const res = await sb.auth.signInWithPassword({
-        email: cleanEmail,
-        password: password
-      });
-      data = res.data;
-      authError = res.error;
-    } catch (e) {
-      authError = e;
-    }
-
-    // Reconocimiento directo para cuentas de tutorial
-    if ((authError || !data?.user) && TUTORIAL_ACCOUNTS[cleanEmail] && password === TUTORIAL_ACCOUNTS[cleanEmail].password) {
-      const tut = TUTORIAL_ACCOUNTS[cleanEmail];
-      const syntheticUser = {
-        id: tut.id,
-        email: tut.email,
-        aud: 'authenticated',
-        role: 'authenticated',
-        user_metadata: {
-          full_name: tut.name,
-          name: tut.name,
-          empresa_nombre: tut.company,
-          plan: 'plus',
-          subscription: { planId: 'plus', billingCycle: 'monthly', isBetaTest: true }
-        },
-        app_metadata: { provider: 'email', providers: ['email'] }
-      };
-      const syntheticProfile = {
-        id: tut.id,
-        empresa_id: tut.companyId,
-        nombre_completo: tut.name,
-        email: tut.email,
-        rol: 'owner',
-        avatar_url: '',
-        empresas: {
-          id: tut.companyId,
-          nombre: tut.company,
-          plan: 'plus',
-          estado_suscripcion: 'active',
-          acceso_arq: true,
-          plan_arq: 'plus',
-          acceso_const: true,
-          plan_const: 'plus'
-        }
-      };
-      const syntheticSession = {
-        access_token: 'tut_access_token_' + tut.id,
-        refresh_token: 'tut_refresh_token_' + tut.id,
-        user: syntheticUser,
-        expires_at: Math.floor(Date.now() / 1000) + 86400 * 30
-      };
-
-      currentUser = syntheticUser;
-      currentProfile = syntheticProfile;
-      currentCompany = syntheticProfile.empresas;
-      markSessionOpen(cleanEmail);
-      writeSharedSsoCookie(syntheticSession);
-      syncLocalUserStorage(currentUser, currentProfile, currentCompany);
-      return { user: currentUser, session: syntheticSession };
-    }
-
-    if (authError) throw authError;
-
-    if (data?.session && isJwtSessionBloated(data.session)) {
+    if (data.session && isJwtSessionBloated(data.session)) {
       const compact = await ensureCompactAuthSession(sb, data.session);
       if (compact?.user) {
         data.session = compact;
@@ -868,13 +773,11 @@ export async function loginWithEmail(email, password) {
       }
     }
 
-    if (data?.user) {
-      currentUser = data.user;
-      markSessionOpen(cleanEmail);
-      if (data.session) writeSharedSsoCookie(data.session);
-      syncLocalUserStorage(currentUser, currentProfile, currentCompany);
-      scheduleBackgroundProfileSync(data.user.id);
-    }
+    currentUser = data.user;
+    markSessionOpen(cleanEmail);
+    if (data.session) writeSharedSsoCookie(data.session);
+    syncLocalUserStorage(currentUser, currentProfile, currentCompany);
+    scheduleBackgroundProfileSync(data.user.id);
     return data;
   } finally {
     setTimeout(() => { explicitAuthDepth = Math.max(0, explicitAuthDepth - 1); }, 1000);
@@ -1135,7 +1038,6 @@ export async function mountGoogleSignInButton({
  * Cerrar sesión
  */
 export async function logout(options = {}) {
-  const scope = options?.scope === 'global' ? 'global' : 'local';
   const email = (currentUser?.email || '').toLowerCase().trim();
   if (email) {
     markSessionClosed(email);
@@ -1151,7 +1053,6 @@ export async function logout(options = {}) {
   activeGoogleNoncePair = null;
   googleSignInBusy = false;
   resetProfileCache();
-  clearSharedSsoCookie({ markSignOut: true });
 
   const slotEl = document.getElementById('google-signin-gsi-slot');
   if (slotEl) slotEl.dataset.gsiRendered = '0';
@@ -1164,19 +1065,15 @@ export async function logout(options = {}) {
   const sb = getSupabase();
   // Retorno desde Construcción/Arquitectura (?logout=1): la sesión ya fue revocada en Supabase por la app satélite.
   // Volver a llamar /auth/v1/logout solo produce un 403 (session_not_found); basta con limpiar tokens locales.
-  const skipServerSignOut = Boolean(options?.skipServerSignOut) && scope !== 'global';
-  if (sb && !skipServerSignOut) {
-    if (scope === 'global') {
-      // Ejecutar scope global ANTES de limpiar tokens o llamar scope local para enviar el JWT válido
-      try {
-        await sb.auth.signOut({ scope: 'global' }).catch(() => {});
-      } catch (_) {}
-    }
-    try {
+  if (sb && !options?.skipServerSignOut) {
+    // Cierre explícito: revocar todas las sesiones (también const/arq); si falla, al menos la local.
+    const globalResult = await sb.auth.signOut({ scope: 'global' }).catch(err => ({ error: err }));
+    if (globalResult?.error) {
       await sb.auth.signOut({ scope: 'local' }).catch(() => {});
-    } catch (_) {}
+    }
   }
 
+  clearSharedSsoCookie({ markSignOut: true });
   clearLocalSupabaseTokens();
   clearLocalUserStorage();
   currentUser = null;
@@ -1219,8 +1116,9 @@ export function resolveUserProfileAndPlan(user, profile, company) {
       company.acceso_arq != null
     )
   );
+  // El plan sale solo de datos de servidor (empresa); user_metadata.subscription es editable por el usuario.
   const legacyFallbackPlan = !hasExplicitProductFields
-    ? (company?.plan || user?.user_metadata?.subscription?.planId || 'free')
+    ? (company?.plan || 'free')
     : 'free';
 
   const rawConstPlan = (company?.acceso_const === false && !company?.plan_const)
@@ -1250,9 +1148,9 @@ export function resolveUserProfileAndPlan(user, profile, company) {
         ? 'plus'
         : (effectiveConstPlan === 'plus' || effectiveArqPlan === 'plus'
             ? 'plus'
-            : (company?.plan || user?.user_metadata?.subscription?.planId || 'free')));
+            : (company?.plan || 'free')));
 
-  const billingCycle = company?.billing_cycle || user?.user_metadata?.subscription?.billingCycle || 'monthly';
+  const billingCycle = company?.billing_cycle || 'monthly';
 
   return {
     plan,
