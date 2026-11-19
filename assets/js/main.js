@@ -29,8 +29,14 @@ import {
   closeS3BackupsAdminModal,
   onS3BackupUserChange,
   onS3BackupDateChange,
-  downloadS3BackupObject
-} from './cubikarAdmin.js?v=20261117_cf30';
+  downloadS3BackupObject,
+  updateAdminUserPlan,
+  openEditMembershipModal,
+  closeEditMembershipModal,
+  setEditModalPresetDate,
+  applyComboProToEditModal,
+  saveUserMembershipFromModal
+} from './cubikarAdmin.js?v=20261119_cf31';
 import { 
   initAuth, 
   syncSubscriptionFromCloud,
@@ -41,7 +47,7 @@ import {
   logout, 
   getCurrentState,
   buildSsoUrl
-} from './auth.js?v=20261117_cf30';
+} from './auth.js?v=20261119_cf31';
 
 function showPortalNotification(message, type = 'info') {
   try {
@@ -153,6 +159,13 @@ function exposeGlobalHandlers() {
     onS3BackupUserChange,
     onS3BackupDateChange,
     downloadS3BackupObject,
+    updateAdminUserPlan,
+    openEditMembershipModal,
+    closeEditMembershipModal,
+    setEditModalPresetDate,
+    applyComboProToEditModal,
+    saveUserMembershipFromModal,
+    showPortalNotification,
     getCurrentState,
     switchSliceTab,
     switchCollabMode,
@@ -1178,6 +1191,11 @@ export function closeShowcaseLightbox() {
 
 window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
+    const editMemberModal = document.getElementById('modal-admin-edit-membership');
+    if (editMemberModal && !editMemberModal.classList.contains('hidden')) {
+      closeEditMembershipModal();
+      return;
+    }
     const s3Modal = document.getElementById('modal-admin-s3-backups');
     if (s3Modal && !s3Modal.classList.contains('hidden')) {
       closeS3BackupsAdminModal();

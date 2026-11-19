@@ -159,9 +159,20 @@ async function updateEmpresaWithBillingCycleFallback(sbUrl, serviceRoleKey, empr
   const endpoint = `${sbUrl}/rest/v1/empresas?id=eq.${encodeURIComponent(empresaId)}&select=id`;
   const patch = (body) => fetch(endpoint, { method: 'PATCH', headers, body: JSON.stringify(body) });
   let res = await patch(payload);
-  if (!res.ok && Object.prototype.hasOwnProperty.call(payload, 'billing_cycle')) {
-    const { billing_cycle: _omit, ...fallbackPayload } = payload;
-    res = await patch(fallbackPayload);
+  if (!res.ok) {
+    // Si falla por columna inexistente (ej. periodo_fin), probar sin ella
+    const fallback1 = { ...payload };
+    delete fallback1.periodo_fin;
+    res = await patch(fallback1);
+    if (!res.ok) {
+      delete fallback1.periodo_fin_const;
+      delete fallback1.periodo_fin_arq;
+      res = await patch(fallback1);
+    }
+    if (!res.ok && Object.prototype.hasOwnProperty.call(fallback1, 'billing_cycle')) {
+      const { billing_cycle: _omit, ...fallback2 } = fallback1;
+      res = await patch(fallback2);
+    }
   }
   if (!res.ok) {
     return { ok: false, updated: 0, error: await res.text().catch(() => `HTTP ${res.status}`) };
@@ -740,6 +751,9 @@ export default async function handler(req, res) {
                 subscription: { planId: plan, billingCycle, isCombo },
                 subscriptionConst: { planId: planConst, billingCycle },
                 subscriptionArq: { planId: planArq, billingCycle },
+                periodoFin: emp.periodo_fin || emp.periodo_fin_const || emp.periodo_fin_arq || existing.periodoFin || null,
+                periodoFinConst: emp.periodo_fin_const || existing.periodoFinConst || null,
+                periodoFinArq: emp.periodo_fin_arq || existing.periodoFinArq || null,
                 appUsage,
                 isMasterAdmin: isMaster,
                 isCoAdmin: Boolean(existing.isCoAdmin || coAdminsMap.has(cleanEmail)),
@@ -960,12 +974,40 @@ export default async function handler(req, res) {
       if (!targetEmail || !targetEmail.includes('@') || targetEmail === MASTER_ADMIN_EMAIL) {
         return res.status(400).json({ error: 'Correo inválido o protegido.' });
       }
-      const plan = ['free', 'plus', 'pro'].includes(String(body.plan || '').toLowerCase().trim())
-        ? String(body.plan).toLowerCase().trim()
-        : 'free';
+
+      const planConstRaw = body.plan_const ?? body.planConst;
+      const planArqRaw = body.plan_arq ?? body.planArq;
+      const planConst = ['free', 'plus', 'pro'].includes(String(planConstRaw || '').toLowerCase().trim())
+        ? String(planConstRaw).toLowerCase().trim()
+        : null;
+      const planArq = ['free', 'plus', 'pro'].includes(String(planArqRaw || '').toLowerCase().trim())
+        ? String(planArqRaw).toLowerCase().trim()
+        : null;
+
+      const planRaw = String(body.plan || '').toLowerCase().trim();
+      const tierRank = { free: 0, plus: 1, pro: 2 };
+      let plan = ['free', 'plus', 'pro'].includes(planRaw) ? planRaw : 'free';
+      if (planConst !== null || planArq !== null) {
+        const cRank = tierRank[planConst || 'free'] || 0;
+        const aRank = tierRank[planArq || 'free'] || 0;
+        const maxRank = Math.max(cRank, aRank);
+        plan = maxRank === 2 ? 'pro' : (maxRank === 1 ? 'plus' : 'free');
+      }
+
       const billingCycle = String(body.billingCycle || body.ciclo || 'monthly').toLowerCase().trim() === 'annual'
         ? 'annual'
         : 'monthly';
+
+      const rawVigencia = body.vigencia_fin ?? body.vigenciaFin ?? body.periodo_fin ?? body.periodoFin;
+      let vigenciaFin = null;
+      if (rawVigencia) {
+        const parsedDate = new Date(rawVigencia);
+        if (!Number.isNaN(parsedDate.getTime())) {
+          vigenciaFin = parsedDate.toISOString();
+        }
+      }
+      const estadoSuscripcion = body.estado_suscripcion || (plan === 'free' ? 'trialing' : 'active');
+
       const prodRaw = String(body.producto || 'combo').toLowerCase().trim();
       const producto = (prodRaw === 'arq' || prodRaw === 'arquitectura')
         ? 'arq'
@@ -981,23 +1023,102 @@ export default async function handler(req, res) {
           return res.status(500).json({ error: `No se pudo consultar el perfil (${perfRes.status}): ${errTxt}` });
         }
         const rows = await perfRes.json();
-        const empresaId = rows?.[0]?.empresa_id;
+        let perfilId = rows?.[0]?.id || null;
+        let empresaId = rows?.[0]?.empresa_id || null;
+        let authUserMatched = null;
+
+        // Si no existe perfil aún en public.perfiles, buscar el usuario en auth.users
+        if (!perfilId) {
+          try {
+            const authUsers = await listAllAuthUsers(sbUrl, serviceRoleKey);
+            authUserMatched = authUsers.find(u => normalizeEmail(u?.email) === targetEmail) || null;
+            if (authUserMatched?.id) {
+              perfilId = authUserMatched.id;
+            }
+          } catch {}
+        }
+
+        // Si el usuario no tiene empresa asociada, crearla automáticamente (y el perfil si faltaba)
+        if (!empresaId && perfilId) {
+          try {
+            const empInsertPayload = {
+              nombre: authUserMatched?.user_metadata?.empresa_nombre || authUserMatched?.user_metadata?.full_name || targetEmail.split('@')[0],
+              plan,
+              plan_const: planConst ?? (producto === 'arq' ? 'free' : plan),
+              plan_arq: planArq ?? (producto === 'const' ? 'free' : plan),
+              acceso_const: (planConst ?? (producto === 'arq' ? 'free' : plan)) !== 'free',
+              acceso_arq: (planArq ?? (producto === 'const' ? 'free' : plan)) !== 'free',
+              estado_suscripcion: estadoSuscripcion,
+              billing_cycle: billingCycle
+            };
+            if (vigenciaFin) {
+              empInsertPayload.periodo_fin_const = vigenciaFin;
+              empInsertPayload.periodo_fin_arq = vigenciaFin;
+            }
+            const createEmpRes = await fetch(`${sbUrl}/rest/v1/empresas`, {
+              method: 'POST',
+              headers: buildSupabaseAdminHeaders(serviceRoleKey, { 'Content-Type': 'application/json', Prefer: 'return=representation' }),
+              body: JSON.stringify(empInsertPayload)
+            });
+            if (createEmpRes.ok) {
+              const newEmp = await createEmpRes.json();
+              empresaId = newEmp?.[0]?.id || null;
+              if (empresaId) {
+                if (rows?.[0]?.id) {
+                  await fetch(`${sbUrl}/rest/v1/perfiles?id=eq.${encodeURIComponent(perfilId)}`, {
+                    method: 'PATCH',
+                    headers: buildSupabaseAdminHeaders(serviceRoleKey, { 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ empresa_id: empresaId })
+                  });
+                } else {
+                  await fetch(`${sbUrl}/rest/v1/perfiles`, {
+                    method: 'POST',
+                    headers: buildSupabaseAdminHeaders(serviceRoleKey, { 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates' }),
+                    body: JSON.stringify({
+                      id: perfilId,
+                      email: targetEmail,
+                      nombre_completo: authUserMatched?.user_metadata?.full_name || authUserMatched?.user_metadata?.name || targetEmail.split('@')[0],
+                      empresa_id: empresaId
+                    })
+                  });
+                }
+              }
+            }
+          } catch {}
+        }
+
         if (!empresaId) {
           return res.status(404).json({ error: `No se encontró una empresa asociada a ${targetEmail}; no se actualizó ninguna membresía.` });
         }
+
         const updatePayload = {
           plan,
           billing_cycle: billingCycle,
-          estado_suscripcion: plan === 'free' ? 'trialing' : 'active'
+          estado_suscripcion: estadoSuscripcion
         };
-        if (producto === 'arq' || producto === 'combo') {
-          updatePayload.plan_arq = plan;
-          updatePayload.acceso_arq = plan !== 'free';
-        }
-        if (producto === 'const' || producto === 'combo') {
+
+        if (planConst !== null) {
+          updatePayload.plan_const = planConst;
+          updatePayload.acceso_const = planConst !== 'free';
+        } else if (producto === 'const' || producto === 'combo') {
           updatePayload.plan_const = plan;
           updatePayload.acceso_const = plan !== 'free';
         }
+
+        if (planArq !== null) {
+          updatePayload.plan_arq = planArq;
+          updatePayload.acceso_arq = planArq !== 'free';
+        } else if (producto === 'arq' || producto === 'combo') {
+          updatePayload.plan_arq = plan;
+          updatePayload.acceso_arq = plan !== 'free';
+        }
+
+        if (vigenciaFin) {
+          updatePayload.periodo_fin = vigenciaFin;
+          updatePayload.periodo_fin_const = vigenciaFin;
+          updatePayload.periodo_fin_arq = vigenciaFin;
+        }
+
         const empResult = await updateEmpresaWithBillingCycleFallback(sbUrl, serviceRoleKey, empresaId, updatePayload);
         if (!empResult.ok) {
           return res.status(500).json({ error: `No se pudo actualizar empresa: ${empResult.error}` });
@@ -1005,7 +1126,29 @@ export default async function handler(req, res) {
         if (empResult.updated === 0) {
           return res.status(404).json({ error: `La empresa ${empresaId} no existe; no se actualizó ninguna membresía.` });
         }
-        return res.status(200).json({ ok: true, email: targetEmail, plan, billingCycle, producto });
+
+        // Sincronizar también cubikar_registros si existe la tabla
+        try {
+          await fetch(`${sbUrl}/rest/v1/cubikar_registros?${emailEqFilter(targetEmail)}`, {
+            method: 'PATCH',
+            headers: buildSupabaseAdminHeaders(serviceRoleKey, { 'Content-Type': 'application/json' }),
+            body: JSON.stringify({
+              plan,
+              billing_cycle: billingCycle,
+              last_activity: new Date().toISOString()
+            })
+          });
+        } catch (_) {}
+
+        return res.status(200).json({
+          ok: true,
+          email: targetEmail,
+          planConst: updatePayload.plan_const || plan,
+          planArq: updatePayload.plan_arq || plan,
+          billingCycle,
+          vigenciaFin,
+          producto
+        });
       } catch (err) {
         return res.status(500).json({ error: err.message || 'Error actualizando membresía.' });
       }

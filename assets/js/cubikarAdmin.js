@@ -549,16 +549,32 @@ export async function deleteSelectedAdminUsers() {
 
 export const deleteRegisteredUser = deleteSelectedAdminUsers;
 
-export async function updateAdminUserPlan(email, plan = 'free', billingCycle = 'monthly', producto = 'combo') {
-  const cleanEmail = String(email || '').toLowerCase().trim();
-  const normalizedPlan = ['free', 'plus', 'pro'].includes(String(plan || '').toLowerCase().trim())
-    ? String(plan).toLowerCase().trim()
-    : 'free';
-  const normalizedCycle = String(billingCycle || 'monthly').toLowerCase().trim() === 'annual' ? 'annual' : 'monthly';
-  if (!cleanEmail || isUserMasterAdmin(cleanEmail)) return false;
+export async function updateAdminUserPlan(emailOrOpts, plan = 'free', billingCycle = 'monthly', producto = 'combo') {
+  const opts = (typeof emailOrOpts === 'object' && emailOrOpts !== null)
+    ? emailOrOpts
+    : { email: emailOrOpts, plan, billingCycle, producto };
+
+  const cleanEmail = String(opts.email || '').toLowerCase().trim();
+  if (!cleanEmail || isUserMasterAdmin(cleanEmail)) {
+    throw new Error('Correo inválido o protegido.');
+  }
+
+  const normPlan = (v) => {
+    const p = String(v || 'free').toLowerCase().trim();
+    return (p === 'plus' || p === 'pro') ? p : 'free';
+  };
+
+  const planConst = opts.planConst != null ? normPlan(opts.planConst) : normPlan(opts.plan);
+  const planArq = opts.planArq != null ? normPlan(opts.planArq) : normPlan(opts.plan);
+  const normalizedCycle = String(opts.billingCycle || opts.ciclo || 'monthly').toLowerCase().trim() === 'annual' ? 'annual' : 'monthly';
+  const vigenciaFin = opts.vigenciaFin !== undefined ? opts.vigenciaFin : (opts.vigencia_fin !== undefined ? opts.vigencia_fin : null);
+  const isCombo = Boolean(opts.isCombo || (planConst === 'pro' && planArq === 'pro'));
+  const overallPlan = (planConst === 'pro' || planArq === 'pro') ? 'pro' : ((planConst === 'plus' || planArq === 'plus') ? 'plus' : 'free');
 
   const { token: bearerToken } = await getAdminSessionContext();
   const endpoints = ['/api/admin-users', 'https://const.cubikar.app/api/admin-users'];
+  let lastError = 'No se pudo conectar con el servidor.';
+
   for (const ep of endpoints) {
     try {
       const headers = { 'Content-Type': 'application/json' };
@@ -569,18 +585,27 @@ export async function updateAdminUserPlan(email, plan = 'free', billingCycle = '
         body: JSON.stringify({
           action: 'update_plan',
           email: cleanEmail,
-          plan: normalizedPlan,
+          plan: overallPlan,
+          plan_const: planConst,
+          plan_arq: planArq,
+          is_combo: isCombo,
           billingCycle: normalizedCycle,
-          producto
+          vigencia_fin: vigenciaFin,
+          producto: opts.producto || 'combo'
         })
       });
-      if (res.ok) {
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.ok) {
         await renderCubikarAdminTable({ refresh: true });
         return true;
       }
-    } catch (_) {}
+      lastError = data?.error || `Error del servidor (HTTP ${res.status})`;
+      if (res.status === 400 || res.status === 401 || res.status === 403) break;
+    } catch (err) {
+      lastError = err?.message || 'Error de red.';
+    }
   }
-  return false;
+  throw new Error(lastError);
 }
 
 // =========================================================================
@@ -651,6 +676,9 @@ export async function fetchAllEcosystemUsers() {
                 subscriptionArq: isMaster
                   ? { planId: 'pro', billingCycle: 'annual' }
                   : { planId: planArq, billingCycle: u.subscriptionArq?.billingCycle || defaultCycle },
+                periodoFin: u.periodoFin || u.periodo_fin || u.periodoFinConst || u.periodo_fin_const || u.periodoFinArq || u.periodo_fin_arq || null,
+                periodoFinConst: u.periodoFinConst || u.periodo_fin_const || null,
+                periodoFinArq: u.periodoFinArq || u.periodo_fin_arq || null,
                 appUsage: isMaster ? 'ambas' : (u.appUsage || (planConst !== 'free' && planArq !== 'free' ? 'ambas' : (planConst !== 'free' ? 'const' : (planArq !== 'free' ? 'arq' : 'ambas')))),
                 source: u.source || 'cloud_api'
               });
@@ -692,6 +720,7 @@ export async function fetchAllEcosystemUsers() {
               ? 'ambas'
               : (planConst !== 'free' ? 'const' : (planArq !== 'free' ? 'arq' : 'ambas')));
 
+          const empExpiry = emp.periodo_fin || emp.periodo_fin_const || emp.periodo_fin_arq || null;
           if (usersMap.has(em)) {
             const ex = usersMap.get(em);
             if (p.nombre_completo && (!ex.name || ex.name === em.split('@')[0])) {
@@ -702,6 +731,11 @@ export async function fetchAllEcosystemUsers() {
               ex.subscriptionConst = { planId: planConst, billingCycle };
               ex.subscriptionArq = { planId: planArq, billingCycle };
               ex.appUsage = appUsage;
+              if (empExpiry || emp.periodo_fin_const || emp.periodo_fin_arq) {
+                ex.periodoFin = empExpiry || ex.periodoFin || null;
+                ex.periodoFinConst = emp.periodo_fin_const || ex.periodoFinConst || null;
+                ex.periodoFinArq = emp.periodo_fin_arq || ex.periodoFinArq || null;
+              }
             }
           } else {
             usersMap.set(em, {
@@ -713,6 +747,9 @@ export async function fetchAllEcosystemUsers() {
               subscription: { planId: plan, billingCycle, isCombo },
               subscriptionConst: { planId: planConst, billingCycle },
               subscriptionArq: { planId: planArq, billingCycle },
+              periodoFin: empExpiry,
+              periodoFinConst: emp.periodo_fin_const || null,
+              periodoFinArq: emp.periodo_fin_arq || null,
               appUsage
             });
           }
@@ -772,7 +809,7 @@ export async function renderCubikarAdminTable({ refresh = false } = {}) {
     if (!adminUsersCache) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="15" class="text-center py-12 text-slate-400 font-medium bg-slate-900/40">
+          <td colspan="16" class="text-center py-12 text-slate-400 font-medium bg-slate-900/40">
             <i class="fa-solid fa-spinner fa-spin text-2xl mb-2 text-slate-500 block"></i>
             Cargando usuarios del ecosistema...
           </td>
@@ -795,10 +832,19 @@ function renderAdminTableFromCache() {
     const metrics = calculateUserMetrics(u);
     const regDate = u.createdAt ? new Date(u.createdAt) : new Date('2026-01-31');
     const inicioSub = regDate;
-    const finSub = new Date(inicioSub.getTime() + 365 * 24 * 60 * 60 * 1000);
+    const expiryRaw = u.periodoFin || u.periodo_fin || u.periodoFinConst || u.periodo_fin_const || u.periodoFinArq || u.periodo_fin_arq || u.vigenciaFin || null;
+    let finSub = expiryRaw ? new Date(expiryRaw) : new Date(inicioSub.getTime() + 365 * 24 * 60 * 60 * 1000);
+    if (Number.isNaN(finSub.getTime())) finSub = new Date(inicioSub.getTime() + 365 * 24 * 60 * 60 * 1000);
+    const isPermanent = finSub.getFullYear() >= 2090;
+    const isExpired = !isPermanent && Boolean(expiryRaw) && finSub.getTime() < Date.now() && (metrics.planConst !== 'free' || metrics.planArq !== 'free');
 
     const pad = (n) => String(n).padStart(2, '0');
     const formatDate = (d) => `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
+    const finMembresiaHtml = isPermanent
+      ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-extrabold bg-amber-400/20 text-amber-300 border border-amber-400/40 uppercase font-mono tracking-wider" title="Acceso Vitalicio / Permanente"><i class="fa-solid fa-infinity text-[9px]"></i> Vitalicio</span>`
+      : (isExpired
+        ? `<span class="text-rose-400 font-semibold">${formatDate(finSub)}</span> <span class="text-[9px] font-bold text-rose-400 uppercase">(Vencida)</span>`
+        : (expiryRaw ? `<span class="text-cyan-300 font-semibold">${formatDate(finSub)}</span>` : formatDate(finSub)));
 
     // Determinar aplicaciones utilizadas
     const appUsage = u.appUsage || (metrics.planConst !== 'free' && metrics.planArq !== 'free' ? 'ambas' : (metrics.planConst !== 'free' ? 'const' : (metrics.planArq !== 'free' ? 'arq' : 'ambas')));
@@ -817,7 +863,8 @@ function renderAdminTableFromCache() {
       billingCycle: metrics.billingCycle,
       isSuiteCombo: metrics.isSuiteCombo,
       inicioMembresia: formatDate(inicioSub),
-      finMembresia: formatDate(finSub),
+      finMembresia: isPermanent ? 'Vitalicio' : formatDate(finSub),
+      finMembresiaHtml,
       tokensIA: metrics.tokensIA.toLocaleString('es-MX'),
       storageMB: `${metrics.storageMB} MB`,
       bandwidthMB: `${metrics.bandwidthMB} MB`,
@@ -875,7 +922,7 @@ function renderAdminTableFromCache() {
   if (filtered.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="15" class="text-center py-12 text-slate-400 font-medium bg-slate-900/40">
+        <td colspan="16" class="text-center py-12 text-slate-400 font-medium bg-slate-900/40">
           <i class="fa-solid fa-filter-circle-xmark text-3xl mb-2 text-slate-500 block"></i>
           No se encontraron registros con los filtros seleccionados.
         </td>
@@ -973,7 +1020,22 @@ function renderAdminTableFromCache() {
         <!-- Membresía Activa -->
         <td class="px-3 py-2.5 text-center whitespace-nowrap">${badgeSuscripciones}</td>
         <!-- Vigencia Fin -->
-        <td class="px-3 py-2.5 text-center font-mono text-slate-400 whitespace-nowrap">${row.finMembresia}</td>
+        <td class="px-3 py-2.5 text-center font-mono text-slate-400 whitespace-nowrap">${row.finMembresiaHtml}</td>
+        <!-- Gestión -->
+        <td class="px-3 py-2.5 text-center whitespace-nowrap">
+          ${isUserMasterAdmin(row.correo) ? `
+            <span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-500/10 text-amber-400/70 border border-amber-500/20 text-[10px] font-bold font-mono" title="Administrador Maestro protegido">
+              <i class="fa-solid fa-shield-halved text-[9px]"></i> Maestro
+            </span>
+          ` : `
+            <button type="button" onclick="openEditMembershipModal('${safeEmailAttr}')"
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/30 text-amber-300 border border-amber-500/35 text-[11px] font-bold transition shadow-xs cursor-pointer"
+                    title="Editar membresías y vigencia de ${safeEmailAttr}">
+              <i class="fa-solid fa-pen-to-square text-[10px]"></i>
+              <span>Editar</span>
+            </button>
+          `}
+        </td>
         <!-- Tokens IA -->
         <td class="px-3 py-2.5 text-right font-mono text-sky-400 whitespace-nowrap" title="Tokens consumidos en ambas apps">
           <i class="fa-solid fa-brain text-[10px] text-sky-500 mr-1"></i>${row.tokensIA}
@@ -1424,6 +1486,223 @@ export async function downloadS3BackupObject(s3Key, btnEl = null) {
   }
 }
 
+// =========================================================================
+// 7. GESTIÓN DE MEMBRESÍAS Y VIGENCIA POR USUARIO (SUPERADMIN)
+// =========================================================================
+
+let editingMembershipEmail = '';
+
+function formatDateInputYYYYMMDD(dateObj) {
+  if (!dateObj || Number.isNaN(dateObj.getTime())) return '';
+  const y = dateObj.getFullYear();
+  const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const d = String(dateObj.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function updateEditModalDaysRemaining() {
+  const dateInput = document.getElementById('edit-member-expiry-date');
+  const badgeEl = document.getElementById('edit-member-days-remaining');
+  if (!dateInput || !badgeEl) return;
+
+  const val = dateInput.value;
+  if (!val) {
+    badgeEl.textContent = 'Sin fecha definida';
+    badgeEl.className = 'text-[10px] text-slate-400 font-mono font-bold';
+    return;
+  }
+
+  const target = new Date(`${val}T23:59:59`);
+  if (Number.isNaN(target.getTime())) {
+    badgeEl.textContent = '--';
+    return;
+  }
+
+  if (target.getFullYear() >= 2090) {
+    badgeEl.textContent = 'Vitalicio (Permanente)';
+    badgeEl.className = 'text-[10px] text-amber-300 font-mono font-bold';
+    return;
+  }
+
+  const diffDays = Math.ceil((target.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+  if (diffDays < 0) {
+    badgeEl.textContent = `Vencida hace ${Math.abs(diffDays)} día(s)`;
+    badgeEl.className = 'text-[10px] text-rose-400 font-mono font-bold';
+  } else if (diffDays === 0) {
+    badgeEl.textContent = 'Vence hoy';
+    badgeEl.className = 'text-[10px] text-amber-400 font-mono font-bold';
+  } else {
+    badgeEl.textContent = `${diffDays} día(s) restantes`;
+    badgeEl.className = 'text-[10px] text-emerald-400 font-mono font-bold';
+  }
+}
+
+export function openEditMembershipModal(userEmail) {
+  const cleanEmail = String(userEmail || '').toLowerCase().trim();
+  if (!cleanEmail || isUserMasterAdmin(cleanEmail)) return;
+
+  const modal = document.getElementById('modal-admin-edit-membership');
+  if (!modal) return;
+
+  const user = (adminUsersCache || []).find(u => (u.email || '').toLowerCase().trim() === cleanEmail);
+  if (!user) return;
+
+  editingMembershipEmail = cleanEmail;
+  const metrics = calculateUserMetrics(user);
+
+  const nameEl = document.getElementById('edit-member-user-name');
+  const emailEl = document.getElementById('edit-member-user-email');
+  const avatarEl = document.getElementById('edit-member-user-avatar');
+  const regEl = document.getElementById('edit-member-user-regdate');
+  const badgesEl = document.getElementById('edit-member-current-badges');
+  const selConst = document.getElementById('edit-member-plan-const');
+  const selArq = document.getElementById('edit-member-plan-arq');
+  const radioMonthly = document.getElementById('edit-member-cycle-monthly');
+  const radioAnnual = document.getElementById('edit-member-cycle-annual');
+  const dateInput = document.getElementById('edit-member-expiry-date');
+  const statusEl = document.getElementById('edit-member-status');
+
+  const displayName = user.name || cleanEmail.split('@')[0];
+  if (nameEl) nameEl.textContent = displayName;
+  if (emailEl) emailEl.textContent = cleanEmail;
+  if (avatarEl) avatarEl.textContent = displayName.charAt(0).toUpperCase();
+
+  const regDate = user.createdAt ? new Date(user.createdAt) : new Date('2026-01-31');
+  const pad = (n) => String(n).padStart(2, '0');
+  if (regEl && !Number.isNaN(regDate.getTime())) {
+    regEl.textContent = `Registrado: ${pad(regDate.getDate())}/${pad(regDate.getMonth() + 1)}/${regDate.getFullYear()}`;
+  }
+
+  if (badgesEl) {
+    if (metrics.isSuiteCombo) {
+      badgesEl.innerHTML = `<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-400/40 uppercase">Suite Pro</span>`;
+    } else {
+      badgesEl.innerHTML = `
+        <span class="px-1.5 py-0.5 rounded text-[9.5px] font-bold bg-slate-800 text-amber-300 border border-amber-500/30 uppercase">C: ${escapeAdminHtml(metrics.planConst)}</span>
+        <span class="px-1.5 py-0.5 rounded text-[9.5px] font-bold bg-slate-800 text-blue-300 border border-blue-500/30 uppercase">A: ${escapeAdminHtml(metrics.planArq)}</span>
+      `;
+    }
+  }
+
+  if (selConst) selConst.value = metrics.planConst || 'free';
+  if (selArq) selArq.value = metrics.planArq || 'free';
+
+  const isAnnual = metrics.billingCycle === 'annual';
+  if (radioAnnual) radioAnnual.checked = isAnnual;
+  if (radioMonthly) radioMonthly.checked = !isAnnual;
+
+  const expiryRaw = user.periodoFin || user.periodo_fin || user.periodoFinConst || user.periodo_fin_const || user.periodoFinArq || user.periodo_fin_arq || user.vigenciaFin;
+  let targetDate = expiryRaw ? new Date(expiryRaw) : new Date(regDate.getTime() + 365 * 24 * 60 * 60 * 1000);
+  if (Number.isNaN(targetDate.getTime())) {
+    targetDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  }
+  if (dateInput) {
+    dateInput.value = formatDateInputYYYYMMDD(targetDate);
+    dateInput.oninput = updateEditModalDaysRemaining;
+    dateInput.onchange = updateEditModalDaysRemaining;
+  }
+  updateEditModalDaysRemaining();
+
+  if (statusEl) {
+    statusEl.className = 'hidden p-3 rounded-xl text-xs font-semibold';
+    statusEl.textContent = '';
+  }
+
+  modal.classList.remove('hidden');
+  modal.style.display = 'flex';
+}
+
+export function closeEditMembershipModal() {
+  const modal = document.getElementById('modal-admin-edit-membership');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
+  }
+  editingMembershipEmail = '';
+}
+
+export function setEditModalPresetDate(months) {
+  const dateInput = document.getElementById('edit-member-expiry-date');
+  if (!dateInput) return;
+
+  if (Number(months) >= 999) {
+    dateInput.value = '2099-12-31';
+    updateEditModalDaysRemaining();
+    return;
+  }
+
+  const m = Number(months) || 1;
+  const base = new Date();
+  base.setMonth(base.getMonth() + m);
+  dateInput.value = formatDateInputYYYYMMDD(base);
+  updateEditModalDaysRemaining();
+}
+
+export function applyComboProToEditModal() {
+  const selConst = document.getElementById('edit-member-plan-const');
+  const selArq = document.getElementById('edit-member-plan-arq');
+  const radioAnnual = document.getElementById('edit-member-cycle-annual');
+  if (selConst) selConst.value = 'pro';
+  if (selArq) selArq.value = 'pro';
+  if (radioAnnual) radioAnnual.checked = true;
+}
+
+export async function saveUserMembershipFromModal() {
+  if (!editingMembershipEmail) return;
+
+  const selConst = document.getElementById('edit-member-plan-const');
+  const selArq = document.getElementById('edit-member-plan-arq');
+  const radioAnnual = document.getElementById('edit-member-cycle-annual');
+  const dateInput = document.getElementById('edit-member-expiry-date');
+  const statusEl = document.getElementById('edit-member-status');
+  const saveBtn = document.getElementById('edit-member-save-btn');
+
+  const planConst = selConst?.value || 'free';
+  const planArq = selArq?.value || 'free';
+  const billingCycle = radioAnnual?.checked ? 'annual' : 'monthly';
+  const dateVal = dateInput?.value || '';
+  const vigenciaFin = dateVal ? new Date(`${dateVal}T23:59:59.000Z`).toISOString() : null;
+  const isCombo = planConst === 'pro' && planArq === 'pro';
+
+  if (statusEl) {
+    statusEl.className = 'hidden p-3 rounded-xl text-xs font-semibold';
+    statusEl.textContent = '';
+  }
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Guardando...</span>';
+  }
+
+  try {
+    const targetEmail = editingMembershipEmail;
+    await updateAdminUserPlan({
+      email: targetEmail,
+      planConst,
+      planArq,
+      isCombo,
+      billingCycle,
+      vigenciaFin
+    });
+
+    closeEditMembershipModal();
+    if (typeof window !== 'undefined' && typeof window.showPortalNotification === 'function') {
+      window.showPortalNotification(`Membresía y vigencia de ${targetEmail} actualizadas en la nube.`, 'success');
+    } else {
+      alert(`Membresía y vigencia de ${targetEmail} actualizadas con éxito.`);
+    }
+  } catch (err) {
+    if (statusEl) {
+      statusEl.textContent = err?.message || 'No se pudo actualizar la membresía en la nube.';
+      statusEl.className = 'p-3 rounded-xl text-xs font-semibold bg-rose-500/20 border border-rose-500/40 text-rose-200 block';
+    }
+  } finally {
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i><span>Guardar Cambios</span>';
+    }
+  }
+}
+
 // Exponer en window para onclicks del DOM
 if (typeof window !== 'undefined') {
   window.openCubikarAdminModal = openCubikarAdminModal;
@@ -1444,6 +1723,7 @@ if (typeof window !== 'undefined') {
   window.onAdminUserCheckboxChange = onAdminUserCheckboxChange;
   window.toggleSelectAllAdminUsers = toggleSelectAllAdminUsers;
   window.deleteSelectedAdminUsers = deleteSelectedAdminUsers;
+  window.updateAdminUserPlan = updateAdminUserPlan;
   window.addCoAdmin = addCoAdmin;
   window.removeCoAdmin = removeCoAdmin;
   window.openS3BackupsAdminModal = openS3BackupsAdminModal;
@@ -1451,4 +1731,9 @@ if (typeof window !== 'undefined') {
   window.onS3BackupUserChange = onS3BackupUserChange;
   window.onS3BackupDateChange = onS3BackupDateChange;
   window.downloadS3BackupObject = downloadS3BackupObject;
+  window.openEditMembershipModal = openEditMembershipModal;
+  window.closeEditMembershipModal = closeEditMembershipModal;
+  window.setEditModalPresetDate = setEditModalPresetDate;
+  window.applyComboProToEditModal = applyComboProToEditModal;
+  window.saveUserMembershipFromModal = saveUserMembershipFromModal;
 }

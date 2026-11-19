@@ -717,8 +717,10 @@ export async function loadUserProfileAndCompany(userId, forceRefresh = false) {
             plan,
             plan_const,
             acceso_const,
+            periodo_fin_const,
             plan_arq,
             acceso_arq,
+            periodo_fin_arq,
             billing_cycle,
             estado_suscripcion,
             logo_url
@@ -1121,12 +1123,24 @@ export function resolveUserProfileAndPlan(user, profile, company) {
     ? (company?.plan || 'free')
     : 'free';
 
-  const rawConstPlan = (company?.acceso_const === false && !company?.plan_const)
+  const isExpiredDate = (dtStr) => {
+    if (!dtStr) return false;
+    const t = new Date(dtStr).getTime();
+    return !Number.isNaN(t) && t < Date.now();
+  };
+  const constExpired = isExpiredDate(company?.periodo_fin_const);
+  const arqExpired = isExpiredDate(company?.periodo_fin_arq);
+
+  const rawConstPlan = constExpired
     ? 'free'
-    : (company?.plan_const || legacyFallbackPlan || 'free');
-  const rawArqPlan = (company?.acceso_arq === false && !company?.plan_arq)
+    : ((company?.acceso_const === false && !company?.plan_const)
+      ? 'free'
+      : (company?.plan_const || legacyFallbackPlan || 'free'));
+  const rawArqPlan = arqExpired
     ? 'free'
-    : (company?.plan_arq || legacyFallbackPlan || 'free');
+    : ((company?.acceso_arq === false && !company?.plan_arq)
+      ? 'free'
+      : (company?.plan_arq || legacyFallbackPlan || 'free'));
 
   const effectiveConstPlan = rawConstPlan === 'pro'
     ? 'pro'
@@ -1135,20 +1149,25 @@ export function resolveUserProfileAndPlan(user, profile, company) {
     ? 'pro'
     : (CUBIKAR_SUB_TEST_MODE ? 'plus' : rawArqPlan);
 
-  const accesoConst = company?.acceso_const != null
-    ? Boolean(company.acceso_const)
-    : (effectiveConstPlan !== 'free');
-  const accesoArq = company?.acceso_arq != null
-    ? Boolean(company.acceso_arq)
-    : (effectiveArqPlan !== 'free');
+  const accesoConst = constExpired
+    ? false
+    : (company?.acceso_const != null
+      ? Boolean(company.acceso_const)
+      : (effectiveConstPlan !== 'free'));
+  const accesoArq = arqExpired
+    ? false
+    : (company?.acceso_arq != null
+      ? Boolean(company.acceso_arq)
+      : (effectiveArqPlan !== 'free'));
 
-  const plan = (company?.plan === 'pro' || effectiveConstPlan === 'pro' || effectiveArqPlan === 'pro')
+  const effectiveCompanyPlan = (constExpired && arqExpired) ? 'free' : company?.plan;
+  const plan = (effectiveCompanyPlan === 'pro' || effectiveConstPlan === 'pro' || effectiveArqPlan === 'pro')
     ? 'pro'
     : (CUBIKAR_SUB_TEST_MODE
         ? 'plus'
         : (effectiveConstPlan === 'plus' || effectiveArqPlan === 'plus'
             ? 'plus'
-            : (company?.plan || 'free')));
+            : (effectiveCompanyPlan || 'free')));
 
   const billingCycle = company?.billing_cycle || 'monthly';
 
@@ -1158,6 +1177,8 @@ export function resolveUserProfileAndPlan(user, profile, company) {
     plan_arq: effectiveArqPlan,
     acceso_const: accesoConst,
     acceso_arq: accesoArq,
+    periodo_fin_const: company?.periodo_fin_const || null,
+    periodo_fin_arq: company?.periodo_fin_arq || null,
     billingCycle
   };
 }
@@ -1181,6 +1202,8 @@ export function syncLocalUserStorage(user, profile, company) {
       plan_arq: effectiveArqPlan,
       acceso_const: accesoConst,
       acceso_arq: accesoArq,
+      periodo_fin_const: periodoFinConst,
+      periodo_fin_arq: periodoFinArq,
       billingCycle
     } = resolveUserProfileAndPlan(user, profile, company);
 
@@ -1197,6 +1220,8 @@ export function syncLocalUserStorage(user, profile, company) {
       plan_arq: effectiveArqPlan,
       acceso_const: accesoConst,
       acceso_arq: accesoArq,
+      periodo_fin_const: periodoFinConst,
+      periodo_fin_arq: periodoFinArq,
       billingCycle,
       role: profile?.rol || 'owner'
     };
@@ -1212,6 +1237,8 @@ export function syncLocalUserStorage(user, profile, company) {
           plan_arq: effectiveArqPlan,
           acceso_const: accesoConst,
           acceso_arq: accesoArq,
+          periodo_fin_const: periodoFinConst,
+          periodo_fin_arq: periodoFinArq,
           billingCycle,
           ...(CUBIKAR_SUB_TEST_MODE && plan !== 'pro' ? { isBetaTest: true } : {}),
           updatedAt: new Date().toISOString()
@@ -1220,6 +1247,7 @@ export function syncLocalUserStorage(user, profile, company) {
           planId: effectiveConstPlan,
           plan_const: effectiveConstPlan,
           acceso_const: accesoConst,
+          periodo_fin_const: periodoFinConst,
           billingCycle,
           ...(CUBIKAR_SUB_TEST_MODE && effectiveConstPlan !== 'pro' ? { isBetaTest: true } : {}),
           updatedAt: new Date().toISOString()
@@ -1228,6 +1256,7 @@ export function syncLocalUserStorage(user, profile, company) {
           planId: effectiveArqPlan,
           plan_arq: effectiveArqPlan,
           acceso_arq: accesoArq,
+          periodo_fin_arq: periodoFinArq,
           billingCycle,
           ...(CUBIKAR_SUB_TEST_MODE && effectiveArqPlan !== 'pro' ? { isBetaTest: true } : {}),
           updatedAt: new Date().toISOString()
