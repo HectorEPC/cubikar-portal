@@ -1,7 +1,7 @@
 // assets/js/appSwitcher.js
 // Selector Unificado de Aplicaciones del Ecosistema Cubikar (Estilo Google Workspace Waffle 9-puntos)
 
-import { appendSsoToUrlFromStorage } from './ssoHelper.js?v=20261119_cf40';
+import { appendSsoToUrlFromStorage } from './ssoHelper.js?v=20261119_cf41';
 
 export function initAppSwitcher(containerId = 'cubikar-app-switcher-mount', currentApp = 'portal') {
   const mount = document.getElementById(containerId);
