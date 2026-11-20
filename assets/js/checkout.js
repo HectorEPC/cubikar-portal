@@ -1,7 +1,7 @@
 // assets/js/checkout.js
 // Configuración exacta y completa de suscripciones de ADM_CONST y ADM_ARQ
 
-import { getSupabase } from './supabaseClient.js?v=20261119_cf37';
+import { getSupabase } from './supabaseClient.js?v=20261119_cf39';
 
 // =========================================================================
 // MODO DE CONTROL: CUBIKAR SUB TEST vs CUBIKAR SUB ORIGINAL
@@ -191,7 +191,7 @@ export const ARQ_TIERS = {
     monthlyPrice: 199,
     annualPrice: 159,
     originalMonthlyPrice: 499,
-    originalAnnualPrice: 499,
+    originalAnnualPrice: 399,
     discountBadge: '60% OFF',
     periodLabel: '/ mes',
     subtextMonthly: 'Facturación mensual flexible • Cancela cuando quieras',
@@ -228,7 +228,7 @@ export const ARQ_TIERS = {
     monthlyPrice: 499,
     annualPrice: 399,
     originalMonthlyPrice: 1099,
-    originalAnnualPrice: 1099,
+    originalAnnualPrice: 879,
     discountBadge: '55% OFF',
     periodLabel: '/ mes',
     subtextMonthly: 'Facturación mensual flexible • Cancela cuando quieras',
@@ -435,6 +435,13 @@ async function runCheckoutFlow(product, planId, cycle) {
     if (!session?.access_token) {
       alert('Inicia sesión o regístrate antes de continuar al pago en Stripe.');
       savePendingProductIntent(normalizedProduct);
+      try {
+        sessionStorage.setItem('cubikar_pending_checkout_intent', JSON.stringify({
+          product: normalizedProduct,
+          planId,
+          cycle: cycle === 'annual' ? 'annual' : 'monthly'
+        }));
+      } catch (_) {}
       if (window.openAuthModal) window.openAuthModal('login');
       return false;
     }
@@ -491,6 +498,11 @@ export async function openCustomerPortal() {
     });
     if (!error && data?.url) {
       window.location.href = data.url;
+      return;
+    }
+
+    if (CUBIKAR_SUB_TEST_MODE) {
+      alert('Durante la fase de pruebas (Cubikar Sub Test), cuentas con acceso Plus de cortesía sin cobros ni suscripciones activas en Stripe.');
       return;
     }
 

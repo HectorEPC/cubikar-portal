@@ -127,6 +127,27 @@ function isCoAdminMetadata(meta) {
   return Boolean(meta && (meta.is_co_admin === true || meta.isCoAdmin === true));
 }
 
+async function fetchPostgrestPaged(baseUrl, headers, pageSize = 1000, maxPages = 50) {
+  const all = [];
+  for (let page = 0; page < maxPages; page++) {
+    const start = page * pageSize;
+    const end = start + pageSize - 1;
+    const res = await fetch(baseUrl, {
+      headers: {
+        ...headers,
+        Range: `${start}-${end}`,
+        'Range-Unit': 'items'
+      }
+    });
+    if (!res.ok) break;
+    const batch = await res.json();
+    if (!Array.isArray(batch) || batch.length === 0) break;
+    all.push(...batch);
+    if (batch.length < pageSize) break;
+  }
+  return all;
+}
+
 async function listAllAuthUsers(sbUrl, serviceRoleKey) {
   const perPage = 1000;
   const maxPages = 200;
@@ -709,12 +730,12 @@ export default async function handler(req, res) {
         const orFilter = searchParam
           ? `&or=(email.ilike.*${encodeURIComponent(searchParam)}*,nombre_completo.ilike.*${encodeURIComponent(searchParam)}*)`
           : '';
-        const perfRes = await fetch(`${sbUrl}/rest/v1/perfiles?select=*,empresas(*)${orFilter}`, {
-          headers: buildSupabaseAdminHeaders(serviceRoleKey)
-        });
-        if (perfRes.ok) {
-          const perfiles = await perfRes.json();
-          if (Array.isArray(perfiles)) {
+        const perfiles = await fetchPostgrestPaged(
+          `${sbUrl}/rest/v1/perfiles?select=*,empresas(*)${orFilter}`,
+          buildSupabaseAdminHeaders(serviceRoleKey)
+        );
+        if (perfiles.length > 0) {
+          {
             perfiles.forEach(p => {
               if (!p || !p.email) return;
               const cleanEmail = p.email.toLowerCase().trim();
@@ -767,12 +788,12 @@ export default async function handler(req, res) {
 
     // 3. Complementar desde cubikar_registros SIN sobrescribir datos autoritativos de Auth/Empresas
     try {
-      const regRes = await fetch(`${sbUrl}/rest/v1/cubikar_registros?select=*`, {
-        headers: buildSupabaseReadHeaders(serviceRoleKey, sbAnonKey, caller.token)
-      });
-      if (regRes.ok) {
-        const rows = await regRes.json();
-        if (Array.isArray(rows)) {
+      const rows = await fetchPostgrestPaged(
+        `${sbUrl}/rest/v1/cubikar_registros?select=*`,
+        buildSupabaseReadHeaders(serviceRoleKey, sbAnonKey, caller.token)
+      );
+      if (rows.length > 0) {
+        {
           rows.forEach(r => {
             if (!r || !r.email) return;
             const cleanEmail = r.email.toLowerCase().trim();
@@ -1117,6 +1138,10 @@ export default async function handler(req, res) {
           updatePayload.periodo_fin = vigenciaFin;
           updatePayload.periodo_fin_const = vigenciaFin;
           updatePayload.periodo_fin_arq = vigenciaFin;
+        } else if (body.clearExpiry === true) {
+          updatePayload.periodo_fin = null;
+          updatePayload.periodo_fin_const = null;
+          updatePayload.periodo_fin_arq = null;
         }
 
         const empResult = await updateEmpresaWithBillingCycleFallback(sbUrl, serviceRoleKey, empresaId, updatePayload);
@@ -1216,26 +1241,44 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: `Error eliminando usuario de Supabase Auth: ${e.message}` });
       }
 
+      const tableErrors = [];
       for (const targetEmail of targets) {
         try {
-          await fetch(`${sbUrl}/rest/v1/perfiles?${emailEqFilter(targetEmail)}`, {
+          const r1 = await fetch(`${sbUrl}/rest/v1/perfiles?${emailEqFilter(targetEmail)}`, {
             method: 'DELETE',
             headers: buildSupabaseAdminHeaders(serviceRoleKey)
           });
-          await fetch(`${sbUrl}/rest/v1/cubikar_registros?${emailEqFilter(targetEmail)}`, {
+          const r2 = await fetch(`${sbUrl}/rest/v1/cubikar_registros?${emailEqFilter(targetEmail)}`, {
             method: 'DELETE',
             headers: buildSupabaseAdminHeaders(serviceRoleKey)
           });
-          deletedFromTables++;
-        } catch {}
+          if (!r1.ok || !r2.ok) {
+            tableErrors.push(`${targetEmail} (perfiles:${r1.status}, registros:${r2.status})`);
+          } else {
+            deletedFromTables++;
+          }
+        } catch (err) {
+          tableErrors.push(`${targetEmail} (${err?.message || 'error'})`);
+        }
+      }
+
+      if (tableErrors.length > 0 && deletedFromAuth === 0) {
+        return res.status(500).json({
+          ok: false,
+          error: `Error eliminando registros en tablas: ${tableErrors.join('; ')}`,
+          tableErrors
+        });
       }
 
       return res.status(200).json({
         ok: true,
-        message: `${targets.length} usuario(s) procesado(s) para eliminación.`,
+        message: tableErrors.length > 0
+          ? `${targets.length} usuario(s) procesado(s) con advertencias en tablas.`
+          : `${targets.length} usuario(s) procesado(s) para eliminación.`,
         deletedEmails: targets,
         deletedFromAuth,
-        deletedFromTables
+        deletedFromTables,
+        ...(tableErrors.length > 0 ? { tableErrors } : {})
       });
     }
 

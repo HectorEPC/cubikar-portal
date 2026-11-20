@@ -22,7 +22,7 @@
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 
   <!-- Estilos Personalizados (D5 Render Palette x Lumion Structure) -->
-  <link rel="stylesheet" href="assets/css/styles.css?v=20261119_cf37">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20261119_cf39">
 </head>
 <body class="bg-[#07080c] text-slate-100 min-h-screen antialiased flex flex-col selection:bg-cyan-500 selection:text-black">
 
@@ -1610,8 +1610,8 @@
   <!-- ========================================================================= -->
   <!-- MODAL 1: AUTH (INICIAR SESIÓN / REGISTRO)                                 -->
   <!-- ========================================================================= -->
-  <div id="modal-auth" class="fixed inset-0 z-50 hidden bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-    <div class="bg-[#0e111a] border border-white/10 rounded-3xl w-full max-w-md p-6 sm:p-8 shadow-2xl relative text-left">
+  <div id="modal-auth" class="fixed inset-0 z-[70] hidden bg-black/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-[#0e111a] border border-white/10 rounded-3xl w-full max-w-md p-6 sm:p-8 shadow-2xl relative text-left my-auto">
       
       <button onclick="closeAuthModal()" class="absolute top-5 right-5 text-slate-400 hover:text-white text-lg font-bold cursor-pointer">
         &times;
@@ -1670,7 +1670,12 @@
         </div>
 
         <div>
-          <label class="block text-[11px] font-bold text-slate-300 uppercase mb-1">Contraseña</label>
+          <div class="flex items-center justify-between mb-1">
+            <label class="block text-[11px] font-bold text-slate-300 uppercase">Contraseña</label>
+            <button type="button" id="auth-forgot-password-btn" onclick="handleForgotPasswordClick()" class="text-[11px] font-semibold text-cyan-400 hover:text-cyan-300 transition cursor-pointer">
+              ¿Olvidaste tu contraseña?
+            </button>
+          </div>
           <input type="password" id="auth-password" required placeholder="••••••••" class="w-full bg-[#07080c] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400">
         </div>
 
@@ -1691,8 +1696,8 @@
   <!-- ========================================================================= -->
   <!-- MODAL: APP CHOOSER (SELECTOR DE APLICACIÓN AL INICIAR SESIÓN)              -->
   <!-- ========================================================================= -->
-  <div id="modal-app-chooser" class="fixed inset-0 z-50 hidden bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-    <div class="bg-[#0e111a] border border-white/10 rounded-3xl w-full max-w-2xl p-6 sm:p-8 shadow-2xl relative text-center animate-in fade-in zoom-in-95 duration-200">
+  <div id="modal-app-chooser" class="fixed inset-0 z-[70] hidden bg-black/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-[#0e111a] border border-white/10 rounded-3xl w-full max-w-2xl p-6 sm:p-8 shadow-2xl relative text-center animate-in fade-in zoom-in-95 duration-200 my-auto">
       
       <button onclick="closeAppChooserModal()" class="absolute top-5 right-5 text-slate-400 hover:text-white text-lg font-bold cursor-pointer">
         &times;
@@ -1787,8 +1792,8 @@
   <!-- ========================================================================= -->
   <!-- MODAL 2: USER DASHBOARD (MI CUENTA & ACCESO DIRECTO)                       -->
   <!-- ========================================================================= -->
-  <div id="modal-dashboard" class="fixed inset-0 z-50 hidden bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-    <div class="bg-[#0e111a] border border-white/10 rounded-3xl w-full max-w-xl p-6 sm:p-8 shadow-2xl relative text-left">
+  <div id="modal-dashboard" class="fixed inset-0 z-[70] hidden bg-black/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-[#0e111a] border border-white/10 rounded-3xl w-full max-w-xl p-6 sm:p-8 shadow-2xl relative text-left my-auto">
       
       <button onclick="closeUserDashboard()" class="absolute top-5 right-5 text-slate-400 hover:text-white text-lg font-bold cursor-pointer">
         &times;
@@ -2443,7 +2448,7 @@
   </div>
 
   <!-- Scripts -->
-  <script type="module" src="assets/js/main.js?v=20261119_cf37"></script>
+  <script type="module" src="assets/js/main.js?v=20261119_cf39"></script>
 
 </body>
 </html>

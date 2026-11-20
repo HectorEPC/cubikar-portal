@@ -2,9 +2,9 @@
 // Módulo de Administración Maestra de Cubikar para el Portal Central (cubikar.app)
 // Supervisión integral de clientes, membresías, consumos técnicos de IA y margen SaaS de ambas aplicaciones
 
-import { getSupabase } from './supabaseClient.js?v=20261119_cf37';
-import { CONST_TIERS, ARQ_TIERS, COMBO_TIERS } from './checkout.js?v=20261119_cf37';
-import { loadXLSX } from './libLoader.js?v=20261119_cf37';
+import { getSupabase } from './supabaseClient.js?v=20261119_cf39';
+import { CONST_TIERS, ARQ_TIERS, COMBO_TIERS } from './checkout.js?v=20261119_cf39';
+import { loadXLSX } from './libLoader.js?v=20261119_cf39';
 const getSupabaseClient = getSupabase;
 
 // Administrador Maestro Oficial
@@ -35,6 +35,20 @@ function escapeAdminHtml(value) {
 
 function escapeAdminAttr(value) {
   return escapeAdminHtml(value);
+}
+
+function escapeAdminJsString(value) {
+  return escapeAdminAttr(
+    String(value ?? '')
+      .replace(/\\/g, '\\\\')
+      .replace(/'/g, "\\'")
+      .replace(/"/g, '\\"')
+      .replace(/`/g, '\\`')
+      .replace(/\n/g, '\\n')
+      .replace(/\r/g, '\\r')
+      .replace(/\u2028/g, '\\u2028')
+      .replace(/\u2029/g, '\\u2029')
+  );
 }
 
 async function getAdminSessionContext() {
@@ -327,17 +341,27 @@ export function calculateUserMetrics(user) {
   // Determinar planes reales de ambas apps o combo desde tiers oficiales
   const planConst = normalizePlan(user?.subscriptionConst?.planId || user?.subscription?.planId);
   const planArq = normalizePlan(user?.subscriptionArq?.planId || user?.subscription?.planId);
-  const isSuiteCombo = Boolean(user?.subscription?.isCombo || (planConst === 'pro' && planArq === 'pro'));
+  const isSuiteCombo = Boolean(
+    user?.subscription?.isCombo ||
+    (planConst === 'pro' && planArq === 'pro') ||
+    (planConst === 'plus' && planArq === 'plus')
+  );
 
   const cycleConst = normalizeCycle(user?.subscriptionConst?.billingCycle || user?.subscription?.billingCycle);
   const cycleArq = normalizeCycle(user?.subscriptionArq?.billingCycle || user?.subscription?.billingCycle);
   const billingCycle = (cycleConst === 'annual' || cycleArq === 'annual') ? 'annual' : 'monthly';
 
-  const gastoConst = CONST_TIERS[planConst]?.[cycleConst === 'annual' ? 'annualPrice' : 'monthlyPrice'] || 0;
-  const gastoArq = ARQ_TIERS[planArq]?.[cycleArq === 'annual' ? 'annualPrice' : 'monthlyPrice'] || 0;
+  const expiryRaw = user?.periodoFin || user?.periodo_fin || user?.periodoFinConst || user?.periodo_fin_const || user?.periodoFinArq || user?.periodo_fin_arq || user?.vigenciaFin || null;
+  const expiryParsed = expiryRaw ? new Date(expiryRaw) : null;
+  const expiryValid = Boolean(expiryParsed && !Number.isNaN(expiryParsed.getTime()));
+  const isPermanentExpiry = Boolean(expiryValid && expiryParsed.getFullYear() >= 2090);
+  const isExpiredPlan = Boolean(expiryValid && !isPermanentExpiry && expiryParsed.getTime() < Date.now() && (planConst !== 'free' || planArq !== 'free'));
+
+  const gastoConst = isExpiredPlan ? 0 : (CONST_TIERS[planConst]?.[cycleConst === 'annual' ? 'annualPrice' : 'monthlyPrice'] || 0);
+  const gastoArq = isExpiredPlan ? 0 : (ARQ_TIERS[planArq]?.[cycleArq === 'annual' ? 'annualPrice' : 'monthlyPrice'] || 0);
 
   let totalGastoSub = gastoConst + gastoArq;
-  if (isSuiteCombo) {
+  if (isSuiteCombo && !isExpiredPlan) {
     const comboTier = (planConst === 'pro' || planArq === 'pro') ? 'pro' : ((planConst === 'plus' || planArq === 'plus') ? 'plus' : 'free');
     totalGastoSub = COMBO_TIERS[comboTier]?.[billingCycle === 'annual' ? 'annualPrice' : 'monthlyPrice'] || totalGastoSub;
   }
@@ -436,8 +460,8 @@ export function toggleSelectAllAdminUsers(checked) {
 export function updateSelectAllCheckboxState() {
   const selectAll = document.getElementById('admin-select-all-checkbox');
   const checkboxes = document.querySelectorAll('.admin-user-checkbox');
-  if (selectAll && checkboxes.length > 0) {
-    selectAll.checked = Array.from(checkboxes).every(cb => cb.checked);
+  if (selectAll) {
+    selectAll.checked = checkboxes.length > 0 && Array.from(checkboxes).every(cb => cb.checked);
   }
 }
 
@@ -575,7 +599,8 @@ export async function updateAdminUserPlan(emailOrOpts, plan = 'free', billingCyc
   const planArq = opts.planArq != null ? normPlan(opts.planArq) : normPlan(opts.plan);
   const normalizedCycle = String(opts.billingCycle || opts.ciclo || 'monthly').toLowerCase().trim() === 'annual' ? 'annual' : 'monthly';
   const vigenciaFin = opts.vigenciaFin !== undefined ? opts.vigenciaFin : (opts.vigencia_fin !== undefined ? opts.vigencia_fin : null);
-  const isCombo = Boolean(opts.isCombo || (planConst === 'pro' && planArq === 'pro'));
+  const clearExpiry = Boolean(opts.clearExpiry);
+  const isCombo = Boolean(opts.isCombo || (planConst === 'pro' && planArq === 'pro') || (planConst === 'plus' && planArq === 'plus'));
   const overallPlan = (planConst === 'pro' || planArq === 'pro') ? 'pro' : ((planConst === 'plus' || planArq === 'plus') ? 'plus' : 'free');
 
   const { token: bearerToken } = await getAdminSessionContext();
@@ -598,6 +623,7 @@ export async function updateAdminUserPlan(emailOrOpts, plan = 'free', billingCyc
           is_combo: isCombo,
           billingCycle: normalizedCycle,
           vigencia_fin: vigenciaFin,
+          clearExpiry,
           producto: opts.producto || 'combo'
         })
       });
@@ -859,7 +885,7 @@ function getFilteredAdminDataset() {
     const appUsage = u.appUsage || (metrics.planConst !== 'free' && metrics.planArq !== 'free' ? 'ambas' : (metrics.planConst !== 'free' ? 'const' : (metrics.planArq !== 'free' ? 'arq' : 'ambas')));
 
     return {
-      no: (idx + 1).toFixed(2),
+      no: String(idx + 1),
       nombre: u.name || u.email.split('@')[0],
       correo: u.email,
       fechaRegistro: formatDate(regDate),
@@ -913,6 +939,10 @@ function getFilteredAdminDataset() {
   if (adminFilterPlan !== 'all') {
     if (adminFilterPlan === 'combo') {
       filtered = filtered.filter(d => d.isSuiteCombo);
+    } else if (adminFilterAppScope === 'const') {
+      filtered = filtered.filter(d => d.planConst === adminFilterPlan);
+    } else if (adminFilterAppScope === 'arq') {
+      filtered = filtered.filter(d => d.planArq === adminFilterPlan);
     } else if (adminFilterPlan === 'free') {
       filtered = filtered.filter(d => d.planConst === 'free' && d.planArq === 'free');
     } else {
@@ -962,6 +992,7 @@ function renderAdminTableFromCache() {
   const nextTbodyHtml = filtered.map(row => {
     const safeEmailHtml = escapeAdminHtml(row.correo);
     const safeEmailAttr = escapeAdminAttr(row.correo);
+    const safeEmailJs = escapeAdminJsString(row.correo);
     const safeNameHtml = escapeAdminHtml(row.nombre);
     const safeNameAttr = escapeAdminAttr(row.nombre);
     const safeInitialHtml = escapeAdminHtml((row.nombre || row.correo || '?').charAt(0).toUpperCase());
@@ -991,7 +1022,10 @@ function renderAdminTableFromCache() {
     // Insignia de Membresías Unificadas
     let badgeSuscripciones = '';
     if (row.isSuiteCombo) {
-      badgeSuscripciones = `<span class="px-2.5 py-0.5 rounded-full text-[10.5px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-400/40 uppercase whitespace-nowrap"><i class="fa-solid fa-crown text-[9px] mr-1"></i>Suite Completa Pro</span>`;
+      const isProSuite = row.planConst === 'pro' && row.planArq === 'pro';
+      badgeSuscripciones = isProSuite
+        ? `<span class="px-2.5 py-0.5 rounded-full text-[10.5px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-400/40 uppercase whitespace-nowrap"><i class="fa-solid fa-crown text-[9px] mr-1"></i>Suite Completa Pro</span>`
+        : `<span class="px-2.5 py-0.5 rounded-full text-[10.5px] font-extrabold bg-blue-500/20 text-blue-300 border border-blue-400/40 uppercase whitespace-nowrap"><i class="fa-solid fa-bolt text-[9px] mr-1"></i>Suite Completa Plus</span>`;
     } else {
       const bConst = row.planConst === 'pro' ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' : (row.planConst === 'plus' ? 'bg-blue-500/20 text-blue-300 border-blue-500/40' : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40');
       const bArq = row.planArq === 'pro' ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' : (row.planArq === 'plus' ? 'bg-blue-500/20 text-blue-300 border-blue-500/40' : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40');
@@ -1031,7 +1065,7 @@ function renderAdminTableFromCache() {
         <td class="px-3.5 py-2.5 font-mono text-slate-300 whitespace-nowrap">
           <div class="flex items-center justify-between gap-1.5">
             <span class="truncate max-w-[170px] block" title="${safeEmailAttr}">${safeEmailHtml}</span>
-            <button type="button" onclick="openS3BackupsAdminModal('${safeEmailAttr}')"
+            <button type="button" onclick="openS3BackupsAdminModal('${safeEmailJs}')"
                     class="text-slate-500 hover:text-emerald-400 p-1 rounded hover:bg-slate-800 transition cursor-pointer shrink-0"
                     title="Ver respaldos S3 de ${safeEmailAttr}">
               <i class="fa-solid fa-cloud-arrow-down text-[11px]"></i>
@@ -1055,7 +1089,7 @@ function renderAdminTableFromCache() {
               <i class="fa-solid fa-shield-halved text-[9px]"></i> Maestro
             </span>
           ` : `
-            <button type="button" onclick="openEditMembershipModal('${safeEmailAttr}')"
+            <button type="button" onclick="openEditMembershipModal('${safeEmailJs}')"
                     class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/30 text-amber-300 border border-amber-500/35 text-[11px] font-bold transition shadow-xs cursor-pointer"
                     title="Editar membresías y vigencia de ${safeEmailAttr}">
               <i class="fa-solid fa-pen-to-square text-[10px]"></i>
@@ -1105,7 +1139,11 @@ function renderAdminTableFromCache() {
 function updateAdminKpisUI(dataset) {
   const totalUsers = dataset.length;
   const activeUsers = dataset.filter(d => d.actividad === 'activo').length;
-  const totalRevenue = dataset.reduce((acc, curr) => acc + (curr.gastoSuscripcion || 0), 0);
+  const totalRevenue = dataset.reduce((acc, curr) => {
+    if (adminFilterAppScope === 'const') return acc + (curr.gastoConst || 0);
+    if (adminFilterAppScope === 'arq') return acc + (curr.gastoArq || 0);
+    return acc + (curr.gastoSuscripcion || 0);
+  }, 0);
   const totalResourceCost = dataset.reduce((acc, curr) => acc + (curr.costoRecursos || 0), 0);
   const grossMargin = totalRevenue > 0 ? Number((((totalRevenue - totalResourceCost) / totalRevenue) * 100).toFixed(1)) : 0;
 
@@ -1288,12 +1326,7 @@ export function renderCoAdminsListUI() {
     const safeName = escapeAdminHtml(admin.name || admin.email);
     const safeEmailHtml = escapeAdminHtml(admin.email);
     const safeEmailAttr = escapeAdminAttr(admin.email);
-    const safeEmailJsArg = escapeAdminAttr(
-      String(admin.email || '')
-        .replace(/\\/g, '\\\\')
-        .replace(/'/g, "\\'")
-        .replace(/"/g, '\\"')
-    );
+    const safeEmailJsArg = escapeAdminJsString(admin.email);
     return `
     <div class="p-3 bg-slate-900 border border-slate-800 rounded-xl flex items-center justify-between gap-3 text-xs">
       <div class="flex items-center gap-2.5 min-w-0">
@@ -1415,7 +1448,9 @@ export function printCubikarAdminTable() {
         const actText = r.actividad === 'activo' ? 'ACTIVO' : (r.actividad === 'reposo' ? 'REPOSO' : 'INACTIVO');
         const actClass = r.actividad === 'activo' ? 'badge-active' : (r.actividad === 'reposo' ? 'badge-rest' : 'badge-inactive');
         const memHtml = r.isSuiteCombo
-          ? `<span class="badge-pro">SUITE COMPLETA PRO</span>`
+          ? ((r.planConst === 'pro' && r.planArq === 'pro')
+              ? `<span class="badge-pro">SUITE COMPLETA PRO</span>`
+              : `<span class="badge-plan">SUITE COMPLETA PLUS</span>`)
           : `<span class="badge-plan">Const: ${escapeAdminHtml(String(r.planConst || 'free').toUpperCase())}</span> <span class="badge-plan">Arq: ${escapeAdminHtml(String(r.planArq || 'free').toUpperCase())}</span>`;
         const cycleText = r.billingCycle === 'annual' ? 'Anual' : 'Mensual';
         const rowBg = idx % 2 === 1 ? '#f8fafc' : '#ffffff';
@@ -1738,11 +1773,19 @@ async function fetchS3BackupManifestFromApi(email, dateStr = '') {
   try {
     const qs = new URLSearchParams({ action: 's3_backups', email });
     if (dateStr) qs.set('date', dateStr);
-    const res = await fetch(`/api/admin-users?${qs.toString()}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    const data = await res.json();
-    if (!res.ok) {
+    const endpoints = ['/api/admin-users', 'https://const.cubikar.app/api/admin-users'];
+    let res = null;
+    let data = {};
+    for (const ep of endpoints) {
+      try {
+        res = await fetch(`${ep}?${qs.toString()}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        data = await res.json().catch(() => ({}));
+        if (res.ok || res.status === 401 || res.status === 403 || res.status === 400) break;
+      } catch (_) {}
+    }
+    if (!res || !res.ok) {
       bodyEl.innerHTML = `<div class="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300">${escapeAdminHtml(data?.error || 'Error consultando respaldos S3.')}</div>`;
       return;
     }
@@ -1779,7 +1822,7 @@ async function fetchS3BackupManifestFromApi(email, dateStr = '') {
 
     const m = data.manifest;
     const projects = Array.isArray(m.projects) ? m.projects : [];
-    const safeCuentaKey = escapeAdminAttr(m.cuentaKey || '');
+    const safeCuentaKeyJs = escapeAdminJsString(m.cuentaKey || '');
     const safeEmailArg = escapeAdminAttr(email);
 
     bodyEl.innerHTML = `
@@ -1798,7 +1841,7 @@ async function fetchS3BackupManifestFromApi(email, dateStr = '') {
         </div>
       </div>
 
-      ${safeCuentaKey ? `
+      ${safeCuentaKeyJs ? `
         <div class="p-3.5 rounded-xl bg-[#07080c] border border-white/10 flex items-center justify-between gap-3">
           <div class="min-w-0">
             <div class="font-bold text-white flex items-center gap-1.5">
@@ -1807,7 +1850,7 @@ async function fetchS3BackupManifestFromApi(email, dateStr = '') {
             </div>
             <div class="text-[10.5px] font-mono text-slate-400 truncate mt-0.5">${escapeAdminHtml(m.cuentaKey)} (${formatBytesShort(m.cuentaBytes)})</div>
           </div>
-          <button type="button" onclick="downloadS3BackupObject('${safeCuentaKey}', this)"
+          <button type="button" onclick="downloadS3BackupObject('${safeCuentaKeyJs}', this)"
                   class="px-3 py-1.5 rounded-lg bg-sky-600/20 hover:bg-sky-600 text-sky-300 hover:text-white border border-sky-500/30 font-bold text-xs transition shrink-0 cursor-pointer flex items-center gap-1.5">
             <i class="fa-solid fa-download"></i>
             <span>cuenta.json.gz</span>
@@ -1828,7 +1871,7 @@ async function fetchS3BackupManifestFromApi(email, dateStr = '') {
                 ${escapeAdminHtml(p.id)} • ${formatBytesShort(p.compressedBytes)} • ${(p.counts?.catalogo_conceptos || 0)} conceptos • ${(p.counts?.bitacora_notas || 0)} bitácora
               </div>
             </div>
-            <button type="button" onclick="downloadS3BackupObject('${escapeAdminAttr(p.s3Key || '')}', this)"
+            <button type="button" onclick="downloadS3BackupObject('${escapeAdminJsString(p.s3Key || '')}', this)"
                     class="px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/30 font-bold text-xs transition shrink-0 cursor-pointer flex items-center gap-1.5">
               <i class="fa-solid fa-download"></i>
               <span>.json.gz</span>
@@ -1913,16 +1956,24 @@ export async function downloadS3BackupObject(s3Key, btnEl = null) {
   if (btnEl) btnEl.disabled = true;
   try {
     const { token } = await getAdminSessionContext();
-    const res = await fetch('/api/admin-users', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify({ action: 'presign_s3_backup', s3Key })
-    });
-    const data = await res.json();
-    if (!res.ok || !data?.downloadUrl) {
+    const endpoints = ['/api/admin-users', 'https://const.cubikar.app/api/admin-users'];
+    let res = null;
+    let data = {};
+    for (const ep of endpoints) {
+      try {
+        res = await fetch(ep, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({ action: 'presign_s3_backup', s3Key })
+        });
+        data = await res.json().catch(() => ({}));
+        if (res.ok || res.status === 401 || res.status === 403 || res.status === 400) break;
+      } catch (_) {}
+    }
+    if (!res || !res.ok || !data?.downloadUrl) {
       alert(data?.error || 'No se pudo obtener el enlace temporal de descarga S3.');
       return;
     }
@@ -2023,7 +2074,10 @@ export function openEditMembershipModal(userEmail) {
 
   if (badgesEl) {
     if (metrics.isSuiteCombo) {
-      badgesEl.innerHTML = `<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-400/40 uppercase">Suite Pro</span>`;
+      const isProSuite = metrics.planConst === 'pro' && metrics.planArq === 'pro';
+      badgesEl.innerHTML = isProSuite
+        ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-400/40 uppercase">Suite Pro</span>`
+        : `<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-500/20 text-blue-300 border border-blue-400/40 uppercase">Suite Plus</span>`;
     } else {
       badgesEl.innerHTML = `
         <span class="px-1.5 py-0.5 rounded text-[9.5px] font-bold bg-slate-800 text-amber-300 border border-amber-500/30 uppercase">C: ${escapeAdminHtml(metrics.planConst)}</span>
@@ -2040,9 +2094,9 @@ export function openEditMembershipModal(userEmail) {
   if (radioMonthly) radioMonthly.checked = !isAnnual;
 
   const expiryRaw = user.periodoFin || user.periodo_fin || user.periodoFinConst || user.periodo_fin_const || user.periodoFinArq || user.periodo_fin_arq || user.vigenciaFin;
-  let targetDate = expiryRaw ? new Date(expiryRaw) : new Date(regDate.getTime() + 365 * 24 * 60 * 60 * 1000);
+  let targetDate = expiryRaw ? new Date(expiryRaw) : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
   if (Number.isNaN(targetDate.getTime())) {
-    targetDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    targetDate = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
   }
   if (dateInput) {
     dateInput.value = formatDateInputYYYYMMDD(targetDate);
@@ -2090,9 +2144,16 @@ export function applyComboProToEditModal() {
   const selConst = document.getElementById('edit-member-plan-const');
   const selArq = document.getElementById('edit-member-plan-arq');
   const radioAnnual = document.getElementById('edit-member-cycle-annual');
+  const dateInput = document.getElementById('edit-member-expiry-date');
   if (selConst) selConst.value = 'pro';
   if (selArq) selArq.value = 'pro';
   if (radioAnnual) radioAnnual.checked = true;
+  if (dateInput) {
+    const parsed = dateInput.value ? new Date(`${dateInput.value}T23:59:59.000Z`) : null;
+    if (!parsed || Number.isNaN(parsed.getTime()) || parsed.getTime() < Date.now()) {
+      setEditModalPresetDate(12);
+    }
+  }
 }
 
 export async function saveUserMembershipFromModal() {
@@ -2110,7 +2171,7 @@ export async function saveUserMembershipFromModal() {
   const billingCycle = radioAnnual?.checked ? 'annual' : 'monthly';
   const dateVal = dateInput?.value || '';
   const vigenciaFin = dateVal ? new Date(`${dateVal}T23:59:59.000Z`).toISOString() : null;
-  const isCombo = planConst === 'pro' && planArq === 'pro';
+  const isCombo = (planConst === 'pro' && planArq === 'pro') || (planConst === 'plus' && planArq === 'plus');
 
   if (statusEl) {
     statusEl.className = 'hidden p-3 rounded-xl text-xs font-semibold';
@@ -2129,7 +2190,8 @@ export async function saveUserMembershipFromModal() {
       planArq,
       isCombo,
       billingCycle,
-      vigenciaFin
+      vigenciaFin,
+      clearExpiry: !dateVal
     });
 
     closeEditMembershipModal();

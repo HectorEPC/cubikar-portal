@@ -2,8 +2,8 @@
 // Manejador de Autenticación, Registro y Estado de Sesión en el Portal Central Cubikar
 // Totalmente sincronizado con Supabase Auth y los esquemas de ADM_CONST y ADM_ARQ
 
-import { getSupabase, SUPABASE_CONFIG } from './supabaseClient.js?v=20261119_cf37';
-import { CUBIKAR_SUB_TEST_MODE } from './checkout.js?v=20261119_cf37';
+import { getSupabase, SUPABASE_CONFIG } from './supabaseClient.js?v=20261119_cf39';
+import { CUBIKAR_SUB_TEST_MODE } from './checkout.js?v=20261119_cf39';
 import {
   writeSharedSsoCookie,
   clearSharedSsoCookie,
@@ -13,7 +13,7 @@ import {
   scrubSsoHashParams,
   getLastSignOutTimestamp,
   buildSsoTargetUrl
-} from './ssoHelper.js?v=20261119_cf37';
+} from './ssoHelper.js?v=20261119_cf39';
 
 export const GOOGLE_CLIENT_ID = '1097638023851-36b44hlrj7fgslfcmqlvf77dk89h7eus.apps.googleusercontent.com';
 export const STORAGE_KEY_CLOSED_SESSIONS = 'control_obra_closed_sessions_v1';
@@ -52,6 +52,31 @@ let inFlightProfilePromise = null;
 let inFlightProfileUserId = null;
 let loadedProfileUserId = null;
 let lastProfileLoadedAt = 0;
+
+const OAUTH_PENDING_STORAGE_KEY = 'cubikar_oauth_pending_ts';
+const INITIAL_URL_HAS_RECOVERY = typeof window !== 'undefined' &&
+  /(?:[?&#])type=recovery(?:&|$)/i.test(`${window.location.search || ''}${window.location.hash || ''}`);
+const INITIAL_URL_OAUTH_RETURN = typeof window !== 'undefined' && !INITIAL_URL_HAS_RECOVERY && (
+  /(?:^|[#&])(access_token|refresh_token)=/.test(window.location.hash || '') ||
+  new URLSearchParams(window.location.search || '').has('code')
+);
+
+function isRecentOAuthPending() {
+  if (INITIAL_URL_OAUTH_RETURN) return true;
+  try {
+    if (typeof sessionStorage === 'undefined') return false;
+    const ts = Number(sessionStorage.getItem(OAUTH_PENDING_STORAGE_KEY) || '0') || 0;
+    return ts > 0 && (Date.now() - ts) < 180000;
+  } catch (_) {
+    return false;
+  }
+}
+
+function clearPendingOAuthFlag() {
+  try {
+    if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem(OAUTH_PENDING_STORAGE_KEY);
+  } catch (_) {}
+}
 
 export function getClosedSessionsList() {
   try {
@@ -521,15 +546,16 @@ export async function initAuth(onStateChange) {
       const email = (session.user.email || '').toLowerCase().trim();
       const closedList = getClosedSessionsList();
       const isClosed = closedList.includes(email);
-      const isOAuthRedirect = typeof window !== 'undefined' && (
+      const isOAuthRedirect = isRecentOAuthPending() || (typeof window !== 'undefined' && !INITIAL_URL_HAS_RECOVERY && (
         window.location.hash.includes('cubikar_sso_') ||
         window.location.hash.includes('access_token') ||
         new URLSearchParams(window.location.search).has('code')
-      );
+      ));
       const isExplicitInteractive = explicitAuthDepth > 0 || ssoHydrationInProgress || isOAuthRedirect;
 
       if (isExplicitInteractive) {
         markSessionOpen(email);
+        clearPendingOAuthFlag();
       } else if (isClosed) {
         console.info(`[Portal Auth] Bloqueando auto-sesión pasiva (${event}) por sesión cerrada previamente (${email}).`);
         currentUser = null;
@@ -616,7 +642,10 @@ export async function initAuth(onStateChange) {
     if (session?.user) {
       const email = (session.user.email || '').toLowerCase().trim();
       const incomingSameEmail = Boolean(incomingHashTokens?.email && incomingHashTokens.email === email);
-      if (closedList.includes(email) && !incomingSameEmail) {
+      if (isRecentOAuthPending()) {
+        markSessionOpen(email);
+        clearPendingOAuthFlag();
+      } else if (closedList.includes(email) && !incomingSameEmail) {
         console.info(`[Portal Auth] Sesión persistida pertenece a usuario con sesión cerrada (${email}). Purgando.`);
         clearLocalSupabaseTokens();
         clearLocalUserStorage();
@@ -635,16 +664,25 @@ export async function initAuth(onStateChange) {
       resetProfileCache();
     }
 
+    const localTokens = readLocalSupabaseTokens();
     const cookieEmail = (cookieTokens?.email || '').toLowerCase().trim();
     const cookieTargetsDifferentUser = Boolean(
       cookieEmail &&
       cookieEmail !== activeEmail &&
       (!closedList.includes(cookieEmail) || (cookieTokens?.ts > 0 && lastSignOutTs > 0 && cookieTokens.ts > lastSignOutTs))
     );
+    const cookieNewerSameUser = Boolean(
+      cookieEmail &&
+      cookieEmail === activeEmail &&
+      cookieTokens?.refreshToken &&
+      session?.refresh_token !== cookieTokens.refreshToken &&
+      (cookieTokens?.ts || 0) > (localTokens?.ts || 0) &&
+      !(lastSignOutTs > 0 && cookieTokens.ts > 0 && cookieTokens.ts <= lastSignOutTs)
+    );
     const hashTargetsDifferentUser = Boolean(incomingHashTokens?.email && incomingHashTokens.email !== activeEmail);
     const hashTargetsNewToken = Boolean(incomingHashTokens?.refreshToken && session?.refresh_token !== incomingHashTokens.refreshToken);
 
-    if (!session?.user || error || hashTargetsDifferentUser || hashTargetsNewToken || cookieTargetsDifferentUser) {
+    if (!session?.user || error || hashTargetsDifferentUser || hashTargetsNewToken || cookieTargetsDifferentUser || cookieNewerSameUser) {
       const ssoSession = await tryHydrateSsoSession(sb);
       if (ssoSession?.user) {
         session = ssoSession;
@@ -850,6 +888,11 @@ export async function loginWithGoogle() {
 
   explicitAuthDepth += 1;
   try {
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.setItem(OAUTH_PENDING_STORAGE_KEY, String(Date.now()));
+    }
+  } catch (_) {}
+  try {
     const { data, error } = await sb.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -863,6 +906,7 @@ export async function loginWithGoogle() {
     if (error) throw error;
     return data;
   } catch (err) {
+    clearPendingOAuthFlag();
     explicitAuthDepth = Math.max(0, explicitAuthDepth - 1);
     throw err;
   }
@@ -964,6 +1008,29 @@ export async function loginWithGoogleIdToken(idToken, rawNonce) {
   } finally {
     setTimeout(() => { explicitAuthDepth = Math.max(0, explicitAuthDepth - 1); }, 1000);
   }
+}
+
+export async function resetPasswordForEmail(email) {
+  const sb = getSupabase();
+  if (!sb) throw new Error('Servidor de autenticación no disponible. Por favor recarga la página.');
+  const cleanEmail = String(email || '').trim().toLowerCase();
+  if (!cleanEmail) throw new Error('Ingresa un correo electrónico válido.');
+  const { data, error } = await sb.auth.resetPasswordForEmail(cleanEmail, {
+    redirectTo: `${window.location.origin}/?type=recovery#type=recovery`
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function updatePassword(newPassword) {
+  const sb = getSupabase();
+  if (!sb) throw new Error('Servidor de autenticación no disponible. Por favor recarga la página.');
+  if (!newPassword || newPassword.length < 6) {
+    throw new Error('La nueva contraseña debe tener al menos 6 caracteres.');
+  }
+  const { data, error } = await sb.auth.updateUser({ password: newPassword });
+  if (error) throw error;
+  return data;
 }
 
 /**
@@ -1133,12 +1200,12 @@ export function resolveUserProfileAndPlan(user, profile, company) {
 
   const rawConstPlan = constExpired
     ? 'free'
-    : ((company?.acceso_const === false && !company?.plan_const)
+    : (company?.acceso_const === false
       ? 'free'
       : (company?.plan_const || legacyFallbackPlan || 'free'));
   const rawArqPlan = arqExpired
     ? 'free'
-    : ((company?.acceso_arq === false && !company?.plan_arq)
+    : (company?.acceso_arq === false
       ? 'free'
       : (company?.plan_arq || legacyFallbackPlan || 'free'));
 
@@ -1151,14 +1218,18 @@ export function resolveUserProfileAndPlan(user, profile, company) {
 
   const accesoConst = constExpired
     ? false
-    : (company?.acceso_const != null
-      ? Boolean(company.acceso_const)
-      : (effectiveConstPlan !== 'free'));
+    : (CUBIKAR_SUB_TEST_MODE
+      ? true
+      : (company?.acceso_const != null
+        ? Boolean(company.acceso_const)
+        : (effectiveConstPlan !== 'free')));
   const accesoArq = arqExpired
     ? false
-    : (company?.acceso_arq != null
-      ? Boolean(company.acceso_arq)
-      : (effectiveArqPlan !== 'free'));
+    : (CUBIKAR_SUB_TEST_MODE
+      ? true
+      : (company?.acceso_arq != null
+        ? Boolean(company.acceso_arq)
+        : (effectiveArqPlan !== 'free')));
 
   const effectiveCompanyPlan = (constExpired && arqExpired) ? 'free' : company?.plan;
   const plan = (effectiveCompanyPlan === 'pro' || effectiveConstPlan === 'pro' || effectiveArqPlan === 'pro')

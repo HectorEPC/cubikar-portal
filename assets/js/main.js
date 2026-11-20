@@ -1,10 +1,10 @@
 // assets/js/main.js
 // Controlador interactivo sincronizado al 100% con ADM_CONST y ADM_ARQ
 
-import { CONST_TIERS, ARQ_TIERS, COMBO_TIERS, redirectToStripeCheckout, openCustomerPortal, CUBIKAR_SUB_TEST_MODE } from './checkout.js?v=20261119_cf37';
-import { downloadFullEcosystemBackup } from './exportBackup.js?v=20261119_cf37';
-import { initAppSwitcher } from './appSwitcher.js?v=20261119_cf37';
-import { initShowcaseRuleta } from './showcaseRuleta.js?v=20261119_cf37';
+import { CONST_TIERS, ARQ_TIERS, COMBO_TIERS, redirectToStripeCheckout, openCustomerPortal, CUBIKAR_SUB_TEST_MODE } from './checkout.js?v=20261119_cf39';
+import { downloadFullEcosystemBackup } from './exportBackup.js?v=20261119_cf39';
+import { initAppSwitcher } from './appSwitcher.js?v=20261119_cf39';
+import { initShowcaseRuleta } from './showcaseRuleta.js?v=20261119_cf39';
 import { 
   isUserAdmin, 
   openCubikarAdminModal,
@@ -37,7 +37,7 @@ import {
   setEditModalPresetDate,
   applyComboProToEditModal,
   saveUserMembershipFromModal
-} from './cubikarAdmin.js?v=20261119_cf37';
+} from './cubikarAdmin.js?v=20261119_cf39';
 import { 
   initAuth, 
   syncSubscriptionFromCloud,
@@ -47,8 +47,10 @@ import {
   mountGoogleSignInButton, 
   logout, 
   getCurrentState,
-  buildSsoUrl
-} from './auth.js?v=20261119_cf37';
+  buildSsoUrl,
+  resetPasswordForEmail,
+  updatePassword
+} from './auth.js?v=20261119_cf39';
 
 function showPortalNotification(message, type = 'info') {
   try {
@@ -72,9 +74,10 @@ function showPortalNotification(message, type = 'info') {
 
 let currentBillingCycle = 'monthly'; // 'monthly' | 'annual'
 let currentPricingProduct = 'const'; // 'const' | 'arq' | 'combo'
-let currentAuthMode = 'login';       // 'login' | 'register'
+let currentAuthMode = 'login';       // 'login' | 'register' | 'recovery'
 let googleAuthInProgress = false;
 let googleAuthWatchdog = null;
+let emailAuthSubmitting = false;
 
 const PENDING_CHECKOUT_KEY = 'cubikar_pending_checkout';
 const CHECKOUT_VERIFY_ATTEMPTS = 6;
@@ -130,6 +133,7 @@ function exposeGlobalHandlers() {
     openAuthModal,
     closeAuthModal,
     toggleAuthMode,
+    handleForgotPasswordClick,
     openAppChooserModal,
     closeAppChooserModal,
     handleAuthSubmit,
@@ -194,9 +198,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const urlParams = new URLSearchParams(window.location.search);
   const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
-  const isOAuthReturn = hashParams.has('access_token') || urlParams.has('code');
+  const isRecoveryReturn = hashParams.get('type') === 'recovery' || urlParams.get('type') === 'recovery';
+  const isOAuthReturn = !isRecoveryReturn && (hashParams.has('access_token') || urlParams.has('code'));
   const pagoParam = urlParams.get('pago');
   let handledOAuthReturn = false;
+  let handledRecoveryModal = false;
 
   // 1. Inicializar App Switcher (Selector de Apps de 9 puntos)
   initAppSwitcher('cubikar-app-switcher-mount', 'portal');
@@ -233,6 +239,12 @@ document.addEventListener('DOMContentLoaded', async () => {
           .then(() => updateAuthUI(getCurrentState()))
           .catch(() => {});
       }
+      if ((state.event === 'PASSWORD_RECOVERY' || (isRecoveryReturn && !handledRecoveryModal)) && !handledRecoveryModal) {
+        handledRecoveryModal = true;
+        window.history.replaceState({}, document.title, window.location.pathname);
+        openAuthModal('recovery');
+        return;
+      }
       if (isOAuthReturn && !handledOAuthReturn) {
         handledOAuthReturn = true;
         window.history.replaceState({}, document.title, window.location.pathname);
@@ -240,7 +252,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
       const authModal = document.getElementById('modal-auth');
-      if (authModal && !authModal.classList.contains('hidden') && !googleAuthInProgress && state.event === 'SIGNED_IN') {
+      if (authModal && !authModal.classList.contains('hidden') && !googleAuthInProgress && !emailAuthSubmitting && state.event === 'SIGNED_IN' && currentAuthMode !== 'recovery') {
         completeAuthAndOpenChooser();
       }
     } else {
@@ -668,36 +680,63 @@ export function openAuthModal(mode = 'login') {
   const companyContainer = document.getElementById('auth-company-container');
   const nameInput = document.getElementById('auth-name');
   const companyInput = document.getElementById('auth-company');
+  const emailInput = document.getElementById('auth-email');
+  const emailWrap = emailInput?.closest('div');
+  const forgotBtn = document.getElementById('auth-forgot-password-btn');
   const submitBtn = document.getElementById('auth-submit-btn');
   const toggleBtn = document.getElementById('auth-toggle-mode-btn');
 
   const testModeNotice = document.getElementById('auth-test-mode-notice');
   if (testModeNotice) {
-    if (CUBIKAR_SUB_TEST_MODE) {
+    if (CUBIKAR_SUB_TEST_MODE && mode !== 'recovery') {
       testModeNotice.classList.remove('hidden');
     } else {
       testModeNotice.classList.add('hidden');
     }
   }
 
-  if (mode === 'login') {
+  if (mode === 'recovery') {
+    if (modalTitle) modalTitle.textContent = 'Restablecer Contraseña';
+    if (modalSubtitle) modalSubtitle.textContent = 'Ingresa tu nueva contraseña (mínimo 6 caracteres)';
+    if (nameContainer) nameContainer.classList.add('hidden');
+    if (companyContainer) companyContainer.classList.add('hidden');
+    if (emailWrap) emailWrap.classList.add('hidden');
+    if (emailInput) emailInput.required = false;
+    if (nameInput) nameInput.required = false;
+    if (companyInput) companyInput.required = false;
+    if (forgotBtn) forgotBtn.classList.add('hidden');
+    if (submitBtn) submitBtn.textContent = 'Guardar Nueva Contraseña';
+    if (toggleBtn) toggleBtn.classList.add('hidden');
+  } else if (mode === 'login') {
     if (modalTitle) modalTitle.textContent = 'Acceso al Ecosistema';
     if (modalSubtitle) modalSubtitle.textContent = 'Ingresa con tu cuenta unificada de Cubikar';
     if (nameContainer) nameContainer.classList.add('hidden');
     if (companyContainer) companyContainer.classList.add('hidden');
+    if (emailWrap) emailWrap.classList.remove('hidden');
+    if (emailInput) emailInput.required = true;
     if (nameInput) nameInput.required = false;
     if (companyInput) companyInput.required = false;
+    if (forgotBtn) forgotBtn.classList.remove('hidden');
     if (submitBtn) submitBtn.textContent = 'Iniciar Sesión';
-    if (toggleBtn) toggleBtn.innerHTML = '¿No tienes cuenta? <span class="font-bold text-blue-400">Regístrate aquí</span>';
+    if (toggleBtn) {
+      toggleBtn.classList.remove('hidden');
+      toggleBtn.innerHTML = '¿No tienes cuenta? <span class="font-bold text-blue-400">Regístrate aquí</span>';
+    }
   } else {
     if (modalTitle) modalTitle.textContent = 'Crear Cuenta en Cubikar';
     if (modalSubtitle) modalSubtitle.textContent = CUBIKAR_SUB_TEST_MODE ? 'Acceso de cortesía a Plan Plus durante evaluación' : 'Comienza a gestionar tus proyectos y obras';
     if (nameContainer) nameContainer.classList.remove('hidden');
     if (companyContainer) companyContainer.classList.remove('hidden');
+    if (emailWrap) emailWrap.classList.remove('hidden');
+    if (emailInput) emailInput.required = true;
     if (nameInput) nameInput.required = true;
     if (companyInput) companyInput.required = false;
+    if (forgotBtn) forgotBtn.classList.add('hidden');
     if (submitBtn) submitBtn.textContent = CUBIKAR_SUB_TEST_MODE ? 'Crear Cuenta (Plan Plus Beta Gratis)' : 'Crear Cuenta Gratis';
-    if (toggleBtn) toggleBtn.innerHTML = '¿Ya tienes cuenta? <span class="font-bold text-blue-400">Inicia sesión aquí</span>';
+    if (toggleBtn) {
+      toggleBtn.classList.remove('hidden');
+      toggleBtn.innerHTML = '¿Ya tienes cuenta? <span class="font-bold text-blue-400">Inicia sesión aquí</span>';
+    }
   }
 
   modal?.classList.remove('hidden');
@@ -716,9 +755,11 @@ function resetModalAuthControls() {
   if (submitBtn) {
     submitBtn.disabled = false;
     submitBtn.classList.remove('opacity-60', 'cursor-not-allowed');
-    submitBtn.textContent = currentAuthMode === 'login'
-      ? 'Iniciar Sesión'
-      : (CUBIKAR_SUB_TEST_MODE ? 'Crear Cuenta (Plan Plus Beta Gratis)' : 'Crear Cuenta Gratis');
+    submitBtn.textContent = currentAuthMode === 'recovery'
+      ? 'Guardar Nueva Contraseña'
+      : (currentAuthMode === 'login'
+          ? 'Iniciar Sesión'
+          : (CUBIKAR_SUB_TEST_MODE ? 'Crear Cuenta (Plan Plus Beta Gratis)' : 'Crear Cuenta Gratis'));
   }
 }
 
@@ -726,21 +767,43 @@ function completeAuthAndOpenChooser() {
   resetModalAuthControls();
   closeAuthModal();
   updateAuthUI(getCurrentState());
+  let pendingCheckout = null;
   let pendingProd = window.__cubikarPendingProductIntent || null;
   try {
-    if (!pendingProd && typeof sessionStorage !== 'undefined') {
-      pendingProd = sessionStorage.getItem('cubikar_pending_product_intent');
-    }
     if (typeof sessionStorage !== 'undefined') {
+      const rawIntent = sessionStorage.getItem('cubikar_pending_checkout_intent');
+      if (rawIntent) {
+        pendingCheckout = JSON.parse(rawIntent);
+        sessionStorage.removeItem('cubikar_pending_checkout_intent');
+      }
+      if (!pendingProd) pendingProd = sessionStorage.getItem('cubikar_pending_product_intent');
       sessionStorage.removeItem('cubikar_pending_product_intent');
     }
     window.__cubikarPendingProductIntent = null;
   } catch (_) {}
+  if (pendingCheckout && pendingCheckout.planId && !CUBIKAR_SUB_TEST_MODE) {
+    redirectToStripeCheckout(pendingCheckout.product || 'const', pendingCheckout.planId, pendingCheckout.cycle || 'monthly');
+    return;
+  }
   if (pendingProd === 'const' || pendingProd === 'arq') {
     launchApp(pendingProd);
     return;
   }
   openAppChooserModal();
+}
+
+export async function handleForgotPasswordClick() {
+  hideAuthMessages();
+  const emailInput = document.getElementById('auth-email');
+  const currentEmail = (emailInput?.value || '').trim();
+  const targetEmail = currentEmail || (typeof prompt === 'function' ? (prompt('Ingresa tu correo electrónico registrado para enviarte el enlace de recuperación:') || '').trim() : '');
+  if (!targetEmail) return;
+  try {
+    await resetPasswordForEmail(targetEmail);
+    showAuthSuccess('Te enviamos un enlace para restablecer tu contraseña. Revisa tu bandeja de entrada o spam.');
+  } catch (err) {
+    showAuthError(err?.message || 'No se pudo enviar el correo de recuperación.');
+  }
 }
 
 export function closeAuthModal() {
@@ -826,6 +889,31 @@ export async function handleAuthSubmit(e) {
   const fullName = nameInput?.value?.trim() || '';
   const company = companyInput?.value?.trim() || '';
 
+  if (currentAuthMode === 'recovery') {
+    if (!password || password.length < 6) {
+      showAuthError('La nueva contraseña debe tener al menos 6 caracteres.');
+      return;
+    }
+    const originalBtnText = submitBtn ? submitBtn.innerHTML : 'Guardar Nueva Contraseña';
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Actualizando...';
+    }
+    try {
+      await updatePassword(password);
+      currentAuthMode = 'login';
+      completeAuthAndOpenChooser();
+      showPortalNotification('Contraseña actualizada correctamente.', 'success');
+    } catch (err) {
+      showAuthError(err?.message || 'No se pudo actualizar la contraseña.');
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnText;
+      }
+    }
+    return;
+  }
+
   if (!email || !password) {
     showAuthError('Por favor ingresa tu correo y contraseña.');
     return;
@@ -837,6 +925,7 @@ export async function handleAuthSubmit(e) {
     submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> ${currentAuthMode === 'login' ? 'Iniciando sesión...' : 'Creando cuenta...'}`;
   }
 
+  emailAuthSubmitting = true;
   try {
     if (currentAuthMode === 'login') {
       await loginWithEmail(email, password);
@@ -876,6 +965,8 @@ export async function handleAuthSubmit(e) {
       submitBtn.disabled = false;
       submitBtn.innerHTML = originalBtnText;
     }
+  } finally {
+    emailAuthSubmitting = false;
   }
 }
 
@@ -983,6 +1074,13 @@ export function updateAuthUI(state) {
     if (dashAdminSec) dashAdminSec.classList.add('hidden');
     const chooserAdminSec = document.getElementById('app-chooser-admin-section');
     if (chooserAdminSec) chooserAdminSec.classList.add('hidden');
+    ['modal-dashboard', 'modal-app-chooser', 'modal-admin-cubikar', 'modal-admin-edit-membership', 'modal-admin-s3-backups', 'modal-admin-coadmins', 'modal-admin-market-rates'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.classList.add('hidden');
+        if (el.style.display === 'flex') el.style.display = 'none';
+      }
+    });
   }
 }
 

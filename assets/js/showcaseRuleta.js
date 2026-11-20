@@ -233,6 +233,7 @@ function pauseProgressBar() {
 }
 
 function resumeProgressBar() {
+  stopAutoPlay();
   const bar = document.getElementById('ruleta-progress-bar');
   if (bar && remainingTime > 0) {
     bar.style.transition = `width ${remainingTime}ms linear`;

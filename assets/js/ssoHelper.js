@@ -226,7 +226,21 @@ export function buildSsoTargetUrl(targetUrl, tokens, remember = true) {
 
 export function appendSsoToUrlFromStorage(targetUrl, remember = null) {
   if (!targetUrl || targetUrl === '#') return targetUrl;
-  const tokens = readLocalSupabaseTokens() || readSharedSsoCookie();
+  const localTokens = readLocalSupabaseTokens();
+  const cookieTokens = readSharedSsoCookie();
+  const lastSignOutTs = getLastSignOutTimestamp();
+  const validCookie = cookieTokens && !(lastSignOutTs > 0 && cookieTokens.ts > 0 && cookieTokens.ts <= lastSignOutTs)
+    ? cookieTokens
+    : null;
+  let tokens = localTokens;
+  if (!tokens && validCookie) {
+    tokens = validCookie;
+  } else if (tokens && validCookie && validCookie.refreshToken) {
+    const sameEmail = !tokens.email || !validCookie.email || tokens.email === validCookie.email;
+    if (sameEmail && (validCookie.ts || 0) > (tokens.ts || 0)) {
+      tokens = validCookie;
+    }
+  }
   if (!tokens) return targetUrl;
   let effectiveRemember = remember;
   if (effectiveRemember === null && typeof localStorage !== 'undefined') {
