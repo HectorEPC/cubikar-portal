@@ -2,8 +2,8 @@
 // Manejador de Autenticación, Registro y Estado de Sesión en el Portal Central Cubikar
 // Totalmente sincronizado con Supabase Auth y los esquemas de ADM_CONST y ADM_ARQ
 
-import { getSupabase, SUPABASE_CONFIG } from './supabaseClient.js?v=20261119_cf36';
-import { CUBIKAR_SUB_TEST_MODE } from './checkout.js?v=20261119_cf36';
+import { getSupabase, SUPABASE_CONFIG } from './supabaseClient.js?v=20261119_cf37';
+import { CUBIKAR_SUB_TEST_MODE } from './checkout.js?v=20261119_cf37';
 import {
   writeSharedSsoCookie,
   clearSharedSsoCookie,
@@ -13,7 +13,7 @@ import {
   scrubSsoHashParams,
   getLastSignOutTimestamp,
   buildSsoTargetUrl
-} from './ssoHelper.js?v=20261119_cf36';
+} from './ssoHelper.js?v=20261119_cf37';
 
 export const GOOGLE_CLIENT_ID = '1097638023851-36b44hlrj7fgslfcmqlvf77dk89h7eus.apps.googleusercontent.com';
 export const STORAGE_KEY_CLOSED_SESSIONS = 'control_obra_closed_sessions_v1';

@@ -1,8 +1,8 @@
 // assets/js/exportBackup.js
 // Motor de Exportación y Descarga de Respaldo Completo del Ecosistema Cubikar (datos reales nube + local)
 
-import { getSupabase } from './supabaseClient.js?v=20261119_cf36';
-import { loadJSZip } from './libLoader.js?v=20261119_cf36';
+import { getSupabase } from './supabaseClient.js?v=20261119_cf37';
+import { loadJSZip } from './libLoader.js?v=20261119_cf37';
 
 export const BACKUP_PAGE_SIZE = 1000;
 export const BACKUP_ID_BATCH_SIZE = 150;

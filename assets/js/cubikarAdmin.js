@@ -2,9 +2,9 @@
 // Módulo de Administración Maestra de Cubikar para el Portal Central (cubikar.app)
 // Supervisión integral de clientes, membresías, consumos técnicos de IA y margen SaaS de ambas aplicaciones
 
-import { getSupabase } from './supabaseClient.js?v=20261119_cf36';
-import { CONST_TIERS, ARQ_TIERS, COMBO_TIERS } from './checkout.js?v=20261119_cf36';
-import { loadXLSX } from './libLoader.js?v=20261119_cf36';
+import { getSupabase } from './supabaseClient.js?v=20261119_cf37';
+import { CONST_TIERS, ARQ_TIERS, COMBO_TIERS } from './checkout.js?v=20261119_cf37';
+import { loadXLSX } from './libLoader.js?v=20261119_cf37';
 const getSupabaseClient = getSupabase;
 
 // Administrador Maestro Oficial
@@ -1200,7 +1200,7 @@ export function startAdminRealtimeSync() {
     const sb = getSupabaseClient();
     if (sb && typeof sb.channel === 'function') {
       adminRealtimeChannel = sb
-        .channel('cubikar-superadmin-realtime')
+        .channel('cubikar-superadmin-realtime', { config: { private: true } })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'perfiles' }, () => scheduleAdminRealtimeRefresh(450))
         .on('postgres_changes', { event: '*', schema: 'public', table: 'empresas' }, () => scheduleAdminRealtimeRefresh(450))
         .on('postgres_changes', { event: '*', schema: 'public', table: 'cubikar_registros' }, () => scheduleAdminRealtimeRefresh(450))
