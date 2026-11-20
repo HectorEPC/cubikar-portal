@@ -391,6 +391,13 @@ export let selectedAdminUserEmails = new Set();
 let adminUsersCache = null;
 let adminUsersRequestSeq = 0;
 let visibleAdminUserEmails = new Set();
+let lastRenderedTbodyHtml = '';
+let adminRealtimeChannel = null;
+let adminAutoRefreshInterval = null;
+let adminRealtimeDebounceTimer = null;
+let adminRefreshInFlight = false;
+let adminVisibilityHandler = null;
+let adminFocusHandler = null;
 
 export function setAdminAppScope(scope) {
   adminFilterAppScope = scope;
@@ -642,7 +649,8 @@ export async function fetchAllEcosystemUsers() {
 
         const res = await fetch(url, {
           method: 'GET',
-          headers
+          headers,
+          cache: 'no-store'
         });
         if (res.ok) {
           const data = await res.json();
@@ -807,6 +815,7 @@ export async function renderCubikarAdminTable({ refresh = false } = {}) {
   if (refresh || !adminUsersCache) {
     const seq = ++adminUsersRequestSeq;
     if (!adminUsersCache) {
+      lastRenderedTbodyHtml = '';
       tbody.innerHTML = `
         <tr>
           <td colspan="16" class="text-center py-12 text-slate-400 font-medium bg-slate-900/40">
@@ -819,6 +828,7 @@ export async function renderCubikarAdminTable({ refresh = false } = {}) {
     const users = await fetchAllEcosystemUsers();
     if (seq !== adminUsersRequestSeq) return;
     adminUsersCache = users;
+    updateAdminRealtimeBadge('live');
   }
 
   renderAdminTableFromCache();
@@ -920,7 +930,7 @@ function renderAdminTableFromCache() {
   });
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `
+    const emptyHtml = `
       <tr>
         <td colspan="16" class="text-center py-12 text-slate-400 font-medium bg-slate-900/40">
           <i class="fa-solid fa-filter-circle-xmark text-3xl mb-2 text-slate-500 block"></i>
@@ -928,11 +938,15 @@ function renderAdminTableFromCache() {
         </td>
       </tr>
     `;
+    if (emptyHtml !== lastRenderedTbodyHtml || tbody.innerHTML === '') {
+      tbody.innerHTML = emptyHtml;
+      lastRenderedTbodyHtml = emptyHtml;
+    }
     updateAdminDeleteButtonUI();
     return;
   }
 
-  tbody.innerHTML = filtered.map(row => {
+  const nextTbodyHtml = filtered.map(row => {
     const safeEmailHtml = escapeAdminHtml(row.correo);
     const safeEmailAttr = escapeAdminAttr(row.correo);
     const safeNameHtml = escapeAdminHtml(row.nombre);
@@ -1064,6 +1078,13 @@ function renderAdminTableFromCache() {
     `;
   }).join('');
 
+  const sel = typeof window !== 'undefined' ? window.getSelection?.() : null;
+  const hasSelectionInside = Boolean(sel && !sel.isCollapsed && sel.anchorNode && tbody.contains(sel.anchorNode));
+  if (!hasSelectionInside && (nextTbodyHtml !== lastRenderedTbodyHtml || tbody.innerHTML === '')) {
+    tbody.innerHTML = nextTbodyHtml;
+    lastRenderedTbodyHtml = nextTbodyHtml;
+  }
+
   updateAdminDeleteButtonUI();
   updateSelectAllCheckboxState();
 }
@@ -1089,6 +1110,113 @@ function updateAdminKpisUI(dataset) {
 }
 
 // =========================================================================
+// 5B. SINCRONIZACIÓN AUTOMÁTICA EN TIEMPO REAL DEL PANEL SUPERADMIN
+// =========================================================================
+
+function isAdminModalOpen() {
+  const modal = document.getElementById('modal-admin-cubikar');
+  return Boolean(modal && !modal.classList.contains('hidden') && modal.style.display !== 'none');
+}
+
+function updateAdminRealtimeBadge(status = 'live') {
+  const el = document.getElementById('admin-realtime-status');
+  if (!el) return;
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2, '0');
+  const mm = String(now.getMinutes()).padStart(2, '0');
+  const ss = String(now.getSeconds()).padStart(2, '0');
+  if (status === 'syncing') {
+    el.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping"></span><span class="text-cyan-300">Sincronizando...</span>`;
+    return;
+  }
+  el.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span><span>En tiempo real • ${hh}:${mm}:${ss}</span>`;
+}
+
+function scheduleAdminRealtimeRefresh(delayMs = 500) {
+  if (!isAdminModalOpen()) return;
+  if (adminRealtimeDebounceTimer) clearTimeout(adminRealtimeDebounceTimer);
+  adminRealtimeDebounceTimer = setTimeout(async () => {
+    if (!isAdminModalOpen() || document.hidden || adminRefreshInFlight) return;
+    adminRefreshInFlight = true;
+    try {
+      updateAdminRealtimeBadge('syncing');
+      await renderCubikarAdminTable({ refresh: true });
+    } catch (_) {
+    } finally {
+      adminRefreshInFlight = false;
+      updateAdminRealtimeBadge('live');
+    }
+  }, delayMs);
+}
+
+export function stopAdminRealtimeSync() {
+  if (adminAutoRefreshInterval) {
+    clearInterval(adminAutoRefreshInterval);
+    adminAutoRefreshInterval = null;
+  }
+  if (adminRealtimeDebounceTimer) {
+    clearTimeout(adminRealtimeDebounceTimer);
+    adminRealtimeDebounceTimer = null;
+  }
+  if (adminVisibilityHandler && typeof document !== 'undefined') {
+    document.removeEventListener('visibilitychange', adminVisibilityHandler);
+    adminVisibilityHandler = null;
+  }
+  if (adminFocusHandler && typeof window !== 'undefined') {
+    window.removeEventListener('focus', adminFocusHandler);
+    adminFocusHandler = null;
+  }
+  if (adminRealtimeChannel) {
+    try {
+      const sb = getSupabaseClient();
+      if (sb && typeof sb.removeChannel === 'function') {
+        sb.removeChannel(adminRealtimeChannel);
+      } else if (typeof adminRealtimeChannel.unsubscribe === 'function') {
+        adminRealtimeChannel.unsubscribe();
+      }
+    } catch (_) {}
+    adminRealtimeChannel = null;
+  }
+}
+
+export function startAdminRealtimeSync() {
+  stopAdminRealtimeSync();
+
+  // 1. Suscripción push instantánea via Supabase Realtime
+  try {
+    const sb = getSupabaseClient();
+    if (sb && typeof sb.channel === 'function') {
+      adminRealtimeChannel = sb
+        .channel('cubikar-superadmin-realtime')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'perfiles' }, () => scheduleAdminRealtimeRefresh(450))
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'empresas' }, () => scheduleAdminRealtimeRefresh(450))
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'cubikar_registros' }, () => scheduleAdminRealtimeRefresh(450))
+        .subscribe();
+    }
+  } catch (_) {}
+
+  // 2. Respaldo automático en segundo plano cada 12 segundos (cubre cambios directos en auth.users o sin Realtime)
+  adminAutoRefreshInterval = setInterval(() => {
+    if (!isAdminModalOpen() || document.hidden || adminRefreshInFlight) return;
+    scheduleAdminRealtimeRefresh(50);
+  }, 12000);
+
+  // 3. Refresco inmediato al regresar a la pestaña o enfocar la ventana
+  if (typeof document !== 'undefined') {
+    adminVisibilityHandler = () => {
+      if (!document.hidden && isAdminModalOpen()) scheduleAdminRealtimeRefresh(150);
+    };
+    document.addEventListener('visibilitychange', adminVisibilityHandler);
+  }
+  if (typeof window !== 'undefined') {
+    adminFocusHandler = () => {
+      if (isAdminModalOpen()) scheduleAdminRealtimeRefresh(150);
+    };
+    window.addEventListener('focus', adminFocusHandler);
+  }
+}
+
+// =========================================================================
 // 6. APERTURA / CIERRE DE MODALES SUPERADMIN
 // =========================================================================
 
@@ -1098,9 +1226,11 @@ export function openCubikarAdminModal() {
   modal.classList.remove('hidden');
   modal.style.display = 'flex';
   renderCubikarAdminTable({ refresh: true });
+  startAdminRealtimeSync();
 }
 
 export function closeCubikarAdminModal() {
+  stopAdminRealtimeSync();
   const modal = document.getElementById('modal-admin-cubikar');
   if (modal) {
     modal.classList.add('hidden');
