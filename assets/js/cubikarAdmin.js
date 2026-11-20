@@ -834,9 +834,8 @@ export async function renderCubikarAdminTable({ refresh = false } = {}) {
   renderAdminTableFromCache();
 }
 
-function renderAdminTableFromCache() {
-  const tbody = document.getElementById('admin-cubikar-table-body');
-  if (!tbody || !adminUsersCache) return;
+function getFilteredAdminDataset() {
+  if (!Array.isArray(adminUsersCache)) return [];
 
   const dataset = adminUsersCache.map((u, idx) => {
     const metrics = calculateUserMetrics(u);
@@ -873,8 +872,13 @@ function renderAdminTableFromCache() {
       billingCycle: metrics.billingCycle,
       isSuiteCombo: metrics.isSuiteCombo,
       inicioMembresia: formatDate(inicioSub),
-      finMembresia: isPermanent ? 'Vitalicio' : formatDate(finSub),
+      finMembresia: isPermanent ? 'Vitalicio' : (isExpired ? `${formatDate(finSub)} (Vencida)` : formatDate(finSub)),
       finMembresiaHtml,
+      isPermanent,
+      isExpired,
+      tokensIANum: Number(metrics.tokensIA || 0),
+      storageMBNum: Number(metrics.storageMB || 0),
+      bandwidthMBNum: Number(metrics.bandwidthMB || 0),
       tokensIA: metrics.tokensIA.toLocaleString('es-MX'),
       storageMB: `${metrics.storageMB} MB`,
       bandwidthMB: `${metrics.bandwidthMB} MB`,
@@ -920,6 +924,15 @@ function renderAdminTableFromCache() {
   if (adminFilterCycle !== 'all') {
     filtered = filtered.filter(d => d.billingCycle === adminFilterCycle || d.cycleConst === adminFilterCycle || d.cycleArq === adminFilterCycle);
   }
+
+  return filtered;
+}
+
+function renderAdminTableFromCache() {
+  const tbody = document.getElementById('admin-cubikar-table-body');
+  if (!tbody || !adminUsersCache) return;
+
+  const filtered = getFilteredAdminDataset();
 
   // Actualizar KPIs Superiores
   updateAdminKpisUI(filtered);
@@ -1351,6 +1364,311 @@ export async function exportCubikarDatabaseToExcel() {
   }
   const wb = XLSX.utils.table_to_book(table, { sheet: 'Bases de Datos Cubikar' });
   XLSX.writeFile(wb, `Cubikar_Ecosistema_Admin_${new Date().toISOString().slice(0, 10)}.xlsx`);
+}
+
+export function printCubikarAdminTable() {
+  const rows = getFilteredAdminDataset();
+  const totalUsers = rows.length;
+  const activeUsers = rows.filter(d => d.actividad === 'activo').length;
+  const totalRevenue = rows.reduce((acc, c) => acc + (c.gastoSuscripcion || 0), 0);
+  const totalResourceCost = rows.reduce((acc, c) => acc + (c.costoRecursos || 0), 0);
+  const grossMargin = totalRevenue > 0 ? Number((((totalRevenue - totalResourceCost) / totalRevenue) * 100).toFixed(1)) : 0;
+  const totalTokens = rows.reduce((acc, c) => acc + (c.tokensIANum || 0), 0);
+  const totalStorageMB = rows.reduce((acc, c) => acc + (c.storageMBNum || 0), 0);
+  const totalBandwidthMB = rows.reduce((acc, c) => acc + (c.bandwidthMBNum || 0), 0);
+
+  const scopeLabels = { all: 'Todo el Ecosistema', const: 'Cubikar Construcción', arq: 'Cubikar Arquitectura' };
+  const activityLabels = { all: 'Todas', activo: 'Activo (≤15d)', reposo: 'Reposo (>15d)', inactivo: 'Inactivo' };
+  const planLabels = { all: 'Todos', free: 'Gratis', plus: 'Plus', pro: 'Pro', combo: 'Suite Combo' };
+  const cycleLabels = { all: 'Todos', monthly: 'Mensual', annual: 'Anual' };
+
+  const filterSummaryParts = [
+    `Alcance: ${scopeLabels[adminFilterAppScope] || 'Todo el Ecosistema'}`,
+    `Actividad: ${activityLabels[adminFilterActivity] || 'Todas'}`,
+    `Plan: ${planLabels[adminFilterPlan] || 'Todos'}`,
+    `Ciclo: ${cycleLabels[adminFilterCycle] || 'Todos'}`
+  ];
+  if (adminTableFilterText) {
+    filterSummaryParts.push(`Búsqueda: "${adminTableFilterText}"`);
+  }
+
+  const now = new Date();
+  const printedAt = now.toLocaleString('es-MX', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
+  let logoUrl = 'assets/branding/cubikar_icon_transparent.png';
+  try {
+    logoUrl = new URL('assets/branding/cubikar_icon_transparent.png', window.location.href).href;
+  } catch (_) {}
+
+  const formatMoney = (n) => `$ ${Number(n || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  const tableRowsHtml = rows.length === 0
+    ? `<tr><td colspan="15" style="text-align:center; padding:18px; color:#64748b;">No hay registros para imprimir con los filtros seleccionados.</td></tr>`
+    : rows.map((r, idx) => {
+        const appLabel = r.appUsage === 'ambas' ? 'Ambas Apps' : (r.appUsage === 'const' ? 'Construcción' : 'Arquitectura');
+        const actText = r.actividad === 'activo' ? 'ACTIVO' : (r.actividad === 'reposo' ? 'REPOSO' : 'INACTIVO');
+        const actClass = r.actividad === 'activo' ? 'badge-active' : (r.actividad === 'reposo' ? 'badge-rest' : 'badge-inactive');
+        const memHtml = r.isSuiteCombo
+          ? `<span class="badge-pro">SUITE COMPLETA PRO</span>`
+          : `<span class="badge-plan">Const: ${escapeAdminHtml(String(r.planConst || 'free').toUpperCase())}</span> <span class="badge-plan">Arq: ${escapeAdminHtml(String(r.planArq || 'free').toUpperCase())}</span>`;
+        const cycleText = r.billingCycle === 'annual' ? 'Anual' : 'Mensual';
+        const rowBg = idx % 2 === 1 ? '#f8fafc' : '#ffffff';
+        const expClass = r.isExpired ? 'color:#dc2626; font-weight:700;' : (r.isPermanent ? 'color:#b45309; font-weight:700;' : '');
+
+        return `
+          <tr style="background:${rowBg};">
+            <td class="num center">${escapeAdminHtml(r.no)}</td>
+            <td class="bold">${escapeAdminHtml(r.nombre)}</td>
+            <td class="mono">${escapeAdminHtml(r.correo)}</td>
+            <td class="center">${escapeAdminHtml(appLabel)}</td>
+            <td class="center mono">${escapeAdminHtml(r.fechaRegistro)}</td>
+            <td class="center"><span class="${actClass}">${actText}</span></td>
+            <td class="center">${memHtml}</td>
+            <td class="center">${cycleText}</td>
+            <td class="center mono" style="${expClass}">${escapeAdminHtml(r.finMembresia)}</td>
+            <td class="right mono">${escapeAdminHtml(r.tokensIA)}</td>
+            <td class="right mono">${escapeAdminHtml(r.storageMB)}</td>
+            <td class="right mono">${escapeAdminHtml(r.bandwidthMB)}</td>
+            <td class="right mono bold" style="color:#047857;">${formatMoney(r.gastoSuscripcion)}</td>
+            <td class="right mono">${formatMoney(r.costoRecursos)}</td>
+            <td class="right mono bold">${Number(r.pctConsumo || 0)}%</td>
+          </tr>
+        `;
+      }).join('');
+
+  const printDocHtml = `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Reporte Administrativo Cubikar - ${escapeAdminHtml(now.toISOString().slice(0, 10))}</title>
+  <style>
+    @page { size: letter landscape; margin: 9mm 10mm; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 14px 18px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      color: #0f172a;
+      background: #ffffff;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #0f172a;
+      color: #f8fafc;
+      padding: 10px 14px;
+      border-radius: 10px;
+      margin-bottom: 14px;
+      font-size: 12px;
+    }
+    .toolbar-actions { display: flex; gap: 8px; }
+    .btn {
+      border: 0;
+      border-radius: 7px;
+      padding: 7px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-print { background: #0284c7; color: #ffffff; }
+    .btn-close { background: #334155; color: #e2e8f0; }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 2.5px solid #1b506f;
+      padding-bottom: 10px;
+      margin-bottom: 12px;
+      gap: 16px;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand img { width: 38px; height: 38px; object-fit: contain; }
+    .brand-title { font-size: 15px; font-weight: 900; color: #1b506f; letter-spacing: 0.02em; text-transform: uppercase; }
+    .brand-sub { font-size: 10.5px; color: #475569; margin-top: 2px; }
+    .meta { text-align: right; font-size: 9.5px; color: #334155; line-height: 1.45; }
+    .meta strong { color: #0f172a; }
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .kpi {
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 7px 10px;
+      background: #f8fafc;
+    }
+    .kpi-label { font-size: 8px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; }
+    .kpi-val { font-size: 13px; font-weight: 900; color: #0f172a; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; margin-top: 2px; }
+    .kpi-green { color: #047857; }
+    .kpi-amber { color: #b45309; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 8.5px;
+      margin-bottom: 10px;
+    }
+    thead tr { background: #1b506f; color: #ffffff; }
+    th {
+      padding: 6px 5px;
+      border: 1px solid #153e56;
+      font-weight: 800;
+      text-align: left;
+      white-space: nowrap;
+    }
+    td {
+      padding: 5px 5px;
+      border: 1px solid #cbd5e1;
+      vertical-align: middle;
+    }
+    tfoot tr { background: #e2e8f0; font-weight: 800; }
+    tfoot td { border: 1px solid #94a3b8; padding: 6px 5px; }
+    .center { text-align: center; }
+    .right { text-align: right; }
+    .bold { font-weight: 700; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .num { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #475569; font-weight: 700; }
+    .badge-active { display:inline-block; padding:1px 5px; border-radius:4px; background:#dcfce7; color:#166534; font-weight:800; font-size:7.5px; border:1px solid #86efac; }
+    .badge-rest { display:inline-block; padding:1px 5px; border-radius:4px; background:#fef3c7; color:#92400e; font-weight:800; font-size:7.5px; border:1px solid #fcd34d; }
+    .badge-inactive { display:inline-block; padding:1px 5px; border-radius:4px; background:#fee2e2; color:#991b1b; font-weight:800; font-size:7.5px; border:1px solid #fca5a5; }
+    .badge-pro { display:inline-block; padding:1px 6px; border-radius:999px; background:#fef3c7; color:#92400e; font-weight:800; font-size:7.5px; border:1px solid #f59e0b; }
+    .badge-plan { display:inline-block; padding:1px 4px; border-radius:3px; background:#f1f5f9; color:#1e293b; font-weight:700; font-size:7.5px; border:1px solid #cbd5e1; }
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 8.5px;
+      color: #64748b;
+      border-top: 1px solid #cbd5e1;
+      padding-top: 6px;
+    }
+    @media print {
+      body { padding: 0; }
+      .no-print { display: none !important; }
+      tr { page-break-inside: avoid; }
+      thead { display: table-header-group; }
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar no-print">
+    <span><strong>Vista Previa de Impresión</strong> — Formato Carta Horizontal (${totalUsers} usuario(s))</span>
+    <div class="toolbar-actions">
+      <button type="button" class="btn btn-print" onclick="window.print()">Imprimir / Guardar PDF</button>
+      <button type="button" class="btn btn-close" onclick="window.close()">Cerrar</button>
+    </div>
+  </div>
+
+  <div class="header">
+    <div class="brand">
+      <img src="${escapeAdminAttr(logoUrl)}" alt="Cubikar">
+      <div>
+        <div class="brand-title">Bases de Datos Cubikar — Reporte Administrativo</div>
+        <div class="brand-sub">Supervisión Integral de Clientes, Membresías, Consumos Técnicos y Margen SaaS</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div><strong>Fecha de emisión:</strong> ${escapeAdminHtml(printedAt)}</div>
+      <div><strong>Registros incluidos:</strong> ${totalUsers} usuario(s)</div>
+      <div><strong>Filtros:</strong> ${escapeAdminHtml(filterSummaryParts.join(' | '))}</div>
+    </div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="kpi-label">Total Usuarios</div><div class="kpi-val">${totalUsers}</div></div>
+    <div class="kpi"><div class="kpi-label">Usuarios Activos (≤15d)</div><div class="kpi-val kpi-green">${activeUsers}</div></div>
+    <div class="kpi"><div class="kpi-label">Ingreso Suscripción</div><div class="kpi-val kpi-green">${formatMoney(totalRevenue)}</div></div>
+    <div class="kpi"><div class="kpi-label">Costo Técnico Recursos</div><div class="kpi-val kpi-amber">${formatMoney(totalResourceCost)}</div></div>
+    <div class="kpi"><div class="kpi-label">Margen Bruto</div><div class="kpi-val kpi-green">${grossMargin}%</div></div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th class="center">No.</th>
+        <th>Nombre de usuario</th>
+        <th>Correo</th>
+        <th class="center">Aplicación</th>
+        <th class="center">Registro</th>
+        <th class="center">Actividad</th>
+        <th class="center">Membresías Ecosistema</th>
+        <th class="center">Ciclo</th>
+        <th class="center">Vigencia Fin</th>
+        <th class="right">Tokens IA</th>
+        <th class="right">Almacenamiento</th>
+        <th class="right">Ancho Banda</th>
+        <th class="right">Facturación</th>
+        <th class="right">Costo Tec.</th>
+        <th class="right">% Consumo</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${tableRowsHtml}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="9" class="right">TOTALES DEL REPORTE (${totalUsers} USUARIOS):</td>
+        <td class="right mono">${totalTokens.toLocaleString('es-MX')}</td>
+        <td class="right mono">${totalStorageMB.toFixed(1)} MB</td>
+        <td class="right mono">${totalBandwidthMB.toFixed(1)} MB</td>
+        <td class="right mono" style="color:#047857;">${formatMoney(totalRevenue)}</td>
+        <td class="right mono">${formatMoney(totalResourceCost)}</td>
+        <td class="right mono">Margen ${grossMargin}%</td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <div class="footer">
+    <span>Estados: Activo (≤15 días) • Reposo (>15 días) • Inactivo (>90 días) • Documento de uso administrativo interno</span>
+    <span>Cubikar Admin Engine v2.0 • Master Superadmin</span>
+  </div>
+
+  <script>
+    window.addEventListener('load', function () {
+      setTimeout(function () { window.print(); }, 250);
+    });
+  </script>
+</body>
+</html>`;
+
+  const printWin = window.open('', '_blank', 'width=1280,height=850');
+  if (printWin) {
+    printWin.document.open();
+    printWin.document.write(printDocHtml);
+    printWin.document.close();
+    return;
+  }
+
+  // Respaldo con iframe oculto si el navegador bloqueó ventanas emergentes
+  const existingFrame = document.getElementById('cubikar-admin-print-frame');
+  if (existingFrame) existingFrame.remove();
+  const iframe = document.createElement('iframe');
+  iframe.id = 'cubikar-admin-print-frame';
+  iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;';
+  document.body.appendChild(iframe);
+  const frameDoc = iframe.contentDocument || iframe.contentWindow?.document;
+  if (frameDoc) {
+    frameDoc.open();
+    frameDoc.write(printDocHtml);
+    frameDoc.close();
+    setTimeout(() => {
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      } catch (_) {}
+      setTimeout(() => iframe.remove(), 3000);
+    }, 300);
+  }
 }
 
 let adminSearchDebounceTimer = null;
@@ -1845,6 +2163,7 @@ if (typeof window !== 'undefined') {
   window.closeMarketRatesModal = closeMarketRatesModal;
   window.saveMarketRatesFromModal = saveMarketRatesFromModal;
   window.exportCubikarDatabaseToExcel = exportCubikarDatabaseToExcel;
+  window.printCubikarAdminTable = printCubikarAdminTable;
   window.setAdminAppScope = setAdminAppScope;
   window.setAdminTableSearch = setAdminTableSearch;
   window.setAdminFilterActivity = setAdminFilterActivity;

@@ -15,6 +15,7 @@ import {
   closeMarketRatesModal,
   saveMarketRatesFromModal,
   exportCubikarDatabaseToExcel,
+  printCubikarAdminTable,
   setAdminAppScope,
   setAdminTableSearch,
   setAdminFilterActivity,
@@ -36,7 +37,7 @@ import {
   setEditModalPresetDate,
   applyComboProToEditModal,
   saveUserMembershipFromModal
-} from './cubikarAdmin.js?v=20261119_cf32';
+} from './cubikarAdmin.js?v=20261119_cf33';
 import { 
   initAuth, 
   syncSubscriptionFromCloud,
@@ -145,6 +146,7 @@ function exposeGlobalHandlers() {
     closeMarketRatesModal,
     saveMarketRatesFromModal,
     exportCubikarDatabaseToExcel,
+    printCubikarAdminTable,
     setAdminAppScope,
     setAdminTableSearch,
     setAdminFilterActivity,
