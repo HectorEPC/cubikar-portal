@@ -31,6 +31,9 @@ jobs:
   backup:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      # El contexto `secrets` no es válido dentro de `if:`; se expone como bandera de entorno a nivel job
+      HAS_DB_URL: ${{ secrets.SUPABASE_DB_URL != '' }}
     steps:
       - name: Obtener código
         uses: actions/checkout@v4
@@ -56,7 +59,7 @@ jobs:
         run: python3 scripts/backup_users_to_s3.py
 
       - name: Dump completo de PostgreSQL a S3 (opcional si existe SUPABASE_DB_URL)
-        if: ${{ !inputs.dry_run && !inputs.skip_pg_dump && secrets.SUPABASE_DB_URL != '' }}
+        if: ${{ always() && env.HAS_DB_URL == 'true' && !inputs.dry_run && !inputs.skip_pg_dump }}
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
