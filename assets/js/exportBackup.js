@@ -1,13 +1,21 @@
 // assets/js/exportBackup.js
 // Motor de Exportación y Descarga de Respaldo Completo del Ecosistema Cubikar (datos reales nube + local)
 
-import { getSupabase } from './supabaseClient.js?v=20261117_cf30';
-import { loadJSZip } from './libLoader.js?v=20261117_cf30';
+import { getSupabase } from './supabaseClient.js?v=20261119_cf36';
+import { loadJSZip } from './libLoader.js?v=20261119_cf36';
 
 export const BACKUP_PAGE_SIZE = 1000;
 export const BACKUP_ID_BATCH_SIZE = 150;
 const OBJECT_URL_TTL_MS = 30000;
-const PROJECT_DETAIL_TABLES = ['estimaciones', 'compras_gastos', 'cronograma_actividades', 'bitacora_notas'];
+const PROJECT_DETAIL_TABLES = [
+  'estimaciones', 'compras_gastos', 'proveedores', 'bitacora_notas', 'bitacora_config',
+  'cronograma_config', 'cronograma_actividades', 'chat_mensajes', 'archivos_almacen'
+];
+// Tablas cuya llave primaria es proyecto_id (no tienen columna id)
+const TABLE_ORDER_COLUMN = { bitacora_config: 'proyecto_id', cronograma_config: 'proyecto_id' };
+// Tablas opcionales: si no existen o fallan, el respaldo continúa y se reporta en el LEEME
+const OPTIONAL_TABLES = new Set(['proveedores', 'bitacora_config', 'cronograma_config', 'cronograma_actividades', 'chat_mensajes', 'archivos_almacen']);
+export const backupWarnings = [];
 
 let backupInProgress = false;
 
@@ -79,8 +87,9 @@ export async function fetchAllPages(buildQuery, pageSize = BACKUP_PAGE_SIZE) {
 
 export async function fetchRowsByIds(sb, table, column, ids, batchSize = BACKUP_ID_BATCH_SIZE) {
   const rows = [];
+  const orderCol = TABLE_ORDER_COLUMN[table] || 'id';
   for (const batch of chunkList(ids, batchSize)) {
-    const batchRows = await fetchAllPages(() => sb.from(table).select('*').in(column, batch).order('id', { ascending: true }));
+    const batchRows = await fetchAllPages(() => sb.from(table).select('*').in(column, batch).order(orderCol, { ascending: true }));
     rows.push(...batchRows);
   }
   return rows;
@@ -95,8 +104,16 @@ async function fetchCloudBackupData(sb) {
 
   const projIds = projects.map(p => p.id).filter(Boolean);
   const byTable = {};
+  backupWarnings.length = 0;
   for (const table of ['catalogo_conceptos', ...PROJECT_DETAIL_TABLES]) {
-    const rows = projIds.length ? await fetchRowsByIds(sb, table, 'proyecto_id', projIds) : [];
+    let rows = [];
+    try {
+      rows = projIds.length ? await fetchRowsByIds(sb, table, 'proyecto_id', projIds) : [];
+    } catch (err) {
+      if (!OPTIONAL_TABLES.has(table)) throw err;
+      backupWarnings.push(`${table}: ${err?.message || err}`);
+      rows = [];
+    }
     byTable[table] = groupBy(rows, r => r.proyecto_id);
   }
 
@@ -218,6 +235,10 @@ export async function downloadFullEcosystemBackup(userName = 'Usuario', userEmai
       }
     }
 
+    if (backupWarnings.length > 0) {
+      projectsFolder.file('ADVERTENCIAS_RESPALDO.txt', 'Tablas que no pudieron incluirse en este respaldo:\n' + backupWarnings.join('\n'));
+    }
+
     for (const lp of localProjects) {
       if (seenIds.has(lp.id) || (lp.cloudId && seenIds.has(lp.cloudId))) continue;
       const pDir = projectsFolder.folder(toFolderSlug(lp.projectName || lp.id, lp.id));
@@ -238,7 +259,7 @@ export async function downloadFullEcosystemBackup(userName = 'Usuario', userEmai
         const rawTree = localStorage.getItem(`control_obra_treeData_${lp.id}`);
         const rawSettings = localStorage.getItem(`control_obra_settings_${lp.id}`);
         const rawEst = localStorage.getItem(`estimaciones_data_${lp.id}`);
-        const rawCompras = localStorage.getItem(`compras_data_${lp.id}`);
+        const rawCompras = localStorage.getItem(`expenses_control_${lp.id}`) || localStorage.getItem(`compras_data_${lp.id}`);
         if (rawSettings) pDir.file('configuracion.json', rawSettings);
         if (rawEst) pDir.file('estimaciones.json', rawEst);
         if (rawCompras) pDir.file('compras_gastos.json', rawCompras);
